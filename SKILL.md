@@ -1,7 +1,6 @@
 ---
 name: ocas-custodian
 source: https://github.com/indigokarasu/custodian
-install: openclaw skill install https://github.com/indigokarasu/custodian
 description: Use when checking system health, fixing log errors, reviewing cron failures, initializing skills, registering missing background tasks, or running overnight maintenance. Trigger phrases: 'check system health', 'fix log errors', 'why is X failing', 'initialize skills', 'clean up errors', 'show open issues', 'what time does custodian run', 'update custodian'. Do not use for skill OKR analysis (use Mentor/Corvus), skill rebuilding (use Forge), knowledge graph queries (use Elephas), social graph queries (use Weave), or research tasks (use Scout/Sift).
 metadata: {"openclaw":{"emoji":"🧹"}}
 ---

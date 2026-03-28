@@ -13,7 +13,38 @@
     ],
     "write": [
       "~/openclaw/data/ocas-custodian/",
-      "~/openclaw/journals/ocas-custodian/"
+      "~/openclaw/journals/ocas-custodian/",
+      "~/openclaw/data/ocas-vesper/intake/"
     ]
-  }
+  },
+  "self_update": {
+    "source": "https://github.com/indigokarasu/custodian",
+    "mechanism": "version-checked tarball from GitHub via gh CLI",
+    "command": "custodian.update",
+    "requires_binaries": [
+      "gh",
+      "tar",
+      "python3"
+    ]
+  },
+  "scheduled_tasks": [
+    {
+      "name": "custodian:light",
+      "schedule": "heartbeat",
+      "command": "custodian.scan.light",
+      "description": "Lightweight health check"
+    },
+    {
+      "name": "custodian:deep",
+      "schedule": "0 1,7,13,19 * * *",
+      "command": "custodian.scan.deep",
+      "description": "Deep system scan"
+    },
+    {
+      "name": "custodian:update",
+      "schedule": "0 0 * * *",
+      "command": "custodian.update",
+      "description": "Self-update from GitHub source"
+    }
+  ]
 }
