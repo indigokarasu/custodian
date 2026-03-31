@@ -175,6 +175,54 @@ Tier 3: append `status: escalated` to `issues.jsonl`, tag journal `escalation_ne
 
 Clean state: zero open issues + previous cycle clean = suppress Vesper signal. First run of day or issues now resolved = emit clean bill of health.
 
+## OKRs
+
+Universal OKRs from spec-ocas-journal.md apply to all runs. Custodian-specific OKRs tracked in every journal:
+
+```yaml
+skill_okrs:
+  - name: success_rate
+    metric: fraction of scans completing without errors
+    direction: maximize
+    target: 0.99
+    evaluation_window: 30_runs
+  - name: auto_fix_rate
+    metric: fraction of detected issues auto-fixed (Tier 1)
+    direction: maximize
+    target: 0.80
+    evaluation_window: 30_runs
+  - name: fix_success_rate
+    metric: fraction of applied Tier 1 fixes that verify successfully
+    direction: maximize
+    target: 0.95
+    evaluation_window: 30_runs
+  - name: mean_time_to_fix
+    metric: average milliseconds from issue detection to fix completion
+    direction: minimize
+    target: 5000
+    evaluation_window: 30_runs
+```
+
+## Initialization
+
+`custodian.init`:
+
+1. Create `~/openclaw/data/ocas-custodian/` and subdirectories if not present
+2. Write default `config.json` with ConfigBase fields and custodian-specific config
+3. Create empty JSONL files: `issues.jsonl`, `fixes.jsonl`, `cleanup_events.jsonl`, `fix_effectiveness.jsonl`, `learned_issues.jsonl`, `skill_conformance.jsonl`, `deferred_fixes.jsonl`, `decisions.jsonl`
+4. Write `activity_model.json` with initial cold start schedule
+5. Write `schedule_state.json` with initial optimization history
+6. Create `~/openclaw/journals/ocas-custodian/`
+7. Create `reports/` directory
+8. Copy bundled plan `references/plans/custodian-repair.plan.md` to `~/openclaw/data/ocas-mentor/plans/` if Mentor present
+9. Register cron jobs `custodian:deep` and `custodian:update` if not already present (check `openclaw cron list` first)
+10. Register heartbeat entry `custodian:light` in `HEARTBEAT.md` if not already present
+11. Log initialization as a DecisionRecord in `decisions.jsonl`
+
+## Update command
+
+`custodian.update` — Pull latest release from GitHub. Preserves `~/openclaw/data/ocas-custodian/` and journals.
+
 ## Journal Outputs
 
 - **Observation Journal** -- scan-only runs, no fixes applied
