@@ -23,6 +23,12 @@ Custodian detects, classifies, and repairs OpenClaw operational failures autonom
 
 **Does not own:** OKR trend analysis (Corvus, Mentor), skill design evaluation or rebuilding (Mentor, Forge), behavioral lesson extraction (Praxis), briefing delivery (Vesper), entity knowledge (Elephas), social graph (Weave). Never modifies any file inside a skill package directory.
 
+## Ontology types
+
+Custodian does not extract entities from user data and does not emit Signals to Elephas. It operates exclusively on system health data (logs, config files, journal metadata, storage usage).
+
+Custodian may read skill config files and journal metadata but does not interact with Chronicle, Weave, or any cross-skill entity data.
+
 ## Optional Skill Cooperation
 
 - **Vesper** -- writes InsightProposals to `~/openclaw/data/ocas-vesper/intake/` after deep scans. Without Vesper, issues stay in `issues.jsonl`.
