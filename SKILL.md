@@ -207,9 +207,33 @@ Registration during `custodian.init` (idempotent -- check `openclaw cron list` f
   YYYY-MM-DD/{run_id}.json
 ```
 
+## Using the script
+
+All deterministic operations delegate to `scripts/custodian.py`. Call it via Bash tool:
+
+```
+python3 {skill_dir}/scripts/custodian.py <command> [args]
+```
+
+Where `{skill_dir}` is the path to this skill package (e.g. `~/.openclaw/skills/ocas-custodian`).
+
+| When to call the script | When to reason directly |
+|---|---|
+| All scan, init, verify, repair, status, issues commands | Web search pass (Step 9) |
+| JSONL reads/writes, log parsing, fingerprinting | Writing Vesper InsightProposals (Step 10) |
+| Cron registration checks and updates | Interpreting novel/ambiguous findings |
+| Activity model rebuild and schedule optimization | Composing escalation summaries for Mentor |
+
+**Output contract:** All commands print human-readable status to stdout and write structured state to JSONL files. `status` and `issues.list` emit JSON. Exit 0 on success, non-zero on failure.
+
+**Web search handoff:** After `scan.deep`, if `~/openclaw/data/ocas-custodian/search_candidates.json` exists, read it and execute the web search pass directly using the query mutation sequence in Web Search Protocol. Write actionable results to `learned_issues.jsonl`.
+
+**Escalation handoff:** After `scan.deep` prints "Agent: run web search pass", also check open Tier 3/4 issues in `issues.list` output and write InsightProposals to `~/openclaw/data/ocas-vesper/intake/` if Vesper is installed.
+
 ## Support File Map
 
 | File | Purpose | When to read |
 |---|---|---|
 | `references/known_issues.json` | Pre-seeded fingerprint registry with tier, fix, reversibility | Start of every scan before classifying errors |
 | `references/plans/custodian-repair.plan.md` | Mentor Workflow Plan for Tier 3 multi-step repair | Copied to Mentor plans dir during init; referenced in escalation |
+| `scripts/custodian.py` | Deterministic CLI helper for all scan, repair, and data operations | Called by the agent for every custodian command |
