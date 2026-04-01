@@ -31,7 +31,7 @@ Custodian may read skill config files and journal metadata but does not interact
 
 ## Optional Skill Cooperation
 
-- **Vesper** -- writes InsightProposals to `~/openclaw/data/ocas-vesper/intake/` after deep scans. Without Vesper, issues stay in `issues.jsonl`.
+- **Vesper** -- writes InsightProposals to `/workspace/openclaw/data/ocas-custodian/proposals/`; Vesper reads from there (cooperative read; Custodian owns). Without Vesper, issues stay in `issues.jsonl`.
 - **Mentor** -- journals tagged `escalation_needed: true` are readable by Mentor heartbeat. Without Mentor, escalated issues await manual review.
 - **Corvus** -- if installed, reads Corvus observation journals for `routine_prediction` InsightProposals. Blended 70% Corvus / 30% own model. Functions normally without Corvus.
 
@@ -73,7 +73,7 @@ Runs on optimized 6-hour cron schedule. Isolated session, lightContext.
 8. **Repair pass** -- all Tier 1 fixes. Activity-aware: if active, only urgent fixes (failure in last 5 min); defer rest. Register verify jobs. Execute prior deferred fixes if now quiet.
 9. **Web search pass** -- for unknown fingerprints with `recurrence_count >= 1`, run next mutation query (see Web Search Protocol).
 10. **Escalation pass** -- Tier 3/4 open issues: write InsightProposal to Vesper intake. Tag journal `escalation_needed: true`.
-11. **Report** -- `~/openclaw/data/ocas-custodian/reports/YYYY-MM-DD-HHMM.md`. If all clean and previous cycle also clean: suppress Vesper signal.
+11. **Report** -- `/workspace/openclaw/data/ocas-custodian/reports/YYYY-MM-DD-HHMM.md`. If all clean and previous cycle also clean: suppress Vesper signal.
 12. **Write journal** -- Action (if fixes applied) or Observation (scan-only).
 
 ## Fix Safety Envelope
@@ -132,9 +132,9 @@ On every deep scan: scan `~/.openclaw/workspace/skills/`, parse each SKILL.md `#
 
 Uninitialized when: data dir missing, config.json missing, or journal dir missing. Sequence (additive only, never overwrite):
 
-1. Create `~/openclaw/data/{skill-name}/` if missing
+1. Create `/workspace/openclaw/data/{skill-name}/` if missing
 2. Write default config.json with ConfigBase fields -- only if absent
-3. Create `~/openclaw/journals/{skill-name}/` if missing
+3. Create `/workspace/openclaw/journals/{skill-name}/` if missing
 4. Create declared intake dirs if missing
 5. Run conformance check for background tasks
 6. Register missing tasks (Tier 1, subject to parameter availability)
@@ -171,64 +171,16 @@ Custodian OKRs (every journal): `success_rate`, `issues_detected`, `issues_auto_
 
 ## Escalation Path
 
-Tier 3: append `status: escalated` to `issues.jsonl`, tag journal `escalation_needed: true`, write InsightProposal (`anomaly_alert`) to `~/openclaw/data/ocas-vesper/intake/`. If Mentor present, note `mentor.plan.run custodian-repair --arg issue_id={id}` available.
+Tier 3: append `status: escalated` to `issues.jsonl`, tag journal `escalation_needed: true`, write InsightProposal (`anomaly_alert`) to `/workspace/openclaw/data/ocas-custodian/proposals/{proposal_id}.json`. Vesper reads from this directory. If Mentor present, note `mentor.plan.run custodian-repair --arg issue_id={id}` available.
 
 Clean state: zero open issues + previous cycle clean = suppress Vesper signal. First run of day or issues now resolved = emit clean bill of health.
-
-## OKRs
-
-Universal OKRs from spec-ocas-journal.md apply to all runs. Custodian-specific OKRs tracked in every journal:
-
-```yaml
-skill_okrs:
-  - name: success_rate
-    metric: fraction of scans completing without errors
-    direction: maximize
-    target: 0.99
-    evaluation_window: 30_runs
-  - name: auto_fix_rate
-    metric: fraction of detected issues auto-fixed (Tier 1)
-    direction: maximize
-    target: 0.80
-    evaluation_window: 30_runs
-  - name: fix_success_rate
-    metric: fraction of applied Tier 1 fixes that verify successfully
-    direction: maximize
-    target: 0.95
-    evaluation_window: 30_runs
-  - name: mean_time_to_fix
-    metric: average milliseconds from issue detection to fix completion
-    direction: minimize
-    target: 5000
-    evaluation_window: 30_runs
-```
-
-## Initialization
-
-`custodian.init`:
-
-1. Create `~/openclaw/data/ocas-custodian/` and subdirectories if not present
-2. Write default `config.json` with ConfigBase fields and custodian-specific config
-3. Create empty JSONL files: `issues.jsonl`, `fixes.jsonl`, `cleanup_events.jsonl`, `fix_effectiveness.jsonl`, `learned_issues.jsonl`, `skill_conformance.jsonl`, `deferred_fixes.jsonl`, `decisions.jsonl`
-4. Write `activity_model.json` with initial cold start schedule
-5. Write `schedule_state.json` with initial optimization history
-6. Create `~/openclaw/journals/ocas-custodian/`
-7. Create `reports/` directory
-8. Copy bundled plan `references/plans/custodian-repair.plan.md` to `~/openclaw/data/ocas-mentor/plans/` if Mentor present
-9. Register cron jobs `custodian:deep` and `custodian:update` if not already present (check `openclaw cron list` first)
-10. Register heartbeat entry `custodian:light` in `HEARTBEAT.md` if not already present
-11. Log initialization as a DecisionRecord in `decisions.jsonl`
-
-## Update command
-
-`custodian.update` — Pull latest release from GitHub. Preserves `~/openclaw/data/ocas-custodian/` and journals.
 
 ## Journal Outputs
 
 - **Observation Journal** -- scan-only runs, no fixes applied
 - **Action Journal** -- any run with Tier 1 fixes or cron registrations
 
-Both include full Custodian OKR block. Path: `~/openclaw/journals/ocas-custodian/YYYY-MM-DD/{run_id}.json`
+Both include full Custodian OKR block. Path: `/workspace/openclaw/journals/ocas-custodian/YYYY-MM-DD/{run_id}.json`
 
 ## Background tasks
 
@@ -243,7 +195,7 @@ Registration during `custodian.init` (idempotent -- check `openclaw cron list` f
 ## Storage Layout
 
 ```
-~/openclaw/data/ocas-custodian/
+/workspace/openclaw/data/ocas-custodian/
   config.json                  -- ConfigBase + scan_window_minutes, optimization settings
   issues.jsonl                 -- issue lifecycle records
   fixes.jsonl                  -- fix attempt records with pre/post state
@@ -255,9 +207,11 @@ Registration during `custodian.init` (idempotent -- check `openclaw cron list` f
   deferred_fixes.jsonl         -- fixes queued for next quiet window
   schedule_state.json          -- current/target schedule, optimization history
   decisions.jsonl              -- DecisionRecord entries
+  proposals/                   -- InsightProposal files for Vesper (cooperative read)
+    {proposal_id}.json
   reports/
     YYYY-MM-DD-HHMM.md         -- deep scan summaries (7-day retention)
-~/openclaw/journals/ocas-custodian/
+/workspace/openclaw/journals/ocas-custodian/
   YYYY-MM-DD/{run_id}.json
 ```
 
@@ -280,9 +234,9 @@ Where `{skill_dir}` is the path to this skill package (e.g. `~/.openclaw/skills/
 
 **Output contract:** All commands print human-readable status to stdout and write structured state to JSONL files. `status` and `issues.list` emit JSON. Exit 0 on success, non-zero on failure.
 
-**Web search handoff:** After `scan.deep`, if `~/openclaw/data/ocas-custodian/search_candidates.json` exists, read it and execute the web search pass directly using the query mutation sequence in Web Search Protocol. Write actionable results to `learned_issues.jsonl`.
+**Web search handoff:** After `scan.deep`, if `/workspace/openclaw/data/ocas-custodian/search_candidates.json` exists, read it and execute the web search pass directly using the query mutation sequence in Web Search Protocol. Write actionable results to `learned_issues.jsonl`.
 
-**Escalation handoff:** After `scan.deep` prints "Agent: run web search pass", also check open Tier 3/4 issues in `issues.list` output and write InsightProposals to `~/openclaw/data/ocas-vesper/intake/` if Vesper is installed.
+**Escalation handoff:** After `scan.deep` prints "Agent: run web search pass", also check open Tier 3/4 issues in `issues.list` output and write InsightProposals to `/workspace/openclaw/data/ocas-custodian/proposals/` if Vesper is installed. Vesper reads from this directory.
 
 ## Support File Map
 
