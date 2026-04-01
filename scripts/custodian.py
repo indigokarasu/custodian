@@ -564,6 +564,70 @@ def is_skill_initialized(skill_name):
     j = HOME / "openclaw" / "journals" / skill_name
     return d.exists() and (d / "config.json").exists() and j.exists()
 
+def check_skill_directories(skill_name, ds):
+    """
+    Proactively check for missing intake/journal directories for a skill.
+    Returns list of issue dicts for missing directories.
+    """
+    issues = []
+    base_paths = [
+        HOME / "openclaw" / "data" / skill_name,
+        HOME / "openclaw" / "journals" / skill_name,
+    ]
+    
+    # Check base data dir exists
+    data_dir = base_paths[0]
+    if data_dir.exists():
+        # Check for intake subdirectory
+        intake_dir = data_dir / "intake"
+        if not intake_dir.exists():
+            issues.append({
+                "issue_id": str(uuid.uuid4())[:8],
+                "fingerprint_id": "oc_intake_dir_missing",
+                "status": "open",
+                "tier": 1,
+                "first_seen": datetime.datetime.now().isoformat(),
+                "context": {
+                    "path": str(intake_dir),
+                    "skill_name": skill_name,
+                },
+                "source": "proactive_scan",
+            })
+        
+        # Check for processed subdirectory
+        processed_dir = intake_dir / "processed"
+        if intake_dir.exists() and not processed_dir.exists():
+            issues.append({
+                "issue_id": str(uuid.uuid4())[:8],
+                "fingerprint_id": "oc_intake_dir_missing",
+                "status": "open",
+                "tier": 1,
+                "first_seen": datetime.datetime.now().isoformat(),
+                "context": {
+                    "path": str(processed_dir),
+                    "skill_name": skill_name,
+                },
+                "source": "proactive_scan",
+            })
+    
+    # Check journal dir exists
+    journal_dir = base_paths[1]
+    if not journal_dir.exists():
+        issues.append({
+            "issue_id": str(uuid.uuid4())[:8],
+            "fingerprint_id": "oc_journal_dir_missing",
+            "status": "open",
+            "tier": 1,
+            "first_seen": datetime.datetime.now().isoformat(),
+            "context": {
+                "path": str(journal_dir),
+                "skill_name": skill_name,
+            },
+            "source": "proactive_scan",
+        })
+    
+    return issues
+
 
 def skill_background_tasks(skill_dir):
     """
@@ -613,10 +677,13 @@ def skill_background_tasks(skill_dir):
                     name = parts[0].strip("`")
                     if name and name not in seen_names:
                         seen_names.add(name)
+                        # Clean schedule: remove backticks and anything in parentheses
+                        schedule_raw = parts[2].strip().strip("`")
+                        schedule = re.sub(r"\s*\([^)]*\)", "", schedule_raw).strip()
                         tasks.append({
                             "name": name,
                             "mechanism": parts[1].strip(),
-                            "schedule": parts[2].strip(),
+                            "schedule": schedule,
                             "command": parts[3].strip().strip("`"),
                             "source": "SKILL.md",
                             "heuristic": False,
@@ -1167,10 +1234,28 @@ def cmd_scan_deep(args):
                 conformance["status"] = "ok"
             ds.append_jsonl(ds.data_dir / "skill_conformance.jsonl", conformance)
 
-    # Step 7: Skill init pass
+    # Step 7: Skill init pass + proactive directory check
     print("7. Skill init pass...")
     for skill_dir in installed_skills():
         skill_name = skill_dir.name
+        
+        # Proactively check for missing intake/journal directories
+        dir_issues = check_skill_directories(skill_name, ds)
+        for issue in dir_issues:
+            fid = issue["fingerprint_id"]
+            # Avoid duplicates - check if already open
+            open_fids = {i.get("fingerprint_id") for i in ds.open_issues()}
+            if fid not in open_fids:
+                ds.append_issue(issue)
+                results["issues_detected"] += 1
+                print(f"   Detected missing dir: {fid} for {skill_name}")
+                # Auto-fix Tier 1 immediately
+                spec = fp.known.get(fid, {})
+                fix = fixer.apply(fid, spec, issue.get("context", {}))
+                if fix["outcome"] == "fix_applied":
+                    results["issues_auto_fixed"] += 1
+                    print(f"     → Fixed: created {issue.get('context', {}).get('path', 'directory')}")
+        
         if not is_skill_initialized(skill_name):
             print(f"   Initializing: {skill_name}")
             fix = fixer.apply(
