@@ -677,9 +677,11 @@ def skill_background_tasks(skill_dir):
                     name = parts[0].strip("`")
                     if name and name not in seen_names:
                         seen_names.add(name)
-                        # Clean schedule: remove backticks and anything in parentheses
-                        schedule_raw = parts[2].strip().strip("`")
-                        schedule = re.sub(r"\s*\([^)]*\)", "", schedule_raw).strip()
+                        # Clean schedule: remove backticks, parentheticals, and extra whitespace
+                        schedule = parts[2].strip()
+                        schedule = re.sub(r"`", "", schedule)  # Remove all backticks
+                        schedule = re.sub(r"\s*\([^)]*\)", "", schedule)  # Remove parentheticals
+                        schedule = schedule.strip()
                         tasks.append({
                             "name": name,
                             "mechanism": parts[1].strip(),
