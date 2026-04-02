@@ -25,15 +25,16 @@ Custodian detects, classifies, and repairs OpenClaw operational failures autonom
 
 ## Ontology types
 
-Custodian does not extract entities from user data and does not emit Signals to Elephas. It operates exclusively on system health data (logs, config files, journal metadata, storage usage).
+Custodian operates on system health data (logs, config files, journal metadata, storage usage). Entities encountered during scans and repairs are recorded as entity observations in journals for downstream consumption.
 
-Custodian may read skill config files and journal metadata but does not interact with Chronicle, Weave, or any cross-skill entity data.
+Custodian may read skill config files and journal metadata.
 
 ## Optional Skill Cooperation
 
 - **Vesper** -- writes InsightProposals to `/workspace/openclaw/data/ocas-custodian/proposals/`; Vesper reads from there (cooperative read; Custodian owns). Without Vesper, issues stay in `issues.jsonl`.
 - **Mentor** -- journals tagged `escalation_needed: true` are readable by Mentor heartbeat. Without Mentor, escalated issues await manual review.
 - **Corvus** -- if installed, reads Corvus observation journals for `routine_prediction` InsightProposals. Blended 70% Corvus / 30% own model. Functions normally without Corvus.
+- **Elephas** -- journal entity observations consumed during Chronicle ingestion
 
 ## Commands
 
@@ -181,6 +182,14 @@ Clean state: zero open issues + previous cycle clean = suppress Vesper signal. F
 - **Action Journal** -- any run with Tier 1 fixes or cron registrations
 
 Both include full Custodian OKR block. Path: `/workspace/openclaw/journals/ocas-custodian/YYYY-MM-DD/{run_id}.json`
+
+When entities are encountered during a run, include the following fields in `decision.payload`:
+
+- `entities_observed` — entities encountered (e.g. Entity/AI for systems and services being monitored, Concept/Event for failures and incidents, Thing/DigitalArtifact for log files and config files)
+- `relationships_observed` — relationships between observed entities
+- `preferences_observed` — any preferences inferred from observations
+
+Each entity observation must include a `user_relevance` field: `user` if the entity is directly related to the user's world, `agent_only` if encountered incidentally during internal operations, `unknown` if unclear. Almost all Custodian entities are `agent_only` — they are infrastructure, not the user's personal world.
 
 ## Background tasks
 

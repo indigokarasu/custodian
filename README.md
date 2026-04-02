@@ -49,6 +49,12 @@ Custodian monitors the OpenClaw gateway logs, cron job registry, skill journals,
 
 ## Changelog
 
+### v1.2.0 -- April 2, 2026
+- Added structured entity observations in journal payloads (`entities_observed`, `relationships_observed`, `preferences_observed`)
+- Added `user_relevance` tagging on journal observations (default `agent_only` for infrastructure entities)
+- Added Elephas journal cooperation in skill cooperation section
+- Removed "does not emit Signals to Elephas" — Custodian now records entity observations in journals
+
 ### v1.0.0 -- March 27, 2026
 - Initial release: gateway log scanning, cron health monitoring, skill journal validation
 - Tier 1 auto-fix with 11 pre-seeded fingerprints and verification jobs
