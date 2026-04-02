@@ -1,3 +1,15 @@
+# CHANGELOG
+
+## [1.2.0] - 2026-04-02
+
+### Added
+- Structured entity observations in journal payloads (`entities_observed`, `relationships_observed`, `preferences_observed`)
+- `user_relevance` tagging on journal observations (default `agent_only` for infrastructure entities)
+- Elephas journal cooperation in skill cooperation section
+
+### Changed
+- Removed "does not emit Signals to Elephas" — Custodian now records entity observations in journals
+
 ## [1.5.1] - 2026-03-31
 
 ### Added
@@ -6,8 +18,6 @@
 
 ### Changed
 - Documentation improvements for better maintainability
-
-# CHANGELOG
 
 ## 1.0.2 — 2026-03-30
 
