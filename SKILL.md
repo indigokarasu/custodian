@@ -50,6 +50,18 @@ Custodian may read skill config files and journal metadata.
 - `custodian.schedule.show` -- display current and target scan schedule with optimization confidence
 - `custodian.update` -- pull latest from GitHub source (preserves journals and data)
 
+## Initialization
+
+This skill initializes on first use via:
+
+```bash
+openclaw custodian.init
+```
+
+This creates required data directories, registers background task cron jobs and heartbeat entries, builds the initial activity model from gateway logs, and prepares bundled workflow plans for Mentor.
+
+---
+
 ## Execution Loop -- Light Scan
 
 Runs every heartbeat. Must be fast (seconds). No web search, doctor, or report.
@@ -254,3 +266,13 @@ Where `{skill_dir}` is the path to this skill package (e.g. `~/.openclaw/skills/
 | `references/known_issues.json` | Pre-seeded fingerprint registry with tier, fix, reversibility | Start of every scan before classifying errors |
 | `references/plans/custodian-repair.plan.md` | Mentor Workflow Plan for Tier 3 multi-step repair | Copied to Mentor plans dir during init; referenced in escalation |
 | `scripts/custodian.py` | Deterministic CLI helper for all scan, repair, and data operations | Called by the agent for every custodian command |
+
+## Update command
+
+This skill self-updates every 24 hours via:
+
+```bash
+openclaw custodian.update
+```
+
+This pulls the latest version from GitHub and restarts the skill's background tasks if applicable.
