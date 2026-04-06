@@ -1,3 +1,9 @@
+## [1.2.2] - 2026-04-06
+
+### Added
+- OKRs section in SKILL.md with formal OKR definitions for skill evaluation
+- YAML-formatted skill_okrs with metrics (fix_success_rate, skill_init_coverage, scan_detection_accuracy) and evaluation windows
+
 ## [2026-04-04] Spec Compliance Update
 
 ### Changes
