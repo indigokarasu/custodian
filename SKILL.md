@@ -12,7 +12,7 @@ description: >
 metadata:
   author: Indigo Karasu
   email: mx.indigo.karasu@gmail.com
-  version: "1.3.0"
+  version: "1.3.1"
   hermes:
     tags: [monitoring, maintenance, health]
     category: interface
@@ -28,14 +28,13 @@ metadata:
     visibility: public
     filesystem:
       read:
-        - "$OCAS_DATA_ROOT/data/ocas-custodian/"
-        - "$OCAS_DATA_ROOT/journals/ocas-custodian/"
-        - "$OCAS_DATA_ROOT/journals/*/"
-        - "$OCAS_DATA_ROOT/data/*/"
+        - "{agent_root}/commons/data/ocas-custodian/"
+        - "{agent_root}/commons/journals/ocas-custodian/"
+        - "{agent_root}/commons/journals/*/"
+        - "{agent_root}/commons/data/*/"
       write:
-        - "$OCAS_DATA_ROOT/data/ocas-custodian/"
-        - "$OCAS_DATA_ROOT/journals/ocas-custodian/"
-        - "$OCAS_DATA_ROOT/data/ocas-vesper/intake/"
+        - "{agent_root}/commons/data/ocas-custodian/"
+        - "{agent_root}/commons/journals/ocas-custodian/"
     self_update:
       source: "https://github.com/indigokarasu/custodian"
       mechanism: "version-checked tarball from GitHub via gh CLI"
@@ -79,7 +78,7 @@ Custodian may read skill config files and journal metadata.
 
 ## Optional Skill Cooperation
 
-- **Vesper** -- writes InsightProposals to `/workspace/openclaw/data/ocas-custodian/proposals/`; Vesper reads from there (cooperative read; Custodian owns). Without Vesper, issues stay in `issues.jsonl`.
+- **Vesper** -- writes InsightProposals to `{agent_root}/commons/data/ocas-custodian/proposals/`; Vesper reads from there (cooperative read; Custodian owns). Without Vesper, issues stay in `issues.jsonl`.
 - **Mentor** -- journals tagged `escalation_needed: true` are readable by Mentor heartbeat. Without Mentor, escalated issues await manual review.
 - **Corvus** -- if installed, reads Corvus observation journals for `routine_prediction` InsightProposals. Blended 70% Corvus / 30% own model. Functions normally without Corvus.
 - **Elephas** -- journal entity observations consumed during Chronicle ingestion
@@ -137,7 +136,7 @@ This creates required data directories, registers background task cron jobs and 
 
 Runs every heartbeat. Must be fast (seconds). No web search, doctor, or report.
 
-1. Read `$OCAS_WORKSPACE_ROOT/cron/jobs.json` -- find jobs with `enabled: false` that were previously enabled in `skill_conformance.jsonl`. Re-enable (Tier 1).
+1. Read `{agent_root}/cron/jobs.json` -- find jobs with `enabled: false` that were previously enabled in `skill_conformance.jsonl`. Re-enable (Tier 1).
 2. Tail `/tmp/openclaw/openclaw-YYYY-MM-DD.log` -- last 100 lines. Fingerprint ERROR entries against `references/known_issues.json` then `learned_issues.jsonl`. Apply Tier 1 fixes. Open issues for Tier 3/4.
 3. Check `issues.jsonl` for `status: fix_attempted_failed`. Retry Tier 1 up to 3 times before escalating.
 4. Check for uninitialized skills (data dir or config.json missing). Initialize immediately.
@@ -156,8 +155,8 @@ Runs on optimized 6-hour cron schedule. Isolated session, lightContext.
 7. **Skill init pass** -- initialize any skill missing data dir, config.json, or journal dir.
 8. **Repair pass** -- all Tier 1 fixes. Activity-aware: if active, only urgent fixes (failure in last 5 min); defer rest. Register verify jobs. Execute prior deferred fixes if now quiet.
 9. **Web search pass** -- for unknown fingerprints with `recurrence_count >= 1`, run next mutation query (see Web Search Protocol).
-10. **Escalation pass** -- Tier 3/4 open issues: write InsightProposal to Vesper intake. Tag journal `escalation_needed: true`.
-11. **Report** -- `/workspace/openclaw/data/ocas-custodian/reports/YYYY-MM-DD-HHMM.md`. If all clean and previous cycle also clean: suppress Vesper signal.
+10. **Escalation pass** -- Tier 3/4 open issues: include `briefing` payload in journal. Tag journal `escalation_needed: true`.
+11. **Report** -- `{agent_root}/commons/data/ocas-custodian/reports/YYYY-MM-DD-HHMM.md`. If all clean and previous cycle also clean: suppress Vesper signal.
 12. **Write journal** -- Action (if fixes applied) or Observation (scan-only).
 
 ## Fix Safety Envelope
@@ -177,7 +176,7 @@ Hard constraints: never modify skill package files, never delete files, never mo
 |---|---|---|
 | 1 | Auto-fix | Apply immediately, register verify job, log fix record |
 | 2 | Plan | Surface with proposed change, do not apply |
-| 3 | Escalate | Write to escalation journal + Vesper intake, invoke Mentor plan if available |
+| 3 | Escalate | Write escalation journal with `briefing` payload, invoke Mentor plan if available |
 | 4 | Alert only | Cannot fix -- surface with diagnostics |
 
 High-recurrence override: if `recurrence_after_fix / successes > 0.5`, auto-promote next occurrence from Tier 1 to Tier 3.
@@ -190,7 +189,7 @@ All Tier 1 fixes defined in `references/known_issues.json`. Read at start of eve
 |---|---|
 | `oc_cron_disabled_transient` | Re-enable cron job |
 | `oc_cron_stuck_missed` | Force-run missed job |
-| `oc_intake_dir_missing` | Create directory |
+
 | `oc_journal_dir_missing` | Create directory |
 | `oc_skill_data_dir_missing` | Create directory + default config.json |
 | `oc_jsonl_oversized` | Rotate with date suffix |
@@ -210,16 +209,16 @@ After successful verification, run fix-specific cleanup (check backoff, confirm 
 
 ## Skill Conformance Checking
 
-On every deep scan: scan `$OCAS_WORKSPACE_ROOT/skills/`, parse each SKILL.md `## Background tasks`, cross-reference against the platform scheduling registry and `HEARTBEAT.md`. Missing tasks: Tier 1 fix. Schedule mismatches: Tier 2. Orphaned `custodian:*` jobs: Tier 2. Write `skill_conformance.jsonl` per skill.
+On every deep scan: scan `{agent_root}/skills/`, parse each SKILL.md `## Background tasks`, cross-reference against the platform scheduling registry and `HEARTBEAT.md`. Missing tasks: Tier 1 fix. Schedule mismatches: Tier 2. Orphaned `custodian:*` jobs: Tier 2. Write `skill_conformance.jsonl` per skill.
 
 ## Skill Initialization
 
 Uninitialized when: data dir missing, config.json missing, or journal dir missing. Sequence (additive only, never overwrite):
 
-1. Create `/workspace/openclaw/data/{skill-name}/` if missing
+1. Create `{agent_root}/commons/data/{skill-name}/` if missing
 2. Write default config.json with ConfigBase fields -- only if absent
-3. Create `/workspace/openclaw/journals/{skill-name}/` if missing
-4. Create declared intake dirs if missing
+3. Create `{agent_root}/commons/journals/{skill-name}/` if missing
+4. Verify commons/ directory structure exists
 5. Run conformance check for background tasks
 6. Register missing tasks (Tier 1, subject to parameter availability)
 7. Register verify job (15 min delay)
@@ -255,7 +254,7 @@ Custodian OKRs (every journal): `success_rate`, `issues_detected`, `issues_auto_
 
 ## Escalation Path
 
-Tier 3: append `status: escalated` to `issues.jsonl`, tag journal `escalation_needed: true`, write InsightProposal (`anomaly_alert`) to `/workspace/openclaw/data/ocas-custodian/proposals/{proposal_id}.json`. Vesper reads from this directory. If Mentor present, note `mentor.plan.run custodian-repair --arg issue_id={id}` available.
+Tier 3: append `status: escalated` to `issues.jsonl`, tag journal `escalation_needed: true`, write InsightProposal (`anomaly_alert`) to `{agent_root}/commons/data/ocas-custodian/proposals/{proposal_id}.json`. Vesper reads from this directory. If Mentor present, note `mentor.plan.run custodian-repair --arg issue_id={id}` available.
 
 Clean state: zero open issues + previous cycle clean = suppress Vesper signal. First run of day or issues now resolved = emit clean bill of health.
 
@@ -264,7 +263,7 @@ Clean state: zero open issues + previous cycle clean = suppress Vesper signal. F
 - **Observation Journal** -- scan-only runs, no fixes applied
 - **Action Journal** -- any run with Tier 1 fixes or cron registrations
 
-Both include full Custodian OKR block. Path: `/workspace/openclaw/journals/ocas-custodian/YYYY-MM-DD/{run_id}.json`
+Both include full Custodian OKR block. Path: `{agent_root}/commons/journals/ocas-custodian/YYYY-MM-DD/{run_id}.json`
 
 When entities are encountered during a run, include the following fields in `decision.payload`:
 
@@ -287,7 +286,7 @@ Registration during `custodian.init` (idempotent -- check the platform schedulin
 ## Storage Layout
 
 ```
-/workspace/openclaw/data/ocas-custodian/
+{agent_root}/commons/data/ocas-custodian/
   config.json                  -- ConfigBase + scan_window_minutes, optimization settings
   issues.jsonl                 -- issue lifecycle records
   fixes.jsonl                  -- fix attempt records with pre/post state
@@ -303,7 +302,7 @@ Registration during `custodian.init` (idempotent -- check the platform schedulin
     {proposal_id}.json
   reports/
     YYYY-MM-DD-HHMM.md         -- deep scan summaries (7-day retention)
-/workspace/openclaw/journals/ocas-custodian/
+{agent_root}/commons/journals/ocas-custodian/
   YYYY-MM-DD/{run_id}.json
 ```
 
@@ -315,7 +314,7 @@ All deterministic operations delegate to `scripts/custodian.py`. Call it via Bas
 python3 {skill_dir}/scripts/custodian.py <command> [args]
 ```
 
-Where `{skill_dir}` is the path to this skill package (e.g. `$OCAS_WORKSPACE_ROOT/skills/ocas-custodian`).
+Where `{skill_dir}` is the path to this skill package (e.g. `{agent_root}/skills/ocas-custodian`).
 
 | When to call the script | When to reason directly |
 |---|---|
@@ -326,9 +325,9 @@ Where `{skill_dir}` is the path to this skill package (e.g. `$OCAS_WORKSPACE_ROO
 
 **Output contract:** All commands print human-readable status to stdout and write structured state to JSONL files. `status` and `issues.list` emit JSON. Exit 0 on success, non-zero on failure.
 
-**Web search handoff:** After `scan.deep`, if `/workspace/openclaw/data/ocas-custodian/search_candidates.json` exists, read it and execute the web search pass directly using the query mutation sequence in Web Search Protocol. Write actionable results to `learned_issues.jsonl`.
+**Web search handoff:** After `scan.deep`, if `{agent_root}/commons/data/ocas-custodian/search_candidates.json` exists, read it and execute the web search pass directly using the query mutation sequence in Web Search Protocol. Write actionable results to `learned_issues.jsonl`.
 
-**Escalation handoff:** After `scan.deep` prints "Agent: run web search pass", also check open Tier 3/4 issues in `issues.list` output and write InsightProposals to `/workspace/openclaw/data/ocas-custodian/proposals/` if Vesper is installed. Vesper reads from this directory.
+**Escalation handoff:** After `scan.deep` prints "Agent: run web search pass", also check open Tier 3/4 issues in `issues.list` output and write InsightProposals to `{agent_root}/commons/data/ocas-custodian/proposals/` if Vesper is installed. Vesper reads from this directory.
 
 ## Support File Map
 
