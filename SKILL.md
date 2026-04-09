@@ -1,8 +1,56 @@
 ---
 name: ocas-custodian
-source: https://github.com/indigokarasu/custodian
-description: Use when checking system health, fixing log errors, reviewing cron failures, initializing skills, registering missing background tasks, or running overnight maintenance. Trigger phrases: 'check system health', 'fix log errors', 'why is X failing', 'initialize skills', 'clean up errors', 'show open issues', 'what time does custodian run', 'update custodian'. Do not use for skill OKR analysis (use Mentor/Corvus), skill rebuilding (use Forge), knowledge graph queries (use Elephas), social graph queries (use Weave), or research tasks (use Scout/Sift).
-metadata: {"openclaw":{"emoji":"🧹"}}
+description: >
+  Monitors OpenClaw gateway logs, cron jobs, skill journals, and OCAS data
+  directories for operational failures. Detects errors, applies safe
+  non-destructive fixes autonomously during quiet hours, initializes
+  uninitialized skills, registers missing background tasks, and escalates
+  issues it cannot fix. Use when asking about system health, log errors, cron
+  failures, skill initialization, or overnight maintenance. Triggers on:
+  'check system health', 'fix log errors', 'why is X failing', 'initialize
+  skills', 'clean up errors'.
+metadata:
+  author: Indigo Karasu
+  email: mx.indigo.karasu@gmail.com
+  version: "1.3.0"
+  hermes:
+    tags: [monitoring, maintenance, health]
+    category: interface
+    cron:
+      - name: "custodian:deep"
+        schedule: "0 1,7,13,19 * * *"
+        command: "custodian.scan.deep"
+      - name: "custodian:update"
+        schedule: "0 0 * * *"
+        command: "custodian.update"
+  openclaw:
+    skill_type: system
+    visibility: public
+    filesystem:
+      read:
+        - "$OCAS_DATA_ROOT/data/ocas-custodian/"
+        - "$OCAS_DATA_ROOT/journals/ocas-custodian/"
+        - "$OCAS_DATA_ROOT/journals/*/"
+        - "$OCAS_DATA_ROOT/data/*/"
+      write:
+        - "$OCAS_DATA_ROOT/data/ocas-custodian/"
+        - "$OCAS_DATA_ROOT/journals/ocas-custodian/"
+        - "$OCAS_DATA_ROOT/data/ocas-vesper/intake/"
+    self_update:
+      source: "https://github.com/indigokarasu/custodian"
+      mechanism: "version-checked tarball from GitHub via gh CLI"
+      command: "custodian.update"
+      requires_binaries: [gh, tar, python3]
+    cron:
+      - name: "custodian:deep"
+        schedule: "0 1,7,13,19 * * *"
+        command: "custodian.scan.deep"
+      - name: "custodian:update"
+        schedule: "0 0 * * *"
+        command: "custodian.update"
+    heartbeat:
+      - name: "custodian:light"
+        command: "custodian.scan.light"
 ---
 
 # Custodian
@@ -89,7 +137,7 @@ This creates required data directories, registers background task cron jobs and 
 
 Runs every heartbeat. Must be fast (seconds). No web search, doctor, or report.
 
-1. Read `~/.openclaw/cron/jobs.json` -- find jobs with `enabled: false` that were previously enabled in `skill_conformance.jsonl`. Re-enable (Tier 1).
+1. Read `$OCAS_WORKSPACE_ROOT/cron/jobs.json` -- find jobs with `enabled: false` that were previously enabled in `skill_conformance.jsonl`. Re-enable (Tier 1).
 2. Tail `/tmp/openclaw/openclaw-YYYY-MM-DD.log` -- last 100 lines. Fingerprint ERROR entries against `references/known_issues.json` then `learned_issues.jsonl`. Apply Tier 1 fixes. Open issues for Tier 3/4.
 3. Check `issues.jsonl` for `status: fix_attempted_failed`. Retry Tier 1 up to 3 times before escalating.
 4. Check for uninitialized skills (data dir or config.json missing). Initialize immediately.
@@ -104,7 +152,7 @@ Runs on optimized 6-hour cron schedule. Isolated session, lightContext.
 3. **Fingerprint + classify** -- match against `references/known_issues.json` then `learned_issues.jsonl`. Unknowns default Tier 3.
 4. **Rebuild activity model** -- parse gateway log `message.processed` events (`source: user` vs `source: cron|heartbeat`). Blend Corvus if present (70/30). Update `activity_model.json`. Determine `current_state`.
 5. **Optimize schedule** -- score current schedule against activity model. If score < 6, compute better schedule. Shift max 30 min per slot. Update cron if changed.
-6. **Skill conformance** -- scan installed skills, parse `## Background tasks`, cross-reference against `openclaw cron list` and `HEARTBEAT.md`. Register missing (Tier 1). Surface mismatches (Tier 2).
+6. **Skill conformance** -- scan installed skills, parse `## Background tasks`, cross-reference against the platform scheduling registry and `HEARTBEAT.md`. Register missing (Tier 1). Surface mismatches (Tier 2).
 7. **Skill init pass** -- initialize any skill missing data dir, config.json, or journal dir.
 8. **Repair pass** -- all Tier 1 fixes. Activity-aware: if active, only urgent fixes (failure in last 5 min); defer rest. Register verify jobs. Execute prior deferred fixes if now quiet.
 9. **Web search pass** -- for unknown fingerprints with `recurrence_count >= 1`, run next mutation query (see Web Search Protocol).
@@ -162,7 +210,7 @@ After successful verification, run fix-specific cleanup (check backoff, confirm 
 
 ## Skill Conformance Checking
 
-On every deep scan: scan `~/.openclaw/workspace/skills/`, parse each SKILL.md `## Background tasks`, cross-reference against `openclaw cron list` and `HEARTBEAT.md`. Missing tasks: Tier 1 fix. Schedule mismatches: Tier 2. Orphaned `custodian:*` jobs: Tier 2. Write `skill_conformance.jsonl` per skill.
+On every deep scan: scan `$OCAS_WORKSPACE_ROOT/skills/`, parse each SKILL.md `## Background tasks`, cross-reference against the platform scheduling registry and `HEARTBEAT.md`. Missing tasks: Tier 1 fix. Schedule mismatches: Tier 2. Orphaned `custodian:*` jobs: Tier 2. Write `skill_conformance.jsonl` per skill.
 
 ## Skill Initialization
 
@@ -234,7 +282,7 @@ Each entity observation must include a `user_relevance` field: `user` if the ent
 | `custodian:deep` | cron | optimized 6h (initial: `0 1,7,13,19 * * *` PT) | `custodian.scan.deep` |
 | `custodian:update` | cron | `0 0 * * *` (midnight daily) | Self-update from GitHub source |
 
-Registration during `custodian.init` (idempotent -- check `openclaw cron list` first).
+Registration during `custodian.init` (idempotent -- check the platform scheduling registry first).
 
 ## Storage Layout
 
@@ -267,7 +315,7 @@ All deterministic operations delegate to `scripts/custodian.py`. Call it via Bas
 python3 {skill_dir}/scripts/custodian.py <command> [args]
 ```
 
-Where `{skill_dir}` is the path to this skill package (e.g. `~/.openclaw/skills/ocas-custodian`).
+Where `{skill_dir}` is the path to this skill package (e.g. `$OCAS_WORKSPACE_ROOT/skills/ocas-custodian`).
 
 | When to call the script | When to reason directly |
 |---|---|
