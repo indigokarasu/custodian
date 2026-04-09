@@ -3,8 +3,8 @@
     "tier": 1,
     "match_patterns": ["job.*disabled", "enabled.*false"],
     "source": "cron_log",
-    "auto_fix": "openclaw cron edit {job_id} --enabled true",
-    "reversibility": "openclaw cron edit {job_id} --enabled false",
+    "auto_fix": "platform.scheduling.enable({job_id})",
+    "reversibility": "platform.scheduling.disable({job_id})",
     "description": "Cron job transiently disabled, likely from a failed run or timeout",
     "technology_context": "Node.js launchd cron scheduler"
   },
@@ -12,7 +12,7 @@
     "tier": 1,
     "match_patterns": ["missed.*schedule", "stuck.*cron", "overdue.*run"],
     "source": "cron_log",
-    "auto_fix": "openclaw cron run {job_id}",
+    "auto_fix": "platform.scheduling.run({job_id})",
     "reversibility": "No side effects -- run was already missed",
     "description": "Cron job missed its scheduled run window",
     "technology_context": "Node.js launchd cron scheduler"
@@ -30,8 +30,8 @@
     "tier": 1,
     "match_patterns": ["ENOENT.*journals", "journal.*directory.*missing", "cannot write.*journal"],
     "source": "skill_journal",
-    "auto_fix": "mkdir -p ~/openclaw/journals/{skill_name}",
-    "reversibility": "rmdir ~/openclaw/journals/{skill_name}",
+    "auto_fix": "mkdir -p $OCAS_DATA_ROOT/journals/{skill_name}",
+    "reversibility": "rmdir $OCAS_DATA_ROOT/journals/{skill_name}",
     "description": "Skill journal directory missing, blocking journal writes",
     "technology_context": "filesystem POSIX directory"
   },
@@ -39,7 +39,7 @@
     "tier": 1,
     "match_patterns": ["ENOENT.*data/ocas-", "data directory.*missing", "config.json.*not found"],
     "source": "ocas_data",
-    "auto_fix": "mkdir -p ~/openclaw/data/{skill_name} && write default config.json",
+    "auto_fix": "mkdir -p $OCAS_DATA_ROOT/data/{skill_name} && write default config.json",
     "reversibility": "Remove created directory and config.json",
     "description": "Skill data directory or config.json missing, skill uninitialized",
     "technology_context": "filesystem JSON configuration"
