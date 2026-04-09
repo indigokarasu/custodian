@@ -47,7 +47,7 @@ steps:
 **Command:** custodian.issues.list
 
 **Inputs:**
-- Filter `issues.jsonl` at `$OCAS_DATA_ROOT/data/ocas-custodian/issues.jsonl` for record matching `issue_id: {{params.issue_id}}`
+- Filter `issues.jsonl` at `{agent_root}/commons/data/ocas-custodian/issues.jsonl` for record matching `issue_id: {{params.issue_id}}`
 
 **Outputs:**
 - `issue_record`: the full issue object including fingerprint, tier, status, recurrence_count, search_history
@@ -61,7 +61,7 @@ steps:
 **Command:** custodian.status
 
 **Inputs:**
-- Read `$OCAS_DATA_ROOT/data/ocas-custodian/fix_effectiveness.jsonl` for entries matching `fingerprint: {{steps.read-issue.issue_record.fingerprint}}`
+- Read `{agent_root}/commons/data/ocas-custodian/fix_effectiveness.jsonl` for entries matching `fingerprint: {{steps.read-issue.issue_record.fingerprint}}`
 
 **Outputs:**
 - `fix_history`: array of fix effectiveness records for this fingerprint, showing attempts, successes, failures, recurrence
@@ -113,7 +113,7 @@ steps:
 - Diagnosis: `{{steps.diagnose.diagnosis}}`
 
 **Outputs:**
-- `repair_proposal`: structured repair plan written to `$OCAS_DATA_ROOT/data/ocas-custodian/reports/repair-{{params.issue_id}}.md`
+- `repair_proposal`: structured repair plan written to `{agent_root}/commons/data/ocas-custodian/reports/repair-{{params.issue_id}}.md`
 
 **On failure:** abort
 **Notes:** The proposal must include: root cause assessment, recommended repair steps, risk evaluation, and rollback plan. Write the proposal as a Markdown file in the Custodian reports directory.
@@ -124,7 +124,7 @@ steps:
 **Command:** dispatch.draft
 
 **Inputs:**
-- Proposal path: `$OCAS_DATA_ROOT/data/ocas-custodian/reports/repair-{{params.issue_id}}.md`
+- Proposal path: `{agent_root}/commons/data/ocas-custodian/reports/repair-{{params.issue_id}}.md`
 - Summary: "Custodian repair proposal ready for {{params.issue_id}}"
 
 **Outputs:**

@@ -17,21 +17,21 @@
     "description": "Cron job missed its scheduled run window",
     "technology_context": "Node.js launchd cron scheduler"
   },
-  "oc_intake_dir_missing": {
+  "oc_commons_dir_missing": {
     "tier": 1,
-    "match_patterns": ["ENOENT.*intake", "intake.*directory.*not found", "cannot write.*intake"],
+    "match_patterns": ["ENOENT.*commons", "commons.*directory.*not found", "cannot write.*commons"],
     "source": "skill_journal",
-    "auto_fix": "mkdir -p {intake_path}",
-    "reversibility": "rmdir {intake_path}",
-    "description": "Skill intake directory missing, blocking inter-skill signal delivery",
+    "auto_fix": "mkdir -p {commons_path}",
+    "reversibility": "rmdir {commons_path}",
+    "description": "Skill journal payload missing, blocking inter-skill signal delivery",
     "technology_context": "filesystem POSIX directory"
   },
   "oc_journal_dir_missing": {
     "tier": 1,
     "match_patterns": ["ENOENT.*journals", "journal.*directory.*missing", "cannot write.*journal"],
     "source": "skill_journal",
-    "auto_fix": "mkdir -p $OCAS_DATA_ROOT/journals/{skill_name}",
-    "reversibility": "rmdir $OCAS_DATA_ROOT/journals/{skill_name}",
+    "auto_fix": "mkdir -p {agent_root}/commons/journals/{skill_name}",
+    "reversibility": "rmdir {agent_root}/commons/journals/{skill_name}",
     "description": "Skill journal directory missing, blocking journal writes",
     "technology_context": "filesystem POSIX directory"
   },
@@ -39,7 +39,7 @@
     "tier": 1,
     "match_patterns": ["ENOENT.*data/ocas-", "data directory.*missing", "config.json.*not found"],
     "source": "ocas_data",
-    "auto_fix": "mkdir -p $OCAS_DATA_ROOT/data/{skill_name} && write default config.json",
+    "auto_fix": "mkdir -p {agent_root}/commons/data/{skill_name} && write default config.json",
     "reversibility": "Remove created directory and config.json",
     "description": "Skill data directory or config.json missing, skill uninitialized",
     "technology_context": "filesystem JSON configuration"
