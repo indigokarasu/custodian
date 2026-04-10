@@ -1,7 +1,7 @@
 ---
 name: ocas-custodian
 description: >
-  Monitors OpenClaw gateway logs, cron jobs, skill journals, and OCAS data
+  Monitors agent gateway logs, cron jobs, skill journals, and OCAS data
   directories for operational failures. Detects errors, applies safe
   non-destructive fixes autonomously during quiet hours, initializes
   uninitialized skills, registers missing background tasks, and escalates
@@ -12,7 +12,7 @@ description: >
 metadata:
   author: Indigo Karasu
   email: mx.indigo.karasu@gmail.com
-  version: "1.3.1"
+  version: "1.3.2"
   hermes:
     tags: [monitoring, maintenance, health]
     category: interface
@@ -54,13 +54,13 @@ metadata:
 
 # Custodian
 
-Custodian detects, classifies, and repairs OpenClaw operational failures autonomously during quiet hours so the user wakes to clean logs, initialized skills, and registered background tasks -- surfacing only what it could not fix.
+Custodian detects, classifies, and repairs agent platform operational failures autonomously during quiet hours so the user wakes to clean logs, initialized skills, and registered background tasks -- surfacing only what it could not fix.
 
 ## When to use
 
 - Asked to check system health, fix log errors, review cron failures
 - Asked to initialize skills or register missing background tasks
-- Asked why OpenClaw or a specific skill is failing
+- Asked why the agent platform or a specific skill is failing
 - Running overnight maintenance or a system audit
 - Invoked automatically via heartbeat or cron
 
@@ -125,7 +125,7 @@ skill_okrs:
 This skill initializes on first use via:
 
 ```bash
-openclaw custodian.init
+custodian.init
 ```
 
 This creates required data directories, registers background task cron jobs and heartbeat entries, builds the initial activity model from gateway logs, and prepares bundled workflow plans for Mentor.
@@ -137,7 +137,7 @@ This creates required data directories, registers background task cron jobs and 
 Runs every heartbeat. Must be fast (seconds). No web search, doctor, or report.
 
 1. Read `{agent_root}/cron/jobs.json` -- find jobs with `enabled: false` that were previously enabled in `skill_conformance.jsonl`. Re-enable (Tier 1).
-2. Tail `/tmp/openclaw/openclaw-YYYY-MM-DD.log` -- last 100 lines. Fingerprint ERROR entries against `references/known_issues.json` then `learned_issues.jsonl`. Apply Tier 1 fixes. Open issues for Tier 3/4.
+2. Tail `{agent_root}/logs/agent-YYYY-MM-DD.log` -- last 100 lines. Fingerprint ERROR entries against `references/known_issues.json` then `learned_issues.jsonl`. Apply Tier 1 fixes. Open issues for Tier 3/4.
 3. Check `issues.jsonl` for `status: fix_attempted_failed`. Retry Tier 1 up to 3 times before escalating.
 4. Check for uninitialized skills (data dir or config.json missing). Initialize immediately.
 5. Write Observation Journal.
@@ -147,7 +147,7 @@ Runs every heartbeat. Must be fast (seconds). No web search, doctor, or report.
 Runs on optimized 6-hour cron schedule. Isolated session, lightContext.
 
 1. **Load context** -- own journals (7 days), `fix_effectiveness.jsonl`. Identify recurring fingerprints, known-failed fixes, already-searched queries.
-2. **Collect** -- full day gateway log, cron run logs, skill journals from scan window, all OCAS data dirs, `openclaw doctor --non-interactive`.
+2. **Collect** -- full day gateway log, cron run logs, skill journals from scan window, all OCAS data dirs, the platform diagnostic tool.
 3. **Fingerprint + classify** -- match against `references/known_issues.json` then `learned_issues.jsonl`. Unknowns default Tier 3.
 4. **Rebuild activity model** -- parse gateway log `message.processed` events (`source: user` vs `source: cron|heartbeat`). Blend Corvus if present (70/30). Update `activity_model.json`. Determine `current_state`.
 5. **Optimize schedule** -- score current schedule against activity model. If score < 6, compute better schedule. Shift max 30 min per slot. Update cron if changed.
@@ -194,7 +194,7 @@ All Tier 1 fixes defined in `references/known_issues.json`. Read at start of eve
 | `oc_skill_data_dir_missing` | Create directory + default config.json |
 | `oc_jsonl_oversized` | Rotate with date suffix |
 | `oc_jsonl_malformed_lines` | Quarantine to `.error` file |
-| `oc_gateway_token_missing` | `openclaw doctor --generate-gateway-token` |
+| `oc_gateway_token_missing` | `platform diagnostics --generate-gateway-token` |
 | `oc_oauth_token_expiring` | OAuth refresh (token still valid, expiry <= 12h) |
 | `oc_background_task_missing` | Register cron or heartbeat entry per SKILL.md |
 | `oc_skill_uninitialized` | Create storage dirs, default config, empty JSONL |
@@ -242,7 +242,7 @@ Confidence gate: high = optimize freely, med = only if score <= 2, low = hold.
 
 Fire when: fingerprint unknown, recurrence increased since last search, last search not actionable, not escalated/suppressed, < 5 attempts.
 
-Query mutation sequence: (1) `{error} openclaw`, (2) `{error} {tech_context}`, (3) `{error_pattern} fix`, (4) `{component} {failure_mode}`, (5) `{failure_mode} root cause diagnosis`.
+Query mutation sequence: (1) `{error} agent skill`, (2) `{error} {tech_context}`, (3) `{error_pattern} fix`, (4) `{component} {failure_mode}`, (5) `{failure_mode} root cause diagnosis`.
 
 On actionable result: attempt fix, append to `learned_issues.jsonl` if successful. On no result: record and continue mutation on next recurrence.
 
@@ -342,7 +342,7 @@ Where `{skill_dir}` is the path to this skill package (e.g. `{agent_root}/skills
 This skill self-updates every 24 hours via:
 
 ```bash
-openclaw custodian.update
+custodian.update
 ```
 
 This pulls the latest version from GitHub and restarts the skill's background tasks if applicable.

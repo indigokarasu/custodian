@@ -66,7 +66,7 @@
     "tier": 1,
     "match_patterns": ["gateway token.*missing", "authentication.*gateway.*failed", "no gateway token"],
     "source": "gateway_log",
-    "auto_fix": "openclaw doctor --generate-gateway-token",
+    "auto_fix": "platform diagnostics --generate-gateway-token",
     "reversibility": "Remove generated token from config",
     "description": "Gateway authentication token missing or invalid",
     "technology_context": "Node.js HTTP authentication token"
@@ -131,7 +131,7 @@
     "source": "doctor",
     "auto_fix": null,
     "reversibility": null,
-    "description": "Node.js version does not meet OpenClaw requirements",
+    "description": "Node.js version does not meet platform requirements",
     "technology_context": "Node.js runtime version"
   }
 }

@@ -1,6 +1,6 @@
 # 🧹 Custodian
 
-Custodian detects, classifies, and repairs OpenClaw operational failures autonomously during quiet hours so the user wakes to clean logs, initialized skills, and registered background tasks -- surfacing only what it could not fix.
+Custodian detects, classifies, and repairs agent platform operational failures autonomously during quiet hours so the user wakes to clean logs, initialized skills, and registered background tasks -- surfacing only what it could not fix.
 
 
 Skill packages follow the [agentskills.io](https://agentskills.io/specification) open standard and are compatible with OpenClaw, Hermes Agent, and any agentskills.io-compliant client.
@@ -9,7 +9,7 @@ Skill packages follow the [agentskills.io](https://agentskills.io/specification)
 
 ## Overview
 
-Custodian monitors the OpenClaw gateway logs, cron job registry, skill journals, and OCAS data directories for operational failures. It fingerprints errors against a known-issues registry, classifies them into tiers (auto-fix, surface with plan, escalate, or alert-only), and applies safe, non-destructive repairs within a strict safety envelope. It initializes uninitialized skills, registers missing background tasks, and maintains an activity model that optimizes its own scan schedule toward quiet hours. Fixes that recur after repair are automatically promoted to escalation tier. Unknown errors trigger a progressive web search protocol that learns new fix patterns over time.
+Custodian monitors the agent gateway logs, cron job registry, skill journals, and OCAS data directories for operational failures. It fingerprints errors against a known-issues registry, classifies them into tiers (auto-fix, surface with plan, escalate, or alert-only), and applies safe, non-destructive repairs within a strict safety envelope. It initializes uninitialized skills, registers missing background tasks, and maintains an activity model that optimizes its own scan schedule toward quiet hours. Fixes that recur after repair are automatically promoted to escalation tier. Unknown errors trigger a progressive web search protocol that learns new fix patterns over time.
 
 ## Commands
 
@@ -70,4 +70,4 @@ Custodian monitors the OpenClaw gateway logs, cron job registry, skill journals,
 
 ---
 
-*Custodian is part of the [OpenClaw Agent Suite](https://github.com/indigokarasu) -- a collection of interconnected skills for personal intelligence, autonomous research, and continuous self-improvement. Each skill owns a narrow responsibility and communicates with others through structured signal files, shared journals, and Chronicle, a long-term knowledge graph that accumulates verified facts over time.*
+*Custodian is part of the [OCAS Agent Suite](https://github.com/indigokarasu) -- a collection of interconnected skills for personal intelligence, autonomous research, and continuous self-improvement. Each skill owns a narrow responsibility and communicates with others through structured signal files, shared journals, and Chronicle, a long-term knowledge graph that accumulates verified facts over time.*
