@@ -12,7 +12,7 @@ description: >
 metadata:
   author: Indigo Karasu
   email: mx.indigo.karasu@gmail.com
-  version: "1.3.4"
+  version: "1.3.2"
   hermes:
     tags: [monitoring, maintenance, health]
     category: interface
@@ -39,7 +39,7 @@ metadata:
       source: "https://github.com/indigokarasu/custodian"
       mechanism: "version-checked tarball from GitHub via gh CLI"
       command: "custodian.update"
-      requires_binaries: [gh, tar]
+      requires_binaries: [gh, tar, python3]
     cron:
       - name: "custodian:deep"
         schedule: "0 1,7,13,19 * * *"
@@ -242,8 +242,6 @@ Confidence gate: high = optimize freely, med = only if score <= 2, low = hold.
 
 Fire when: fingerprint unknown, recurrence increased since last search, last search not actionable, not escalated/suppressed, < 5 attempts.
 
-**Search tool selection:** Prefer SearXNG (via the N2 MCP or a self-hosted instance) for all queries. If SearXNG is unavailable, fall back to the agent's default search tool silently.
-
 Query mutation sequence: (1) `{error} agent skill`, (2) `{error} {tech_context}`, (3) `{error_pattern} fix`, (4) `{component} {failure_mode}`, (5) `{failure_mode} root cause diagnosis`.
 
 On actionable result: attempt fix, append to `learned_issues.jsonl` if successful. On no result: record and continue mutation on next recurrence.
@@ -308,15 +306,108 @@ Registration during `custodian.init` (idempotent -- check the platform schedulin
   YYYY-MM-DD/{run_id}.json
 ```
 
-## Execution notes
+## Platform Compatibility
 
-All scan, init, verify, repair, status, and issues operations are performed directly by the agent — no helper script. Read and write JSONL files, parse logs, fingerprint errors, rebuild the activity model, and update the schedule using the data structures described above and in `references/known_issues.json`.
+The `scripts/custodian.py` script was originally written for the `openclaw` CLI. On Hermes, the CLI is `hermes` (not `openclaw`), and some commands differ:
 
-**Cron registration:** Always use Hermes-native platform scheduling commands. Never use any binary or script for cron management.
+| OpenClaw command | Hermes equivalent | Status |
+|---|---|---|
+| `openclaw cron add --name X --cron S --message M` | `hermes cron add --name X --skill SKILL S 'PROMPT'` | Different syntax and flags |
+| `openclaw cron edit ID --enabled true` | `hermes cron resume ID` | Different subcommand |
+| `openclaw cron run ID` | `hermes cron run ID` | Same |
+| `openclaw doctor` | `hermes doctor` | May differ |
 
-**Web search handoff:** During `scan.deep` Step 9, if `{agent_root}/commons/data/ocas-custodian/search_candidates.json` exists, read it and execute the web search pass directly using the query mutation sequence in Web Search Protocol. Write actionable results to `learned_issues.jsonl`.
+**The script's `CronRegistry.add_cron_job()` calls `openclaw` which does not exist on Hermes.** The `init` command will fail with `FileNotFoundError: 'openclaw'`. Path references also use `~/openclaw/` instead of `{agent_root}/commons/`.
 
-**Escalation handoff:** After Step 9, check open Tier 3/4 issues and write InsightProposals to `{agent_root}/commons/data/ocas-custodian/proposals/` if Vesper is installed. Vesper reads from this directory.
+**Workaround:** Execute deep scans manually by reasoning directly. For cron registration, use `hermes cron add` with `--skill` and `--name` flags. For data operations, manipulate JSONL files directly using `read_file`/`write_file`/terminal tools. The data directory is `{agent_root}/commons/data/ocas-custodian/` (not `~/openclaw/data/`).
+
+### Hermes-Specific Execution Patterns (Deep Scan)
+
+On Hermes, the deep scan must be executed manually by reasoning through each step. Here are the exact patterns:
+
+**Agent root path:** `~/.hermes` (not `~/openclaw/`). Commons dirs: `~/.hermes/commons/data/` and `~/.hermes/commons/journals/`.
+
+**Cron registration (Tier 1 — oc_background_task_missing):**
+```bash
+hermes cron add --name 'skill:taskname' --skill ocas-skillname '0 0 * * *' 'Human-readable prompt describing what the task does'
+```
+- `--name`: The background task name from SKILL.md (e.g., `mentor:deep`, `sands:morning-brief`)
+- `--skill`: The skill package name (e.g., `ocas-mentor`, `ocas-sands`)
+- Next arg: cron schedule expression
+- Final arg: descriptive prompt for the agent executing the task
+
+**Cron listing and removal:**
+```bash
+hermes cron list                    # List all jobs with IDs, schedules, and status
+hermes cron remove <job_id>         # Remove a job by ID (use for duplicates)
+hermes cron pause <job_id>          # Pause without removing
+hermes cron resume <job_id>         # Resume a paused job
+```
+
+**Duplicate cron job detection:** `hermes cron list` output includes job IDs. When multiple entries share the same name/schedule, the earliest-registered ID is canonical — remove the later ones. This happens when `init` commands are run multiple times.
+
+**HEARTBEAT.md creation:** Located at `{agent_root}/HEARTBEAT.md`. Format:
+```markdown
+# Heartbeat Tasks
+| Task | Skill | Command | Description |
+|------|-------|---------|-------------|
+| taskname | ocas-skillname | skill.command | Description |
+```
+Skills that declare `mechanism: heartbeat` in their Background tasks table go here, not in the cron registry.
+
+**InsightProposal format** (for Vesper escalation):
+```json
+{
+  "proposal_id": "prop-<8charhex>",
+  "type": "anomaly_alert",
+  "priority": "high|medium|low",
+  "title": "Short title",
+  "description": "Detailed description of the issue",
+  "fingerprint": "oc_fingerprint_name",
+  "tier": 3,
+  "recommendation": "Suggested action",
+  "created_at": "ISO timestamp"
+}
+```
+Written to `{agent_root}/commons/data/ocas-custodian/proposals/{proposal_id}.json`.
+
+**Skill initialization:** Create three directories minimally (never overwrite existing):
+1. `{agent_root}/commons/data/{skill-name}/` (if missing)
+2. `{agent_root}/commons/data/{skill-name}/config.json` (default `{"skill_name": "...", "version": "1.0.0", "initialized_at": "..."}` — only if absent)
+3. `{agent_root}/commons/journals/{skill-name}/` (if missing)
+
+**Background task scan:** Read each `~/.hermes/skills/ocas-*/SKILL.md`, find `## Background tasks` section, parse the table rows for Job name/Mechanism/Schedule. Cross-reference against `hermes cron list` output and HEARTBEAT.md. Skills with `mechanism: heartbeat` → add to HEARTBEAT.md. Skills with `mechanism: cron` → register via `hermes cron add`.
+
+**Activity model:** On Hermes, `message.processed` events may not be labeled in gateway.log. Use log line counts per timestamp as a proxy for activity volume. Build hourly confidence from the proportion of active hours vs. total observed hours across the 7-14 day window.
+
+**Schedule scoring:** Score each slot -2 to +2 based on quietness (lower activity = higher score). Quiet slots score +2, moderate +1, high activity -2. Total max = 8. If score < 6 and confidence >= med, shift each slot max 30 minutes toward the target.
+
+## Using the script
+
+All deterministic operations delegate to `scripts/custodian.py`. Call it via Bash tool:
+
+```
+python3 {skill_dir}/scripts/custodian.py <command> [args]
+```
+
+Where `{skill_dir}` is the path to this skill package (e.g. `{agent_root}/skills/ocas-custodian`).
+
+**Known issue:** Commands that call `CronRegistry` methods (`init`, any operation registering/editing cron jobs) will fail on Hermes because they invoke the `openclaw` binary. Use `hermes cron` CLI instead. All other commands that only read/write JSONL files and logs should work.
+
+| When to call the script | When to reason directly |
+|---|---|
+| JSONL reads/writes, log parsing, fingerprinting (scan, status, issues) | Cron registration (use `hermes cron add`) |
+| Activity model data analysis | Web search pass (Step 9) |
+| Fix verification, issue lifecycle tracking | Writing Vesper InsightProposals (Step 10) |
+| **Cron registration/editing** (script calls `openclaw`, use `hermes cron add/remove/list`) | Interpreting novel/ambiguous findings |
+| **Skill init** (script calls CronRegistry, create dirs/config manually, register tasks via `hermes cron add`) | Composing escalation summaries for Mentor |
+| **Duplicate job cleanup** (use `hermes cron list` to find, `hermes cron remove <id>` to clean) | Determining which tasks should be heartbeat vs. cron |
+
+**Output contract:** All commands print human-readable status to stdout and write structured state to JSONL files. `status` and `issues.list` emit JSON. Exit 0 on success, non-zero on failure.
+
+**Web search handoff:** After `scan.deep`, if `{agent_root}/commons/data/ocas-custodian/search_candidates.json` exists, read it and execute the web search pass directly using the query mutation sequence in Web Search Protocol. Write actionable results to `learned_issues.jsonl`.
+
+**Escalation handoff:** After `scan.deep` prints "Agent: run web search pass", also check open Tier 3/4 issues in `issues.list` output and write InsightProposals to `{agent_root}/commons/data/ocas-custodian/proposals/` if Vesper is installed. Vesper reads from this directory.
 
 ## Support File Map
 
@@ -324,6 +415,7 @@ All scan, init, verify, repair, status, and issues operations are performed dire
 |---|---|---|
 | `references/known_issues.json` | Pre-seeded fingerprint registry with tier, fix, reversibility | Start of every scan before classifying errors |
 | `references/plans/custodian-repair.plan.md` | Mentor Workflow Plan for Tier 3 multi-step repair | Copied to Mentor plans dir during init; referenced in escalation |
+| `scripts/custodian.py` | Deterministic CLI helper for all scan, repair, and data operations | Called by the agent for every custodian command |
 
 ## Update command
 
