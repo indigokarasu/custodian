@@ -417,12 +417,163 @@ Where `{skill_dir}` is the path to this skill package (e.g. `{agent_root}/skills
 | `references/plans/custodian-repair.plan.md` | Mentor Workflow Plan for Tier 3 multi-step repair | Copied to Mentor plans dir during init; referenced in escalation |
 | `scripts/custodian.py` | Deterministic CLI helper for all scan, repair, and data operations | Called by the agent for every custodian command |
 
-## Update command
+## Integrated: skill-status-diagnostic
 
-This skill self-updates every 24 hours via:
+Diagnostic skill for checking the operational status of any Hermes skill. Determines if a skill is initialized, scheduled, actually running, and what dependencies or configuration might be missing. Use when you need to understand why a skill isn't working or what its current state is.
 
-```bash
-custodian.update
+### Trigger conditions
+- "What is [skill] doing?"
+- "Is [skill] running?"
+- "Why isn't [skill] working?"
+- "Check the status of [skill]"
+- "Diagnose [skill]"
+- Any time you need to understand a skill's current operational state
+
+### Responsibility boundary
+This skill does: check initialization state, verify data/journal directories, inspect cron jobs, examine execution history, identify missing dependencies, check configuration files, and provide a clear status summary.
+
+This skill does not: fix issues (that's for other skills), modify configuration, run the skill being diagnosed, or make changes to the system.
+
+### Diagnostic checklist
+For any skill, run through these checks in order:
+
+#### 1. Load skill definition
+```
+skill_view(name)
+```
+- Read the skill's SKILL.md
+- Note expected data directories, journal directories, cron jobs
+- Note required dependencies, environment variables, credentials
+
+#### 2. Check initialization
+```
+ls -la ~/.hermes/commons/data/{skill}/
+cat ~/.hermes/commons/data/{skill}/config.json
+```
+- Does data directory exist?
+- Is config.json present and valid?
+- What is the created_at timestamp?
+- Are there any other state files?
+
+#### 3. Check journal directory
+```
+ls -la ~/.hermes/commons/journals/{skill}/
+find ~/.hermes/commons/journals/{skill}/ -type f -name "*.json" | head -20
+```
+- Does journal directory exist?
+- Are there any journal entries?
+- What's the most recent journal entry timestamp?
+
+#### 4. Check cron jobs
+```
+# Check platform cron registry
+cronjob list | grep {skill}
+
+# Check system crontab (if applicable)
+crontab -l | grep {skill}
+```
+- Are cron jobs registered?
+- What is the schedule?
+- What was last_run_at?
+- What was last_status?
+- Is the job enabled?
+
+#### 5. Check execution history
+```
+# Look for recent journal entries
+ls -lt ~/.hermes/commons/journals/{skill}/ | head -10
+
+# Check for error logs or status files
+find ~/.hermes/commons/data/{skill}/ -name "*log*" -o -name "*error*" -o -name "*status*"
+```
+- When did it last run successfully?
+- Are there recent errors?
+- What's the frequency of runs?
+
+#### 6. Check dependencies
+```
+# Check for MCP servers in config.yaml
+cat ~/.hermes/config.yaml | grep -A 20 "mcp_servers:"
+
+# Check for required binaries
+which {binary1} {binary2} 2>/dev/null
+
+# Check for required Python packages
+pip list | grep {package}
+
+# Check for required environment variables
+env | grep {ENV_VAR}
+```
+- Are MCP servers configured?
+- Are required binaries installed?
+- Are required Python packages available?
+- Are environment variables set?
+
+#### 7. Check credentials
+```
+# Look for credential files
+find ~/.hermes/credentials/ -name "*{service}*" -o -name "*{provider}*"
+
+# Check for OAuth tokens
+ls -la ~/.hermes/*token*.json 2>/dev/null
+
+# Check for service account keys
+find ~/.hermes -name "*.json" -exec grep -l "service_account\|private_key" {} \; 2>/dev/null | grep -v node_modules | grep -v venv
+```
+- Are credentials present?
+- What type of authentication is configured?
+- Are credentials expired or invalid?
+
+#### 8. Check configuration
+```
+# Read skill-specific config
+cat ~/.hermes/commons/data/{skill}/config.json
+
+# Check for skill-specific config files
+find ~/.hermes/commons/data/{skill}/ -type f -name "*.yaml" -o -name "*.json" -o -name "*.toml"
+```
+- Is configuration valid?
+- Are required fields present?
+- Are there any configuration errors?
+
+### Status summary format
+After running the diagnostic, provide a clear summary:
+
+```
+[SKILL NAME] Status: [INITIALIZED|NOT_INITIALIZED|PARTIALLY_INITIALIZED]
+
+Current State:
+- Initialized: [Yes/No] (date)
+- Last run: [Never|timestamp]
+- Last status: [ok/error/null]
+- Cron jobs: [N] scheduled, [N] active
+
+What's Working:
+- [List what's correctly configured]
+
+What's Missing:
+- [List missing dependencies, credentials, or configuration]
+
+What's Wrong:
+- [List any errors or issues]
+
+To Get [SKILL] Working:
+1. [Step 1]
+2. [Step 2]
+3. [Step 3]
 ```
 
-This pulls the latest version from GitHub and restarts the skill's background tasks if applicable.
+### Common patterns
+- **Skill initialized but never ran**: Data directory exists with config.json, journal directory empty, cron jobs scheduled but last_run_at is null. Likely missing: dependencies, credentials, or MCP server configuration.
+- **Skill running but failing**: Journal entries exist with errors, last status is "error". Check recent journal entries for error messages, check logs for stack traces or failure reasons.
+- **Skill not scheduled**: Data directory exists, no cron jobs in registry. Need to run skill's init command or register cron jobs manually.
+- **MCP server missing**: Skill requires MCP server (check SKILL.md), config.yaml has no mcp_servers entry for that service. Need to add MCP server configuration to config.yaml.
+- **Credentials missing**: Skill requires authentication (check SKILL.md), no credential files found. Need to set up OAuth or service account credentials.
+
+### Integration with other skills
+This skill is diagnostic only. It does not fix issues but provides the information needed for:
+- **ocas-custodian** - Can use diagnostic results for health monitoring
+- **ocas-forge** - Can use diagnostic results when building or fixing skills
+- **google-cloud-api-setup** - For setting up missing Google Cloud credentials
+- **mcp/native-mcp** - For configuring missing MCP servers
+- Individual skill init commands - For initializing or reinitializing skills
