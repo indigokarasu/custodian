@@ -1,3 +1,13 @@
+## [1.3.4] - 2026-04-12
+
+### Changed
+- Agent now performs all scan, repair, and data operations directly — no helper script delegation
+- Cron registration always uses Hermes-native platform scheduling commands
+
+### Removed
+- `scripts/custodian.py` (contained stale openclaw binary calls and hardcoded paths; agent reasoning is more reliable)
+- `python3` from `requires_binaries`
+
 ## [1.2.2] - 2026-04-06
 
 ### Added

@@ -12,7 +12,7 @@ description: >
 metadata:
   author: Indigo Karasu
   email: mx.indigo.karasu@gmail.com
-  version: "1.3.2"
+  version: "1.3.4"
   hermes:
     tags: [monitoring, maintenance, health]
     category: interface
