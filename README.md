@@ -52,6 +52,10 @@ Custodian monitors the agent gateway logs, cron job registry, skill journals, an
 
 ## Changelog
 
+### v1.3.4 — April 12, 2026
+- Agent now performs all scan, repair, and data operations directly — no helper script delegation
+- Removed `scripts/custodian.py` and `python3` from required binaries
+
 ### v1.2.0 -- April 2, 2026
 - Added structured entity observations in journal payloads (`entities_observed`, `relationships_observed`, `preferences_observed`)
 - Added `user_relevance` tagging on journal observations (default `agent_only` for infrastructure entities)
