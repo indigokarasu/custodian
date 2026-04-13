@@ -39,7 +39,7 @@ metadata:
       source: "https://github.com/indigokarasu/custodian"
       mechanism: "version-checked tarball from GitHub via gh CLI"
       command: "custodian.update"
-      requires_binaries: [gh, tar, python3]
+      requires_binaries: [gh, tar]
     cron:
       - name: "custodian:deep"
         schedule: "0 1,7,13,19 * * *"
@@ -242,6 +242,8 @@ Confidence gate: high = optimize freely, med = only if score <= 2, low = hold.
 
 Fire when: fingerprint unknown, recurrence increased since last search, last search not actionable, not escalated/suppressed, < 5 attempts.
 
+**Search tool selection:** Prefer SearXNG (via the N2 MCP or a self-hosted instance) for all queries. If SearXNG is unavailable, fall back to the agent's default search tool silently.
+
 Query mutation sequence: (1) `{error} agent skill`, (2) `{error} {tech_context}`, (3) `{error_pattern} fix`, (4) `{component} {failure_mode}`, (5) `{failure_mode} root cause diagnosis`.
 
 On actionable result: attempt fix, append to `learned_issues.jsonl` if successful. On no result: record and continue mutation on next recurrence.
@@ -306,28 +308,15 @@ Registration during `custodian.init` (idempotent -- check the platform schedulin
   YYYY-MM-DD/{run_id}.json
 ```
 
-## Using the script
+## Execution notes
 
-All deterministic operations delegate to `scripts/custodian.py`. Call it via Bash tool:
+All scan, init, verify, repair, status, and issues operations are performed directly by the agent — no helper script. Read and write JSONL files, parse logs, fingerprint errors, rebuild the activity model, and update the schedule using the data structures described above and in `references/known_issues.json`.
 
-```
-python3 {skill_dir}/scripts/custodian.py <command> [args]
-```
+**Cron registration:** Always use Hermes-native platform scheduling commands. Never use any binary or script for cron management.
 
-Where `{skill_dir}` is the path to this skill package (e.g. `{agent_root}/skills/ocas-custodian`).
+**Web search handoff:** During `scan.deep` Step 9, if `{agent_root}/commons/data/ocas-custodian/search_candidates.json` exists, read it and execute the web search pass directly using the query mutation sequence in Web Search Protocol. Write actionable results to `learned_issues.jsonl`.
 
-| When to call the script | When to reason directly |
-|---|---|
-| All scan, init, verify, repair, status, issues commands | Web search pass (Step 9) |
-| JSONL reads/writes, log parsing, fingerprinting | Writing Vesper InsightProposals (Step 10) |
-| Cron registration checks and updates | Interpreting novel/ambiguous findings |
-| Activity model rebuild and schedule optimization | Composing escalation summaries for Mentor |
-
-**Output contract:** All commands print human-readable status to stdout and write structured state to JSONL files. `status` and `issues.list` emit JSON. Exit 0 on success, non-zero on failure.
-
-**Web search handoff:** After `scan.deep`, if `{agent_root}/commons/data/ocas-custodian/search_candidates.json` exists, read it and execute the web search pass directly using the query mutation sequence in Web Search Protocol. Write actionable results to `learned_issues.jsonl`.
-
-**Escalation handoff:** After `scan.deep` prints "Agent: run web search pass", also check open Tier 3/4 issues in `issues.list` output and write InsightProposals to `{agent_root}/commons/data/ocas-custodian/proposals/` if Vesper is installed. Vesper reads from this directory.
+**Escalation handoff:** After Step 9, check open Tier 3/4 issues and write InsightProposals to `{agent_root}/commons/data/ocas-custodian/proposals/` if Vesper is installed. Vesper reads from this directory.
 
 ## Support File Map
 
@@ -335,7 +324,6 @@ Where `{skill_dir}` is the path to this skill package (e.g. `{agent_root}/skills
 |---|---|---|
 | `references/known_issues.json` | Pre-seeded fingerprint registry with tier, fix, reversibility | Start of every scan before classifying errors |
 | `references/plans/custodian-repair.plan.md` | Mentor Workflow Plan for Tier 3 multi-step repair | Copied to Mentor plans dir during init; referenced in escalation |
-| `scripts/custodian.py` | Deterministic CLI helper for all scan, repair, and data operations | Called by the agent for every custodian command |
 
 ## Update command
 
