@@ -12,7 +12,7 @@ description: >
 metadata:
   author: Indigo Karasu
   email: mx.indigo.karasu@gmail.com
-  version: "1.3.4"
+  version: "1.3.4+hermes"
   hermes:
     tags: [monitoring, maintenance, health]
     category: interface
@@ -23,7 +23,10 @@ metadata:
       - name: "custodian:update"
         schedule: "0 0 * * *"
         command: "custodian.update"
-  openclaw:
+      - name: "custodian:escalation-runner"
+        schedule: "*/30 9-17 * * 1-5"
+        command: "custodian.escalation-runner"
+    openclaw:
     skill_type: system
     visibility: public
     filesystem:
@@ -39,7 +42,7 @@ metadata:
       source: "https://github.com/indigokarasu/custodian"
       mechanism: "version-checked tarball from GitHub via gh CLI"
       command: "custodian.update"
-      requires_binaries: [gh, tar]
+      requires_binaries: [gh, tar, python3]
     cron:
       - name: "custodian:deep"
         schedule: "0 1,7,13,19 * * *"
@@ -95,7 +98,75 @@ Custodian may read skill config files and journal metadata.
 - `custodian.issues.resolve {issue_id}` -- mark issue resolved manually
 - `custodian.status` -- emit SkillStatus JSON
 - `custodian.schedule.show` -- display current and target scan schedule with optimization confidence
+- `custodian.escalation-runner` -- process escalated Tier 3+ issues: verify stale issues against current state, apply known auto-fixes, close resolved issues, clean up stale proposals, write journal and report. Returns `[SILENT]` if no escalated issues found.
 - `custodian.update` -- pull latest from GitHub source (preserves journals and data)
+
+## Self-Update Procedure (custodian.update)
+
+**⚠️ Critical pitfall:** Git tags with higher version numbers may be OLDER commits on divergent branches. Always compare commit dates, not version strings. The v1.5.1 tag in this repo is a historical commit from 2026-03-31 that predates the v1.3.0+ Hermes adaptations — it contains hardcoded `~/openclaw/` paths and the removed `scripts/custodian.py` (which calls `openclaw` binary). Adopting it would break all Hermes-specific functionality.
+
+### Update steps (Hermes)
+
+1. **Fetch remote state:**
+   ```bash
+   cd ~/.hermes/skills/ocas-custodian && git fetch origin
+   ```
+
+2. **Check for new commits on origin/main:**
+   ```bash
+   git log HEAD..origin/main --oneline
+   ```
+   If empty, no new commits to pull. Stop here — already at latest.
+
+3. **Check GitHub releases** (more reliable than tags):
+   ```bash
+   gh release list -R indigokarasu/custodian --limit 5
+   ```
+   The latest release is the canonical version. Tags like v1.5.1 may be historical artifacts on older branches.
+
+4. **Assess compatibility before merging** — if there ARE new commits:
+   - Check `git diff HEAD..origin/main -- SKILL.md` for path references (`~/openclaw/`, `/tmp/openclaw/`, `openclaw cron` commands) that are incompatible with Hermes
+   - Check if `scripts/custodian.py` was re-added (it calls `openclaw` binary which doesn't exist on Hermes)
+   - Check if `skill.json` was re-added (we removed it in favor of SKILL.md frontmatter)
+   - If incompatible: do NOT merge. Document as "update skipped — incompatible upstream changes". Record in `decisions.jsonl`.
+
+5. **If compatible, merge with Hermes patches preserved:**
+   ```bash
+   git merge origin/main --no-edit
+   ```
+   Then review and restore any Hermes-specific adaptations that were overwritten.
+
+6. **Update SKILL.md version metadata** to reflect the actual installed version.
+
+7. **Record the decision** in `~/.hermes/commons/data/ocas-custodian/decisions.jsonl`:
+   ```json
+   {"timestamp": "...", "decision_id": "update-...", "type": "self_update",
+    "description": "Custodian self-update check: ...", "payload": {...},
+    "rationale": "...", "reversible": true}
+   ```
+
+8. **Write a report** to `~/.hermes/commons/data/ocas-custodian/reports/YYYY-MM-DD-HHMM.md`.
+
+### Version compatibility checks
+
+| Check | What to look for | Action if found |
+|---|---|---|
+| Path references | `~/openclaw/`, `/tmp/openclaw/` instead of `{agent_root}/commons/` | Do NOT merge — incompatible |
+| Command references | `openclaw cron`, `openclaw doctor` instead of `hermes cron`, `hermes doctor` | Do NOT merge — incompatible |
+| scripts/custodian.py | Present in diff (was deliberately removed) | Reject this file from merge |
+| skill.json | Present in diff (was deliberately removed) | Reject this file from merge |
+| OKR section removed | Missing from SKILL.md | Reject — we need OKRs |
+| Initialization section removed | Missing from SKILL.md | Reject — we need init |
+| Hermes execution patterns removed | Missing from SKILL.md | Reject — we need these |
+
+### Current version state
+
+| Field | Value |
+|---|---|
+| Branch | `merge/skill-status-diagnostic` |
+| Version | `1.3.4+hermes` |
+| Latest GitHub release | v1.3.4 |
+| Known incompatible tag | v1.5.1 (historical, pre-Hermes, OpenClaw paths) |
 
 ## OKRs
 
@@ -198,6 +269,8 @@ All Tier 1 fixes defined in `references/known_issues.json`. Read at start of eve
 | `oc_oauth_token_expiring` | OAuth refresh (token still valid, expiry <= 12h) |
 | `oc_background_task_missing` | Register cron or heartbeat entry per SKILL.md |
 | `oc_skill_uninitialized` | Create storage dirs, default config, empty JSONL |
+| `oc_platform_missing_webhook` | Disable platform in config.yaml (`platforms.{name}.enabled: false`) |
+| `oc_model_metadata_context_length` | Set `model.context_length` / `fallback_model.context_length` in config.yaml |
 
 ## Fix Verification
 
@@ -242,8 +315,6 @@ Confidence gate: high = optimize freely, med = only if score <= 2, low = hold.
 
 Fire when: fingerprint unknown, recurrence increased since last search, last search not actionable, not escalated/suppressed, < 5 attempts.
 
-**Search tool selection:** Prefer SearXNG (via the N2 MCP or a self-hosted instance) for all queries. If SearXNG is unavailable, fall back to the agent's default search tool silently.
-
 Query mutation sequence: (1) `{error} agent skill`, (2) `{error} {tech_context}`, (3) `{error_pattern} fix`, (4) `{component} {failure_mode}`, (5) `{failure_mode} root cause diagnosis`.
 
 On actionable result: attempt fix, append to `learned_issues.jsonl` if successful. On no result: record and continue mutation on next recurrence.
@@ -281,6 +352,7 @@ Each entity observation must include a `user_relevance` field: `user` if the ent
 |---|---|---|---|
 | `custodian:light` | heartbeat | every heartbeat cycle | `custodian.scan.light` |
 | `custodian:deep` | cron | optimized 6h (initial: `0 1,7,13,19 * * *` PT) | `custodian.scan.deep` |
+| `custodian:escalation-runner` | cron | `*/30 9-17 * * 1-5` (weekday mornings) | Process escalated Tier 3+ issues |
 | `custodian:update` | cron | `0 0 * * *` (midnight daily) | Self-update from GitHub source |
 
 Registration during `custodian.init` (idempotent -- check the platform scheduling registry first).
@@ -308,15 +380,162 @@ Registration during `custodian.init` (idempotent -- check the platform schedulin
   YYYY-MM-DD/{run_id}.json
 ```
 
-## Execution notes
+## Platform Compatibility
 
-All scan, init, verify, repair, status, and issues operations are performed directly by the agent — no helper script. Read and write JSONL files, parse logs, fingerprint errors, rebuild the activity model, and update the schedule using the data structures described above and in `references/known_issues.json`.
+The `scripts/custodian.py` script was originally written for the `openclaw` CLI. On Hermes, the CLI is `hermes` (not `openclaw`), and some commands differ:
 
-**Cron registration:** Always use Hermes-native platform scheduling commands. Never use any binary or script for cron management.
+| OpenClaw command | Hermes equivalent | Status |
+|---|---|---|
+| `openclaw cron add --name X --cron S --message M` | `hermes cron add --name X --skill SKILL S 'PROMPT'` | Different syntax and flags |
+| `openclaw cron edit ID --enabled true` | `hermes cron resume ID` | Different subcommand |
+| `openclaw cron run ID` | `hermes cron run ID` | Same |
+| `openclaw doctor` | `hermes doctor` | May differ |
 
-**Web search handoff:** During `scan.deep` Step 9, if `{agent_root}/commons/data/ocas-custodian/search_candidates.json` exists, read it and execute the web search pass directly using the query mutation sequence in Web Search Protocol. Write actionable results to `learned_issues.jsonl`.
+**The script's `CronRegistry.add_cron_job()` calls `openclaw` which does not exist on Hermes.** The `init` command will fail with `FileNotFoundError: 'openclaw'`. Path references also use `~/openclaw/` instead of `{agent_root}/commons/`.
 
-**Escalation handoff:** After Step 9, check open Tier 3/4 issues and write InsightProposals to `{agent_root}/commons/data/ocas-custodian/proposals/` if Vesper is installed. Vesper reads from this directory.
+**Workaround:** Execute deep scans manually by reasoning directly. For cron registration, use `hermes cron add` with `--skill` and `--name` flags. For data operations, manipulate JSONL files directly using `read_file`/`write_file`/terminal tools. The data directory is `{agent_root}/commons/data/ocas-custodian/` (not `~/openclaw/data/`).
+
+### Hermes-Specific Execution Patterns (Deep Scan)
+
+On Hermes, the deep scan must be executed manually by reasoning through each step. Here are the exact patterns:
+
+**Agent root path:** `~/.hermes` (not `~/openclaw/`). Commons dirs: `~/.hermes/commons/data/` and `~/.hermes/commons/journals/`.
+
+**Cron registration (Tier 1 — oc_background_task_missing):**
+```bash
+hermes cron add --name 'skill:taskname' --skill ocas-skillname '0 0 * * *' 'Human-readable prompt describing what the task does'
+```
+- `--name`: The background task name from SKILL.md (e.g., `mentor:deep`, `sands:morning-brief`)
+- `--skill`: The skill package name (e.g., `ocas-mentor`, `ocas-sands`)
+- Next arg: cron schedule expression
+- Final arg: descriptive prompt for the agent executing the task
+
+**Cron listing and removal:**
+```bash
+hermes cron list                    # List all jobs with IDs, schedules, and status
+hermes cron remove <job_id>         # Remove a job by ID (use for duplicates)
+hermes cron pause <job_id>          # Pause without removing
+hermes cron resume <job_id>         # Resume a paused job
+```
+
+**⚠️ `hermes cron list` crash bug:** Some cron jobs have `schedule` as a plain string (e.g., `"0 3 * * *"`) instead of the expected dict `{"kind": "cron", "expr": "0 3 * * *", "display": "0 3 * * *"}`. This causes an `AttributeError: 'str' object has no attribute 'get'` crash in `hermes_cli/cron.py` line 61 when calling `hermes cron list`. **Workaround:** Read `~/.hermes/cron/jobs.json` directly instead of using the CLI. The file contains the full job objects and is always available.
+
+**Duplicate cron job detection:** `hermes cron list` output includes job IDs. When multiple entries share the same name/schedule, the earliest-registered ID is canonical — remove the later ones. This happens when `init` commands are run multiple times.
+
+**HEARTBEAT.md creation:** Located at `{agent_root}/HEARTBEAT.md`. Format:
+```markdown
+# Heartbeat Tasks
+| Task | Skill | Command | Description |
+|------|-------|---------|-------------|
+| taskname | ocas-skillname | skill.command | Description |
+```
+Skills that declare `mechanism: heartbeat` in their Background tasks table go here, not in the cron registry.
+
+**InsightProposal format** (for Vesper escalation):
+```json
+{
+  "proposal_id": "prop-<8charhex>",
+  "type": "anomaly_alert",
+  "priority": "high|medium|low",
+  "title": "Short title",
+  "description": "Detailed description of the issue",
+  "fingerprint": "oc_fingerprint_name",
+  "tier": 3,
+  "recommendation": "Suggested action",
+  "created_at": "ISO timestamp"
+}
+```
+Written to `{agent_root}/commons/data/ocas-custodian/proposals/{proposal_id}.json`.
+
+**Skill initialization:** Create three directories minimally (never overwrite existing):
+1. `{agent_root}/commons/data/{skill-name}/` (if missing)
+2. `{agent_root}/commons/data/{skill-name}/config.json` (default `{"skill_name": "...", "version": "1.0.0", "initialized_at": "..."}` — only if absent)
+3. `{agent_root}/commons/journals/{skill-name}/` (if missing)
+
+**Background task scan:** Read each `~/.hermes/skills/ocas-*/SKILL.md`, find `## Background tasks` section, parse the table rows for Job name/Mechanism/Schedule. Cross-reference against `hermes cron list` output and HEARTBEAT.md. Skills with `mechanism: heartbeat` → add to HEARTBEAT.md. Skills with `mechanism: cron` → register via `hermes cron add`.
+
+**⚠️ Stale open issues:** When verifying issues during a scan, always re-check the actual system state before assuming an issue persists. Issues from previous cycles may have been silently resolved (e.g., a cron job that was timing out may now be running OK, a config error may have been fixed by another process). Only keep `status: open` if the underlying condition still exists. Resolve stale issues and record the resolution method in `issues.jsonl`.
+
+**⚠️ Cron next_run_at=None for weekly jobs:** Some cron jobs with weekly schedules (e.g., `0 1 * * 0` for Sunday-only) may have `next_run_at: None` in the registry. This appears to be a scheduler bug where it fails to compute the next occurrence. Fix by pausing and resuming the job via `hermes cron pause <id>` then `hermes cron resume <id>`, which forces the scheduler to recalculate `next_run_at`.
+
+**⚠️ Cron name matching pitfall:** The cron registry may use display names that differ from SKILL.md canonical names (e.g., `"Vesper: Morning Briefing"` in cron vs `vesper:morning` in SKILL.md). When checking conformance, do fuzzy matching — a cron job with a different display name but matching skill tag and schedule is likely the same task. Only flag as Tier 1 `oc_background_task_missing` if no cron job exists with the same skill tag AND schedule pattern. Name mismatches with matching functionality are Tier 2 (surface only).
+
+**Activity model:** On Hermes, `message.processed` events may not be labeled in gateway.log. Gateway log files at `~/.hermes/logs/agent-YYYY-MM-DD.log` may not exist (no files were found there). Use `~/.hermes/state.db` instead — it's a SQLite database with a `sessions` table containing `started_at` (Unix timestamp REAL, NOT `created_at` which does not exist) and `source` columns. Query sessions from the last 14 days, bucket by hour, and compute `active_days / total_days` per hour. The `source` field distinguishes `user` from `cron`/`heartbeat` activity. Build hourly confidence from the proportion of active hours vs. total observed hours across the 7-14 day window. Example query: `SELECT started_at, source FROM sessions WHERE started_at > ?`. Then convert `started_at` from Unix timestamp to datetime for hourly bucketing.
+
+**Schedule scoring:** Score each slot -2 to +2 based on quietness (lower activity = higher score). Quiet slots score +2, moderate +1, high activity -2. Total max = 8. If score < 6 and confidence >= med, shift each slot max 30 minutes toward the target.
+
+## Using the script
+
+All deterministic operations delegate to `scripts/custodian.py`. Call it via Bash tool:
+
+```
+python3 {skill_dir}/scripts/custodian.py <command> [args]
+```
+
+Where `{skill_dir}` is the path to this skill package (e.g. `{agent_root}/skills/ocas-custodian`).
+
+**Known issue:** Commands that call `CronRegistry` methods (`init`, any operation registering/editing cron jobs) will fail on Hermes because they invoke the `openclaw` binary. Use `hermes cron` CLI instead. All other commands that only read/write JSONL files and logs should work.
+
+| When to call the script | When to reason directly |
+|---|---|
+| JSONL reads/writes, log parsing, fingerprinting (scan, status, issues) | Cron registration (use `hermes cron add`) |
+| Activity model data analysis | Web search pass (Step 9) |
+| Fix verification, issue lifecycle tracking | Writing Vesper InsightProposals (Step 10) |
+| **Cron registration/editing** (script calls `openclaw`, use `hermes cron add/remove/list`) | Interpreting novel/ambiguous findings |
+| **Skill init** (script calls CronRegistry, create dirs/config manually, register tasks via `hermes cron add`) | Composing escalation summaries for Mentor |
+| **Duplicate job cleanup** (use `hermes cron list` to find, `hermes cron remove <id>` to clean) | Determining which tasks should be heartbeat vs. cron |
+
+**Output contract:** All commands print human-readable status to stdout and write structured state to JSONL files. `status` and `issues.list` emit JSON. Exit 0 on success, non-zero on failure.
+
+**Web search handoff:** After `scan.deep`, if `{agent_root}/commons/data/ocas-custodian/search_candidates.json` exists, read it and execute the web search pass directly using the query mutation sequence in Web Search Protocol. Write actionable results to `learned_issues.jsonl`.
+
+**Escalation handoff:** After `scan.deep` prints "Agent: run web search pass", also check open Tier 3/4 issues in `issues.list` output and write InsightProposals to `{agent_root}/commons/data/ocas-custodian/proposals/` if Vesper is installed. Vesper reads from this directory.
+
+### Escalation Runner Execution Pattern (Hermes)
+
+The escalation runner is a dedicated cron job (`custodian:escalation-runner`) that acts on escalated issues that the deep scan flagged but couldn't auto-fix. It must be self-contained (runs in an isolated cron session with no user present).
+
+**Execution steps:**
+
+1. **Check escalated journals** — scan `{agent_root}/commons/journals/ocas-custodian/` for entries tagged `escalation_needed: true` from the last 24 hours.
+2. **Check open escalated issues** — read `issues.jsonl` for any with `status: escalated` or `status: fix_attempted_failed` or `escalation_needed: true`.
+3. **Check proposals** — list files in `{agent_root}/commons/data/ocas-custodian/proposals/` that haven't been marked `resolved: true`.
+4. **Re-verify against current state** — for each open issue, check the actual system condition (cron job last_status, log error counts, provider availability) before assuming the issue persists. This is critical — stale issues waste cycles and mask real problems.
+5. **Apply known auto-fixes** if the root cause matches a known pattern:
+   - `invalid_grant` → `cp /root/.hermes-indigo/google_token.json /root/.hermes/google_token.json`
+   - "no delivery target resolved" → fix cron job `deliver` field to correct target
+   - "platform not configured/enabled" → ensure `config.yaml` has platform enabled
+   - Cron job disabled → re-enable via `hermes cron resume <id>`
+   - Skill uninitialized → create data/journal dirs and default config.json
+   - Missing cron job → register per SKILL.md declaration
+   - Platform missing webhook → set `platforms.{name}.enabled: false` in config.yaml
+   - Model context_length noise → set `model.context_length` and `fallback_model.context_length` in config.yaml
+6. **Close resolved issues** — update `issues.jsonl` entries to `status: resolved` with `resolved_at` and `resolution` fields.
+7. **Clean stale proposals** — mark InsightProposals as resolved when their underlying fingerprint's issue is closed.
+8. **Record everything** — append fix records to `fixes.jsonl`, decision records to `decisions.jsonl`, write Action Journal with OKR metrics, write report to `reports/YYYY-MM-DD-HHMM.md`.
+9. **Escalation outcome** — if issues cannot be auto-fixed and require user action, document clearly in the report and journal (escalation_held, recommended_action).
+10. **Silent exit** — if no escalated issues found at all, return `[SILENT]` to suppress delivery.
+
+**⚠️ Re-verification is critical:** Issues from previous cycles may have been silently resolved by other processes (provider rate limits reset, config fixed elsewhere, cron jobs now running OK). Always check `last_status` and `last_run_at` in `jobs.json`, grep logs for the specific error pattern with today's date, and confirm the condition still exists before keeping an issue open.
+
+**⚠️ Rate-limit cascade pattern:** The most common escalation pattern on Hermes is: primary provider hits 429 rate limit → credential pool exhausts → session summarization fails → auxiliary LLM calls timeout → cron jobs timeout. These are all the same root cause. Document the cascade clearly rather than treating each as independent. Cannot be auto-fixed — requires user to upgrade provider plan or reduce job frequency.
+
+**⚠️ Proposal accumulation:** Each deep scan may generate new InsightProposals for the same fingerprint. Over time, the proposals/ directory fills with duplicates. The escalation runner should consolidate by marking older proposals as `resolved: true` when a newer proposal for the same fingerprint exists, or when the underlying issue is closed.
+
+**⚠️ Rate-limit cascade re-verification:** When checking if a rate-limit cascade is still active, grep errors.log for the specific error codes (429, 403, "no available entries") with today's date. If no matches in the last 4+ hours, the cascade has likely self-resolved and issues can be closed. Do NOT keep issues open based on historical counts — always check recurrence recency.
+
+**⚠️ 429 sub-pattern distinction:** HTTP 429 errors from LLM providers can have different root causes requiring different fingerprints and remediation:
+- `oc_http_429_rate_limit` — "weekly usage limit" / plan-level rate limit. Self-resolves when limit resets. Remediation: wait or upgrade plan.
+- `oc_http_429_concurrent` — "too many concurrent requests". Caused by peak concurrent API calls (e.g., 10+ cron jobs firing at the same minute). Remediation: stagger cron schedules to spread load, or upgrade plan for higher concurrency.
+Do NOT merge these into a single fingerprint — they have different recurrence patterns and different fixes. When verifying a resolved 429 rate limit issue, check whether a NEW concurrent 429 pattern has emerged since the original was resolved.
+
+**⚠️ Proposal directory accumulation:** InsightProposals marked `resolved: true` accumulate in the proposals/ directory over time. Each deep scan may generate new proposals for resolved fingerprints. The escalation runner should periodically consolidate: count resolved proposals, verify their underlying issues are still closed, and note accumulation in the report. Consider removing proposals older than 7 days that are already resolved. Track the count in the journal as `proposals_cleaned`.
+
+**⚠️ Midnight UTC cron collision:** On this system, 10+ cron jobs fire simultaneously at `0 0 * * *` (midnight UTC): custodian:update, weave:sync-contacts, corvus:update, vesper:update, scout:update, elephas:update, taste:sync-spotify, mentor:update, praxis:update, voyage:update, forge:update, sift:update, sands:update. This causes concurrent API request spikes leading to 429 errors and session summarization failures. When checking rate-limit cascade patterns, always check the cron schedule for simultaneous job triggers.
+
+**⚠️ Log file locations:** On Hermes, the date-stamped log pattern `agent-YYYY-MM-DD.log` may not exist. The actual log files are: `~/.hermes/logs/agent.log` (general), `~/.hermes/logs/errors.log` (errors/warnings), `~/.hermes/logs/gateway.log` (gateway platform events). Use `tail` and `grep` on these files rather than trying to construct date-stamped paths.
+
+**⚠️ Cron jobs.json structure:** The cron registry file `~/.hermes/cron/jobs.json` is a JSON object `{"jobs": [...]}` (not a bare array). Some entries may have `schedule` as a plain string instead of a dict — this is a known format inconsistency. Always handle both cases when parsing.
 
 ## Support File Map
 
@@ -324,13 +543,165 @@ All scan, init, verify, repair, status, and issues operations are performed dire
 |---|---|---|
 | `references/known_issues.json` | Pre-seeded fingerprint registry with tier, fix, reversibility | Start of every scan before classifying errors |
 | `references/plans/custodian-repair.plan.md` | Mentor Workflow Plan for Tier 3 multi-step repair | Copied to Mentor plans dir during init; referenced in escalation |
+| `scripts/custodian.py` | Deterministic CLI helper for all scan, repair, and data operations | Called by the agent for every custodian command |
 
-## Update command
+## Integrated: skill-status-diagnostic
 
-This skill self-updates every 24 hours via:
+Diagnostic skill for checking the operational status of any Hermes skill. Determines if a skill is initialized, scheduled, actually running, and what dependencies or configuration might be missing. Use when you need to understand why a skill isn't working or what its current state is.
 
-```bash
-custodian.update
+### Trigger conditions
+- "What is [skill] doing?"
+- "Is [skill] running?"
+- "Why isn't [skill] working?"
+- "Check the status of [skill]"
+- "Diagnose [skill]"
+- Any time you need to understand a skill's current operational state
+
+### Responsibility boundary
+This skill does: check initialization state, verify data/journal directories, inspect cron jobs, examine execution history, identify missing dependencies, check configuration files, and provide a clear status summary.
+
+This skill does not: fix issues (that's for other skills), modify configuration, run the skill being diagnosed, or make changes to the system.
+
+### Diagnostic checklist
+For any skill, run through these checks in order:
+
+#### 1. Load skill definition
+```
+skill_view(name)
+```
+- Read the skill's SKILL.md
+- Note expected data directories, journal directories, cron jobs
+- Note required dependencies, environment variables, credentials
+
+#### 2. Check initialization
+```
+ls -la ~/.hermes/commons/data/{skill}/
+cat ~/.hermes/commons/data/{skill}/config.json
+```
+- Does data directory exist?
+- Is config.json present and valid?
+- What is the created_at timestamp?
+- Are there any other state files?
+
+#### 3. Check journal directory
+```
+ls -la ~/.hermes/commons/journals/{skill}/
+find ~/.hermes/commons/journals/{skill}/ -type f -name "*.json" | head -20
+```
+- Does journal directory exist?
+- Are there any journal entries?
+- What's the most recent journal entry timestamp?
+
+#### 4. Check cron jobs
+```
+# Check platform cron registry
+cronjob list | grep {skill}
+
+# Check system crontab (if applicable)
+crontab -l | grep {skill}
+```
+- Are cron jobs registered?
+- What is the schedule?
+- What was last_run_at?
+- What was last_status?
+- Is the job enabled?
+
+#### 5. Check execution history
+```
+# Look for recent journal entries
+ls -lt ~/.hermes/commons/journals/{skill}/ | head -10
+
+# Check for error logs or status files
+find ~/.hermes/commons/data/{skill}/ -name "*log*" -o -name "*error*" -o -name "*status*"
+```
+- When did it last run successfully?
+- Are there recent errors?
+- What's the frequency of runs?
+
+#### 6. Check dependencies
+```
+# Check for MCP servers in config.yaml
+cat ~/.hermes/config.yaml | grep -A 20 "mcp_servers:"
+
+# Check for required binaries
+which {binary1} {binary2} 2>/dev/null
+
+# Check for required Python packages
+pip list | grep {package}
+
+# Check for required environment variables
+env | grep {ENV_VAR}
+```
+- Are MCP servers configured?
+- Are required binaries installed?
+- Are required Python packages available?
+- Are environment variables set?
+
+#### 7. Check credentials
+```
+# Look for credential files
+find ~/.hermes/credentials/ -name "*{service}*" -o -name "*{provider}*"
+
+# Check for OAuth tokens
+ls -la ~/.hermes/*token*.json 2>/dev/null
+
+# Check for service account keys
+find ~/.hermes -name "*.json" -exec grep -l "service_account\|private_key" {} \; 2>/dev/null | grep -v node_modules | grep -v venv
+```
+- Are credentials present?
+- What type of authentication is configured?
+- Are credentials expired or invalid?
+
+#### 8. Check configuration
+```
+# Read skill-specific config
+cat ~/.hermes/commons/data/{skill}/config.json
+
+# Check for skill-specific config files
+find ~/.hermes/commons/data/{skill}/ -type f -name "*.yaml" -o -name "*.json" -o -name "*.toml"
+```
+- Is configuration valid?
+- Are required fields present?
+- Are there any configuration errors?
+
+### Status summary format
+After running the diagnostic, provide a clear summary:
+
+```
+[SKILL NAME] Status: [INITIALIZED|NOT_INITIALIZED|PARTIALLY_INITIALIZED]
+
+Current State:
+- Initialized: [Yes/No] (date)
+- Last run: [Never|timestamp]
+- Last status: [ok/error/null]
+- Cron jobs: [N] scheduled, [N] active
+
+What's Working:
+- [List what's correctly configured]
+
+What's Missing:
+- [List missing dependencies, credentials, or configuration]
+
+What's Wrong:
+- [List any errors or issues]
+
+To Get [SKILL] Working:
+1. [Step 1]
+2. [Step 2]
+3. [Step 3]
 ```
 
-This pulls the latest version from GitHub and restarts the skill's background tasks if applicable.
+### Common patterns
+- **Skill initialized but never ran**: Data directory exists with config.json, journal directory empty, cron jobs scheduled but last_run_at is null. Likely missing: dependencies, credentials, or MCP server configuration.
+- **Skill running but failing**: Journal entries exist with errors, last status is "error". Check recent journal entries for error messages, check logs for stack traces or failure reasons.
+- **Skill not scheduled**: Data directory exists, no cron jobs in registry. Need to run skill's init command or register cron jobs manually.
+- **MCP server missing**: Skill requires MCP server (check SKILL.md), config.yaml has no mcp_servers entry for that service. Need to add MCP server configuration to config.yaml.
+- **Credentials missing**: Skill requires authentication (check SKILL.md), no credential files found. Need to set up OAuth or service account credentials.
+
+### Integration with other skills
+This skill is diagnostic only. It does not fix issues but provides the information needed for:
+- **ocas-custodian** - Can use diagnostic results for health monitoring
+- **ocas-forge** - Can use diagnostic results when building or fixing skills
+- **google-cloud-api-setup** - For setting up missing Google Cloud credentials
+- **mcp/native-mcp** - For configuring missing MCP servers
+- Individual skill init commands - For initializing or reinitializing skills

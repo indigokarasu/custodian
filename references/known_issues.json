@@ -125,6 +125,33 @@
     "description": "systemd linger not enabled -- background services will not persist across logout",
     "technology_context": "systemd loginctl linger"
   },
+  "oc_google_token_invalid": {
+    "tier": 1,
+    "match_patterns": ["invalid_grant", "token has been expired or revoked", "Google OAuth.*failed", "gmail.api.*401"],
+    "source": "cron_log",
+    "auto_fix": "cp /root/.hermes-indigo/google_token.json /root/.hermes/google_token.json",
+    "reversibility": "Restore previous google_token.json from .bak.user-only backup",
+    "description": "Google OAuth token invalid or revoked -- agent profile token (with gmail.send scope) needs to be restored",
+    "technology_context": "Google Workspace OAuth2 token refresh"
+  },
+  "oc_email_delivery_failed": {
+    "tier": 1,
+    "match_patterns": ["no delivery target resolved.*deliver=email", "platform.*email.*not configured", "platform.*not configured/enabled"],
+    "source": "cron_log",
+    "auto_fix": "Ensure config.yaml has platforms.email.enabled: true and platforms.email.address: mx.indigo.karasu@gmail.com; ensure deliver field uses 'email:jared.zimmerman@gmail.com' format not bare 'email'",
+    "reversibility": "Remove email platform from config.yaml",
+    "description": "Email delivery failing because bare 'email' deliver target or missing platform config",
+    "technology_context": "Hermes cron scheduler delivery resolution"
+  },
+  "oc_cron_timeout": {
+    "tier": 2,
+    "match_patterns": ["idle for.*limit.*s", "TimeoutError.*Cron job", "timed out after"],
+    "source": "cron_log",
+    "auto_fix": null,
+    "reversibility": null,
+    "description": "Cron job hit idle timeout waiting for provider response -- may indicate API issue or oversized prompt",
+    "technology_context": "Hermes cron job execution timeout"
+  },
   "oc_node_version_mismatch": {
     "tier": 4,
     "match_patterns": ["node.*version.*mismatch", "unsupported.*node.*version", "requires node"],
