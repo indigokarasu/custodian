@@ -12,7 +12,7 @@ description: >
 metadata:
   author: Indigo Karasu
   email: mx.indigo.karasu@gmail.com
-  version: "1.4.0+hermes"
+  version: "1.3.4+hermes"
   hermes:
     tags: [monitoring, maintenance, health]
     category: interface
@@ -23,7 +23,10 @@ metadata:
       - name: "custodian:update"
         schedule: "0 0 * * *"
         command: "custodian.update"
-  openclaw:
+      - name: "custodian:escalation-runner"
+        schedule: "*/30 9-17 * * 1-5"
+        command: "custodian.escalation-runner"
+    openclaw:
     skill_type: system
     visibility: public
     filesystem:
@@ -95,7 +98,75 @@ Custodian may read skill config files and journal metadata.
 - `custodian.issues.resolve {issue_id}` -- mark issue resolved manually
 - `custodian.status` -- emit SkillStatus JSON
 - `custodian.schedule.show` -- display current and target scan schedule with optimization confidence
+- `custodian.escalation-runner` -- process escalated Tier 3+ issues: verify stale issues against current state, apply known auto-fixes, close resolved issues, clean up stale proposals, write journal and report. Returns `[SILENT]` if no escalated issues found.
 - `custodian.update` -- pull latest from GitHub source (preserves journals and data)
+
+## Self-Update Procedure (custodian.update)
+
+**⚠️ Critical pitfall:** Git tags with higher version numbers may be OLDER commits on divergent branches. Always compare commit dates, not version strings. The v1.5.1 tag in this repo is a historical commit from 2026-03-31 that predates the v1.3.0+ Hermes adaptations — it contains hardcoded `~/openclaw/` paths and the removed `scripts/custodian.py` (which calls `openclaw` binary). Adopting it would break all Hermes-specific functionality.
+
+### Update steps (Hermes)
+
+1. **Fetch remote state:**
+   ```bash
+   cd ~/.hermes/skills/ocas-custodian && git fetch origin
+   ```
+
+2. **Check for new commits on origin/main:**
+   ```bash
+   git log HEAD..origin/main --oneline
+   ```
+   If empty, no new commits to pull. Stop here — already at latest.
+
+3. **Check GitHub releases** (more reliable than tags):
+   ```bash
+   gh release list -R indigokarasu/custodian --limit 5
+   ```
+   The latest release is the canonical version. Tags like v1.5.1 may be historical artifacts on older branches.
+
+4. **Assess compatibility before merging** — if there ARE new commits:
+   - Check `git diff HEAD..origin/main -- SKILL.md` for path references (`~/openclaw/`, `/tmp/openclaw/`, `openclaw cron` commands) that are incompatible with Hermes
+   - Check if `scripts/custodian.py` was re-added (it calls `openclaw` binary which doesn't exist on Hermes)
+   - Check if `skill.json` was re-added (we removed it in favor of SKILL.md frontmatter)
+   - If incompatible: do NOT merge. Document as "update skipped — incompatible upstream changes". Record in `decisions.jsonl`.
+
+5. **If compatible, merge with Hermes patches preserved:**
+   ```bash
+   git merge origin/main --no-edit
+   ```
+   Then review and restore any Hermes-specific adaptations that were overwritten.
+
+6. **Update SKILL.md version metadata** to reflect the actual installed version.
+
+7. **Record the decision** in `~/.hermes/commons/data/ocas-custodian/decisions.jsonl`:
+   ```json
+   {"timestamp": "...", "decision_id": "update-...", "type": "self_update",
+    "description": "Custodian self-update check: ...", "payload": {...},
+    "rationale": "...", "reversible": true}
+   ```
+
+8. **Write a report** to `~/.hermes/commons/data/ocas-custodian/reports/YYYY-MM-DD-HHMM.md`.
+
+### Version compatibility checks
+
+| Check | What to look for | Action if found |
+|---|---|---|
+| Path references | `~/openclaw/`, `/tmp/openclaw/` instead of `{agent_root}/commons/` | Do NOT merge — incompatible |
+| Command references | `openclaw cron`, `openclaw doctor` instead of `hermes cron`, `hermes doctor` | Do NOT merge — incompatible |
+| scripts/custodian.py | Present in diff (was deliberately removed) | Reject this file from merge |
+| skill.json | Present in diff (was deliberately removed) | Reject this file from merge |
+| OKR section removed | Missing from SKILL.md | Reject — we need OKRs |
+| Initialization section removed | Missing from SKILL.md | Reject — we need init |
+| Hermes execution patterns removed | Missing from SKILL.md | Reject — we need these |
+
+### Current version state
+
+| Field | Value |
+|---|---|
+| Branch | `merge/skill-status-diagnostic` |
+| Version | `1.3.4+hermes` |
+| Latest GitHub release | v1.3.4 |
+| Known incompatible tag | v1.5.1 (historical, pre-Hermes, OpenClaw paths) |
 
 ## OKRs
 
@@ -198,6 +269,8 @@ All Tier 1 fixes defined in `references/known_issues.json`. Read at start of eve
 | `oc_oauth_token_expiring` | OAuth refresh (token still valid, expiry <= 12h) |
 | `oc_background_task_missing` | Register cron or heartbeat entry per SKILL.md |
 | `oc_skill_uninitialized` | Create storage dirs, default config, empty JSONL |
+| `oc_platform_missing_webhook` | Disable platform in config.yaml (`platforms.{name}.enabled: false`) |
+| `oc_model_metadata_context_length` | Set `model.context_length` / `fallback_model.context_length` in config.yaml |
 
 ## Fix Verification
 
@@ -279,6 +352,7 @@ Each entity observation must include a `user_relevance` field: `user` if the ent
 |---|---|---|---|
 | `custodian:light` | heartbeat | every heartbeat cycle | `custodian.scan.light` |
 | `custodian:deep` | cron | optimized 6h (initial: `0 1,7,13,19 * * *` PT) | `custodian.scan.deep` |
+| `custodian:escalation-runner` | cron | `*/30 9-17 * * 1-5` (weekday mornings) | Process escalated Tier 3+ issues |
 | `custodian:update` | cron | `0 0 * * *` (midnight daily) | Self-update from GitHub source |
 
 Registration during `custodian.init` (idempotent -- check the platform scheduling registry first).
@@ -344,6 +418,8 @@ hermes cron pause <job_id>          # Pause without removing
 hermes cron resume <job_id>         # Resume a paused job
 ```
 
+**⚠️ `hermes cron list` crash bug:** Some cron jobs have `schedule` as a plain string (e.g., `"0 3 * * *"`) instead of the expected dict `{"kind": "cron", "expr": "0 3 * * *", "display": "0 3 * * *"}`. This causes an `AttributeError: 'str' object has no attribute 'get'` crash in `hermes_cli/cron.py` line 61 when calling `hermes cron list`. **Workaround:** Read `~/.hermes/cron/jobs.json` directly instead of using the CLI. The file contains the full job objects and is always available.
+
 **Duplicate cron job detection:** `hermes cron list` output includes job IDs. When multiple entries share the same name/schedule, the earliest-registered ID is canonical — remove the later ones. This happens when `init` commands are run multiple times.
 
 **HEARTBEAT.md creation:** Located at `{agent_root}/HEARTBEAT.md`. Format:
@@ -378,7 +454,13 @@ Written to `{agent_root}/commons/data/ocas-custodian/proposals/{proposal_id}.jso
 
 **Background task scan:** Read each `~/.hermes/skills/ocas-*/SKILL.md`, find `## Background tasks` section, parse the table rows for Job name/Mechanism/Schedule. Cross-reference against `hermes cron list` output and HEARTBEAT.md. Skills with `mechanism: heartbeat` → add to HEARTBEAT.md. Skills with `mechanism: cron` → register via `hermes cron add`.
 
-**Activity model:** On Hermes, `message.processed` events may not be labeled in gateway.log. Use log line counts per timestamp as a proxy for activity volume. Build hourly confidence from the proportion of active hours vs. total observed hours across the 7-14 day window.
+**⚠️ Stale open issues:** When verifying issues during a scan, always re-check the actual system state before assuming an issue persists. Issues from previous cycles may have been silently resolved (e.g., a cron job that was timing out may now be running OK, a config error may have been fixed by another process). Only keep `status: open` if the underlying condition still exists. Resolve stale issues and record the resolution method in `issues.jsonl`.
+
+**⚠️ Cron next_run_at=None for weekly jobs:** Some cron jobs with weekly schedules (e.g., `0 1 * * 0` for Sunday-only) may have `next_run_at: None` in the registry. This appears to be a scheduler bug where it fails to compute the next occurrence. Fix by pausing and resuming the job via `hermes cron pause <id>` then `hermes cron resume <id>`, which forces the scheduler to recalculate `next_run_at`.
+
+**⚠️ Cron name matching pitfall:** The cron registry may use display names that differ from SKILL.md canonical names (e.g., `"Vesper: Morning Briefing"` in cron vs `vesper:morning` in SKILL.md). When checking conformance, do fuzzy matching — a cron job with a different display name but matching skill tag and schedule is likely the same task. Only flag as Tier 1 `oc_background_task_missing` if no cron job exists with the same skill tag AND schedule pattern. Name mismatches with matching functionality are Tier 2 (surface only).
+
+**Activity model:** On Hermes, `message.processed` events may not be labeled in gateway.log. Gateway log files at `~/.hermes/logs/agent-YYYY-MM-DD.log` may not exist (no files were found there). Use `~/.hermes/state.db` instead — it's a SQLite database with a `sessions` table containing `started_at` (Unix timestamp REAL, NOT `created_at` which does not exist) and `source` columns. Query sessions from the last 14 days, bucket by hour, and compute `active_days / total_days` per hour. The `source` field distinguishes `user` from `cron`/`heartbeat` activity. Build hourly confidence from the proportion of active hours vs. total observed hours across the 7-14 day window. Example query: `SELECT started_at, source FROM sessions WHERE started_at > ?`. Then convert `started_at` from Unix timestamp to datetime for hourly bucketing.
 
 **Schedule scoring:** Score each slot -2 to +2 based on quietness (lower activity = higher score). Quiet slots score +2, moderate +1, high activity -2. Total max = 8. If score < 6 and confidence >= med, shift each slot max 30 minutes toward the target.
 
@@ -409,6 +491,60 @@ Where `{skill_dir}` is the path to this skill package (e.g. `{agent_root}/skills
 
 **Escalation handoff:** After `scan.deep` prints "Agent: run web search pass", also check open Tier 3/4 issues in `issues.list` output and write InsightProposals to `{agent_root}/commons/data/ocas-custodian/proposals/` if Vesper is installed. Vesper reads from this directory.
 
+### Escalation Runner Execution Pattern (Hermes)
+
+The escalation runner is a dedicated cron job (`custodian:escalation-runner`) that acts on escalated issues that the deep scan flagged but couldn't auto-fix. It must be self-contained (runs in an isolated cron session with no user present).
+
+**Execution steps:**
+
+1. **Check escalated journals** — scan `{agent_root}/commons/journals/ocas-custodian/` for entries tagged `escalation_needed: true` from the last 24 hours.
+2. **Check open escalated issues** — read `issues.jsonl` for any with `status: escalated` or `status: fix_attempted_failed` or `escalation_needed: true`.
+3. **Check proposals** — list files in `{agent_root}/commons/data/ocas-custodian/proposals/` that haven't been marked `resolved: true`.
+4. **Re-verify against current state** — for each open issue, check the actual system condition (cron job last_status, log error counts, provider availability) before assuming the issue persists. This is critical — stale issues waste cycles and mask real problems.
+5. **Apply known auto-fixes** if the root cause matches a known pattern:
+   - `invalid_grant` → `cp /root/.hermes-indigo/google_token.json /root/.hermes/google_token.json`
+   - "no delivery target resolved" → fix cron job `deliver` field to correct target
+   - "platform not configured/enabled" → ensure `config.yaml` has platform enabled
+   - Cron job disabled → re-enable via `hermes cron resume <id>`
+   - Skill uninitialized → create data/journal dirs and default config.json
+   - Missing cron job → register per SKILL.md declaration
+   - Platform missing webhook → set `platforms.{name}.enabled: false` in config.yaml
+   - **Platform auto-detected from env vars (no explicit config entry)** → add explicit `platforms.{name}.enabled: false` to config.yaml to suppress gateway auto-detection from `TWILIO_*`, `SMS_ENABLED`, etc. The gateway scans env vars for known service credentials and auto-starts platforms even without an explicit config entry. Adding an explicit `enabled: false` overrides this behavior.
+   - **Email enabled without credentials** → set `platforms.email.enabled: false` (or provide EMAIL_ADDRESS, EMAIL_PASSWORD, EMAIL_IMAP_HOST, EMAIL_SMTP_HOST in .env)
+   - Model context_length noise → set `model.context_length` and `fallback_model.context_length` in config.yaml
+6. **Close resolved issues** — update `issues.jsonl` entries to `status: resolved` with `resolved_at` and `resolution` fields.
+7. **Clean stale proposals** — mark InsightProposals as resolved when their underlying fingerprint's issue is closed.
+8. **Record everything** — append fix records to `fixes.jsonl`, decision records to `decisions.jsonl`, write Action Journal with OKR metrics, write report to `reports/YYYY-MM-DD-HHMM.md`.
+9. **Escalation outcome** — if issues cannot be auto-fixed and require user action, document clearly in the report and journal (escalation_held, recommended_action).
+10. **Silent exit** — if no escalated issues found at all, return `[SILENT]` to suppress delivery.
+
+**⚠️ Re-verification is critical:** Issues from previous cycles may have been silently resolved by other processes (provider rate limits reset, config fixed elsewhere, cron jobs now running OK). Always check `last_status` and `last_run_at` in `jobs.json`, grep logs for the specific error pattern with today's date, and confirm the condition still exists before keeping an issue open.
+
+**⚠️ Rate-limit cascade pattern:** The most common escalation pattern on Hermes is: primary provider hits 429 rate limit → credential pool exhausts → session summarization fails → auxiliary LLM calls timeout → cron jobs timeout. These are all the same root cause. Document the cascade clearly rather than treating each as independent. Cannot be auto-fixed — requires user to upgrade provider plan or reduce job frequency.
+
+**⚠️ Proposal accumulation:** Each deep scan may generate new InsightProposals for the same fingerprint. Over time, the proposals/ directory fills with duplicates. The escalation runner should consolidate by marking older proposals as `resolved: true` when a newer proposal for the same fingerprint exists, or when the underlying issue is closed.
+
+**⚠️ Rate-limit cascade re-verification:** When checking if a rate-limit cascade is still active, grep errors.log for the specific error codes (429, 403, "no available entries") with today's date. If no matches in the last 4+ hours, the cascade has likely self-resolved and issues can be closed. Do NOT keep issues open based on historical counts — always check recurrence recency.
+
+**⚠️ 429 sub-pattern distinction:** HTTP 429 errors from LLM providers can have different root causes requiring different fingerprints and remediation:
+- `oc_http_429_rate_limit` — "weekly usage limit" / plan-level rate limit. Self-resolves when limit resets. Remediation: wait or upgrade plan.
+- `oc_http_429_concurrent` — "too many concurrent requests". Caused by peak concurrent API calls (e.g., 10+ cron jobs firing at the same minute). Remediation: stagger cron schedules to spread load, or upgrade plan for higher concurrency.
+Do NOT merge these into a single fingerprint — they have different recurrence patterns and different fixes. When verifying a resolved 429 rate limit issue, check whether a NEW concurrent 429 pattern has emerged since the original was resolved.
+
+**⚠️ Proposal directory accumulation:** InsightProposals marked `resolved: true` accumulate in the proposals/ directory over time. Each deep scan may generate new proposals for resolved fingerprints. The escalation runner should periodically consolidate: count resolved proposals, verify their underlying issues are still closed, and note accumulation in the report. Consider removing proposals older than 7 days that are already resolved. Track the count in the journal as `proposals_cleaned`.
+
+**⚠️ Midnight UTC cron collision:** On this system, 10+ cron jobs fire simultaneously at `0 0 * * *` (midnight UTC): custodian:update, weave:sync-contacts, corvus:update, vesper:update, scout:update, elephas:update, taste:sync-spotify, mentor:update, praxis:update, voyage:update, forge:update, sift:update, sands:update. This causes concurrent API request spikes leading to 429 errors and session summarization failures. When checking rate-limit cascade patterns, always check the cron schedule for simultaneous job triggers.
+
+**⚠️ Log file locations:** On Hermes, the date-stamped log pattern `agent-YYYY-MM-DD.log` may not exist. The actual log files are: `~/.hermes/logs/agent.log` (general), `~/.hermes/logs/errors.log` (errors/warnings), `~/.hermes/logs/gateway.log` (gateway platform events). Use `tail` and `grep` on these files rather than trying to construct date-stamped paths.
+
+**⚠️ Cron jobs.json structure:** The cron registry file `~/.hermes/cron/jobs.json` is a JSON object `{"jobs": [...]}` (not a bare array). Some entries may have `schedule` as a plain string instead of a dict — this is a known format inconsistency. Always handle both cases when parsing.
+
+**⚠️ config.yaml dual platforms sections:** The config file may have TWO `platforms:` entries:
+- Line ~188: `platforms: {}` inside the `hermes:` nested section (for hermes tool progress settings — leave as-is)
+- Line ~394: Top-level `platforms:` section (this is where `email:`, `sms:`, etc. entries belong)
+
+Only modify the top-level `platforms:` section. The nested one under `hermes:` is for unrelated tool progress configuration.
+
 ## Support File Map
 
 | File | Purpose | When to read |
@@ -417,15 +553,151 @@ Where `{skill_dir}` is the path to this skill package (e.g. `{agent_root}/skills
 | `references/plans/custodian-repair.plan.md` | Mentor Workflow Plan for Tier 3 multi-step repair | Copied to Mentor plans dir during init; referenced in escalation |
 | `scripts/custodian.py` | Deterministic CLI helper for all scan, repair, and data operations | Called by the agent for every custodian command |
 
-## Update command
+## Integrated: skill-status-diagnostic
 
-This skill self-updates every 24 hours via:
+Diagnostic skill for checking the operational status of any Hermes skill. Determines if a skill is initialized, scheduled, actually running, and what dependencies or configuration might be missing. Use when you need to understand why a skill isn't working or what its current state is.
 
-```bash
-custodian.update
+### Trigger conditions
+- "What is [skill] doing?"
+- "Is [skill] running?"
+- "Why isn't [skill] working?"
+- "Check the status of [skill]"
+- "Diagnose [skill]"
+- Any time you need to understand a skill's current operational state
+
+### Responsibility boundary
+This skill does: check initialization state, verify data/journal directories, inspect cron jobs, examine execution history, identify missing dependencies, check configuration files, and provide a clear status summary.
+
+This skill does not: fix issues (that's for other skills), modify configuration, run the skill being diagnosed, or make changes to the system.
+
+### Diagnostic checklist
+For any skill, run through these checks in order:
+
+#### 1. Load skill definition
 ```
+skill_view(name)
+```
+- Read the skill's SKILL.md
+- Note expected data directories, journal directories, cron jobs
+- Note required dependencies, environment variables, credentials
 
-This pulls the latest version from GitHub and restarts the skill's background tasks if applicable.
+#### 2. Check initialization
+```
+ls -la ~/.hermes/commons/data/{skill}/
+cat ~/.hermes/commons/data/{skill}/config.json
+```
+- Does data directory exist?
+- Is config.json present and valid?
+- What is the created_at timestamp?
+- Are there any other state files?
+
+#### 3. Check journal directory
+```
+ls -la ~/.hermes/commons/journals/{skill}/
+find ~/.hermes/commons/journals/{skill}/ -type f -name "*.json" | head -20
+```
+- Does journal directory exist?
+- Are there any journal entries?
+- What's the most recent journal entry timestamp?
+
+#### 4. Check cron jobs
+```
+# Check platform cron registry
+cronjob list | grep {skill}
+
+# Check system crontab (if applicable)
+crontab -l | grep {skill}
+```
+- Are cron jobs registered?
+- What is the schedule?
+- What was last_run_at?
+- What was last_status?
+- Is the job enabled?
+
+#### 5. Check execution history
+```
+# Look for recent journal entries
+ls -lt ~/.hermes/commons/journals/{skill}/ | head -10
+
+# Check for error logs or status files
+find ~/.hermes/commons/data/{skill}/ -name "*log*" -o -name "*error*" -o -name "*status*"
+```
+- When did it last run successfully?
+- Are there recent errors?
+- What's the frequency of runs?
+
+#### 6. Check dependencies
+```
+# Check for MCP servers in config.yaml
+cat ~/.hermes/config.yaml | grep -A 20 "mcp_servers:"
+
+# Check for required binaries
+which {binary1} {binary2} 2>/dev/null
+
+# Check for required Python packages
+pip list | grep {package}
+
+# Check for required environment variables
+env | grep {ENV_VAR}
+```
+- Are MCP servers configured?
+- Are required binaries installed?
+- Are required Python packages available?
+- Are environment variables set?
+
+#### 7. Check credentials
+```
+# Look for credential files
+find ~/.hermes/credentials/ -name "*{service}*" -o -name "*{provider}*"
+
+# Check for OAuth tokens
+ls -la ~/.hermes/*token*.json 2>/dev/null
+
+# Check for service account keys
+find ~/.hermes -name "*.json" -exec grep -l "service_account\|private_key" {} \; 2>/dev/null | grep -v node_modules | grep -v venv
+```
+- Are credentials present?
+- What type of authentication is configured?
+- Are credentials expired or invalid?
+
+#### 8. Check configuration
+```
+# Read skill-specific config
+cat ~/.hermes/commons/data/{skill}/config.json
+
+# Check for skill-specific config files
+find ~/.hermes/commons/data/{skill}/ -type f -name "*.yaml" -o -name "*.json" -o -name "*.toml"
+```
+- Is configuration valid?
+- Are required fields present?
+- Are there any configuration errors?
+
+### Status summary format
+After running the diagnostic, provide a clear summary:
+
+```
+[SKILL NAME] Status: [INITIALIZED|NOT_INITIALIZED|PARTIALLY_INITIALIZED]
+
+Current State:
+- Initialized: [Yes/No] (date)
+- Last run: [Never|timestamp]
+- Last status: [ok/error/null]
+- Cron jobs: [N] scheduled, [N] active
+
+What's Working:
+- [List what's correctly configured]
+
+What's Missing:
+- [List missing dependencies, credentials, or configuration]
+
+What's Wrong:
+- [List any errors or issues]
+
+To Get [SKILL] Working:
+1. [Step 1]
+2. [Step 2]
+3. [Step 3]
+```
 
 ### Common patterns
 - **Skill initialized but never ran**: Data directory exists with config.json, journal directory empty, cron jobs scheduled but last_run_at is null. Likely missing: dependencies, credentials, or MCP server configuration.
@@ -434,17 +706,6 @@ This pulls the latest version from GitHub and restarts the skill's background ta
 - **MCP server missing**: Skill requires MCP server (check SKILL.md), config.yaml has no mcp_servers entry for that service. Need to add MCP server configuration to config.yaml.
 - **Credentials missing**: Skill requires authentication (check SKILL.md), no credential files found. Need to set up OAuth or service account credentials.
 
-### Credential audit (.env health)
-
-Triggered by: "audit/verify/test credentials or API keys", post-rotation onboarding, or recurring `auth failed`/`unauthorized` errors. Tests every active key in `.env` against its live API, annotates results, removes dead keys, documents alternate auth.
-
-1. **Parse sources** — `.env` (active non-comment key=value), `~/.hermes/config.yaml` `model.api_key`, session history (`session_search` for rotated keys), memory. Skip `***`/`(empty)` placeholders.
-2. **Test each key** with a minimal read-only call. For per-service endpoints and auth methods, see `references/api_endpoints.md`.
-3. **Classify** — valid (annotate `# Valid as of YYYY-MM-DD`), broken (remove), alternate auth (annotate `# ACCESS METHOD: ...`; OAuth/CLI/local services — do NOT flag as broken).
-4. **Recover broken keys** — search session history and memory for user-provided replacements; test and substitute.
-5. **Write `.env`** — annotated valid keys, alternate-auth comments, broken lines removed (never leave `***` or `(empty)`).
-6. **Report** — X valid, Y broken (removed), Z alternate auth. Record as `credential_audit` observation journal entry.
-
 ### Integration with other skills
 This skill is diagnostic only. It does not fix issues but provides the information needed for:
 - **ocas-custodian** - Can use diagnostic results for health monitoring
@@ -452,4 +713,92 @@ This skill is diagnostic only. It does not fix issues but provides the informati
 - **google-cloud-api-setup** - For setting up missing Google Cloud credentials
 - **mcp/native-mcp** - For configuring missing MCP servers
 - Individual skill init commands - For initializing or reinitializing skills
+
+
+---
+
+## Integrated: api-key-audit
+
+# API Key Audit
+
+Periodic credential health check. Tests every active key in `.env` against its live API, annotates results, removes dead keys, and documents alternate auth methods so you don't confuse "no API key" with "broken."
+
+## When to use
+
+- User asks to audit, test, or verify credentials/API keys
+- Onboarding a new environment or after a credential rotation
+- Debugging "auth failed" or "unauthorized" errors
+
+## Workflow
+
+1. **Parse ALL sources** — Not just `.env`. Also check:
+   - `~/.hermes/config.yaml` — LLM provider keys are often in the `model.api_key` field (e.g., GLM/OpenCode Go key is here, NOT in .env).
+   - Session history (`session_search`) — Search for "API key provider token rotated" to find keys the user may have provided in past sessions.
+   - Memory — Check for any credential notes.
+   - `.env` — Read all active (non-commented, non-empty) key=value pairs. Ignore `***` and `(empty)` placeholders.
+
+2. **Test each key** against a minimal read-only API call:
+
+| Service | Test Endpoint | Method | Expected |
+|---------|---------------|--------|----------|
+| Alpaca | `/v2/account` | GET with Basic auth (key_id:secret) | `{"id": "..."}` |
+| ElevenLabs | `/v1/voices` | GET with `xi-api-key` header | `{"voices": [...]}` |
+| Hunter.io | `/v2/account?api_key=KEY` | GET | `{"data": {"plan_name": ...}}` |
+| Fal.ai | `/v1/models` via queue API | GET with `Authorization: Key KEY` | Model list or error detail |
+| Firecrawl | `/v1/scrape` POST | POST with Bearer token | `{"success": true}` or `{"error": "..."}` |
+| Google | People API via OAuth | Python `googleapiclient` | Contact count |
+| GitHub | `gh api user` | CLI or `curl -H "Authorization: token KEY"` | `{"login": "..."}` |
+| NVIDIA | `/v1/models` | GET with Bearer token | `{"data": [...]}` |
+| OpenRouter | `/api/v1/auth/key` | GET with Bearer token | `{"data": {"label": ...}}` |
+| Trello | `/1/members/me?key=KEY&token=TOKEN` | GET | `{"id": "..."}` |
+| Twilio | `/2010-04-01/Accounts/SID.json` | GET with Basic auth (SID:TOKEN) | `{"sid": "..."}` |
+| Spotify | `/api/token` with client_credentials | POST with Base64 client_id:secret | `{"access_token": "..."}` |
+| Mem0 | `/v1/memories/` | GET with `Api-Key` header | JSON response |
+| Atlassian | `/me` | GET with Bearer token | `{\"account_id\": \"...\"}` |
+| OpenCode Go | `ollama.com/v1/models` | GET with Bearer token (from config.yaml) | Model list |
+| GLM / z.ai | Zhipu requires JWT-signed tokens, NOT raw Bearer. Raw Bearer auth returns 401 on both `api.z.ai` and `open.bigmodel.cn`. Only the SDK or JWT generation works. | — | — |
+| Telegram Bot | Active gateway is proof of validity. Can also `getMe` via API. | — | — |
+
+3. **Provider-key location varies.** LLM provider keys often live in `config.yaml` under `model.api_key`, NOT in `.env`. Specifically:
+   - **OpenCode Go / GLM** — Key is in `~/.hermes/config.yaml` at `model.api_key`. Base URL is `ollama.com/v1` (OpenCode Go endpoint), NOT the raw zhipuai endpoint.
+   - **OpenRouter** — Keys in `.env` as `OPENROUTER_API_KEY`, `OPENROUTER_API_KEY_2`, `OPENROUTER_API_KEY_3`, etc. The primary key may be missing (commented out) with only suffixed keys active.
+   - **NVIDIA** — May have multiple keys (`NVIDIA_API_KEY`, `NVIDIA_API_KEY_2`). Both need testing independently
+
+3. **Classify results:**
+   - **Valid** — Key works, API returns success. Annotate with `# Valid as of YYYY-MM-DD`.
+   - **Broken** — Key fails auth (401, 403, expired). Remove from `.env`. Note reason for removal.
+   - **Alternate auth** — Service works but NOT via a simple API key. Add `# ACCESS METHOD:` comment explaining how auth actually works (e.g., OAuth token file, CLI login, local service).
+
+4. **Alternate auth detection** — Do NOT flag as broken if the service uses:
+   - **OAuth tokens** (Google, etc.) — Token file at `~/.hermes/google_token.json`. Test by refreshing and calling API.
+   - **CLI auth** (`gh auth login`) — Stored in `~/.config/gh/hosts.yml`. Test with `gh api user`.
+   - **Local services** (Ollama, SearXNG) — Running on localhost, key optional. Test with `curl localhost:PORT/api/tags`.
+   - **No key needed** — Some services in `.env` are config-only (booleans, URLs, numbers). Skip these.
+
+5. **Search for replacement credentials** — For broken keys, search session history (`session_search`) and memory for any updates the user may have provided. If found, test and replace.
+
+6. **Update .env** — Write back with:
+   - `# Valid as of YYYY-MM-DD` comments on working keys
+   - `# ACCESS METHOD: ...` comments on alternate-auth keys
+   - Remove broken/unrecoverable keys entirely (don't leave placeholders — they cause confusion)
+   - Never leave `***` or `(empty)` placeholder values
+
+7. **Report** — Summarize: X valid, Y broken (removed), Z alternate auth.
+
+## Pitfalls
+
+- **Don't confuse `# KEY=***` with a comment.** In `.env` files, a `#`-prefixed line is a comment/placeholder. But some keys (like `GITHUB_TOKEN`) may have been set to `***` as a redacted placeholder that the user expects you to replace. Ask before deleting.
+- **Don't false-positive alternate auth services.** If Google API key shows as `***` or expired, check if OAuth tokens exist before calling it "broken."
+- **Google OAuth tokens expire.** Always try `creds.refresh(Request())` before declaring Google auth broken.
+- **Firecrawl may return HTML instead of JSON.** Use `/v1/scrape` POST endpoint, not `/v1/team`.
+- **Mem0 uses `Api-Key` header**, not `Authorization: Token`. The header name matters.
+- **`gh auth login` and `.env GITHUB_TOKEN` are separate.** `gh` stores credentials in `~/.config/gh/hosts.yml` independently. If both exist, `GH_TOKEN` env var takes precedence but `gh auth` is more reliable for CLI use.
+- **Don't leave `***` in `.env`.** Either replace with a real key or remove the line. Placeholders cause confusion about whether a key exists.
+- **GLM / z.ai keys use JWT auth, not Bearer.** A raw `Authorization: Bearer <id.secret>` call to zhipu endpoints returns 401. The key format `id.secret` must be signed into a JWT using HMAC-SHA256. However, the actual provider endpoint used by the agent is often OpenCode Go (`ollama.com/v1`) which DOES accept Bearer auth. Test the actual base_url from config, not the documentation URL.
+- **OpenCode Go endpoint is `ollama.com/v1`, not `opencode.ai`.** The `model.api_key` in config.yaml with `base_url: https://ollama.com/v1` is OpenCode Go, not a local Ollama instance.
+- **Multiple suffixed keys exist.** `OPENROUTER_API_KEY_2`, `NVIDIA_API_KEY_2`, etc. Scan for numeric suffixes, don't just look for the base name.
+- **Google OAuth scope errors.** When refreshing Google OAuth tokens, don't hardcode scopes — read them from the token file itself (`token_data.get("scopes")`) or pass `None` to Credentials to use stored scopes. Hardcoded scopes cause `invalid_scope` errors.
+- **`curl -w '%{http_code}'` syntax matters.** In execute_code heredocs, Python f-strings can eat the curly braces. Use `%%{http_code}` or Python urllib instead for reliability.
+- **LadybugDB queries use Connection, not raw SQL.** For Weave operations, use `real_ladybug` Python module with `lb.Database()` and `lb.Connection()`.
+- **Sync Weave → Google Contacts via Python `googleapiclient`**, not via non-existent CLI commands like `openclaw weave.sync.google-contacts`. Use the OAuth token at `~/.hermes/google_token.json` with `googleapiclient.discovery.build`.
 

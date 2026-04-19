@@ -160,5 +160,24 @@
     "reversibility": null,
     "description": "Node.js version does not meet platform requirements",
     "technology_context": "Node.js runtime version"
+  },
+  "oc_platform_auto_detected_no_config": {
+    "tier": 4,
+    "match_patterns": ["Refusing to start.*WEBHOOK_URL", "platform.*auto.*detect", "no explicit.*platform.*entry.*env vars"],
+    "source": "gateway_log",
+    "auto_fix": "Add explicit platforms.{name}.enabled: false to config.yaml to override env-var auto-detection",
+    "reversibility": "Remove the platforms.{name} entry from config.yaml",
+    "description": "Gateway auto-detects platform from *_ENABLED env vars or service-specific env vars (e.g. TWILIO_*) even when no explicit platform entry exists in config.yaml. Platform repeatedly fails to start (missing webhook URL, etc.) generating log spam. Fix: add explicit enabled: false to suppress auto-detection.",
+    "technology_context": "Hermes gateway platform auto-detection from environment variables",
+    "hermes_specific": true
+  },
+  "oc_email_not_configured": {
+    "tier": 4,
+    "match_patterns": ["No adapter available for email", "email.*enabled.*no credentials", "EMAIL_ADDRESS.*not set"],
+    "source": "gateway_log",
+    "auto_fix": "Set platforms.email.enabled: false in config.yaml (or provide EMAIL_ADDRESS, EMAIL_PASSWORD, EMAIL_IMAP_HOST, EMAIL_SMTP_HOST in .env)",
+    "reversibility": "Set platforms.email.enabled: true and provide credentials",
+    "description": "Email platform enabled in config.yaml but IMAP/SMTP credentials not configured in .env. Gateway reports 'No adapter available' on startup.",
+    "technology_context": "Hermes email platform IMAP/SMTP"
   }
 }
