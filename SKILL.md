@@ -12,7 +12,7 @@ description: >
 metadata:
   author: Indigo Karasu
   email: mx.indigo.karasu@gmail.com
-  version: "1.3.2"
+  version: "1.4.0+hermes"
   hermes:
     tags: [monitoring, maintenance, health]
     category: interface
@@ -426,3 +426,30 @@ custodian.update
 ```
 
 This pulls the latest version from GitHub and restarts the skill's background tasks if applicable.
+
+### Common patterns
+- **Skill initialized but never ran**: Data directory exists with config.json, journal directory empty, cron jobs scheduled but last_run_at is null. Likely missing: dependencies, credentials, or MCP server configuration.
+- **Skill running but failing**: Journal entries exist with errors, last status is "error". Check recent journal entries for error messages, check logs for stack traces or failure reasons.
+- **Skill not scheduled**: Data directory exists, no cron jobs in registry. Need to run skill's init command or register cron jobs manually.
+- **MCP server missing**: Skill requires MCP server (check SKILL.md), config.yaml has no mcp_servers entry for that service. Need to add MCP server configuration to config.yaml.
+- **Credentials missing**: Skill requires authentication (check SKILL.md), no credential files found. Need to set up OAuth or service account credentials.
+
+### Credential audit (.env health)
+
+Triggered by: "audit/verify/test credentials or API keys", post-rotation onboarding, or recurring `auth failed`/`unauthorized` errors. Tests every active key in `.env` against its live API, annotates results, removes dead keys, documents alternate auth.
+
+1. **Parse sources** — `.env` (active non-comment key=value), `~/.hermes/config.yaml` `model.api_key`, session history (`session_search` for rotated keys), memory. Skip `***`/`(empty)` placeholders.
+2. **Test each key** with a minimal read-only call. For per-service endpoints and auth methods, see `references/api_endpoints.md`.
+3. **Classify** — valid (annotate `# Valid as of YYYY-MM-DD`), broken (remove), alternate auth (annotate `# ACCESS METHOD: ...`; OAuth/CLI/local services — do NOT flag as broken).
+4. **Recover broken keys** — search session history and memory for user-provided replacements; test and substitute.
+5. **Write `.env`** — annotated valid keys, alternate-auth comments, broken lines removed (never leave `***` or `(empty)`).
+6. **Report** — X valid, Y broken (removed), Z alternate auth. Record as `credential_audit` observation journal entry.
+
+### Integration with other skills
+This skill is diagnostic only. It does not fix issues but provides the information needed for:
+- **ocas-custodian** - Can use diagnostic results for health monitoring
+- **ocas-forge** - Can use diagnostic results when building or fixing skills
+- **google-cloud-api-setup** - For setting up missing Google Cloud credentials
+- **mcp/native-mcp** - For configuring missing MCP servers
+- Individual skill init commands - For initializing or reinitializing skills
+
