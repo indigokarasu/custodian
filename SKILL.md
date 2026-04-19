@@ -802,3 +802,24 @@ Periodic credential health check. Tests every active key in `.env` against its l
 - **LadybugDB queries use Connection, not raw SQL.** For Weave operations, use `real_ladybug` Python module with `lb.Database()` and `lb.Connection()`.
 - **Sync Weave → Google Contacts via Python `googleapiclient`**, not via non-existent CLI commands like `openclaw weave.sync.google-contacts`. Use the OAuth token at `~/.hermes/google_token.json` with `googleapiclient.discovery.build`.
 
+---
+
+## Integrated: searchx-guardian
+
+### SearXNG Health Monitor
+
+Automated health monitoring and recovery for the SearXNG Docker container.
+
+**Check:** HTTP health check on `http://localhost:8888`
+**Action:** Restart `searxng` Docker container on 502 Bad Gateway or connection failure.
+
+```bash
+# Health check
+curl -s -o /dev/null -w '%{http_code}' http://localhost:8888
+
+# Recovery
+docker restart searxng
+```
+
+**Deployment:** Systemd service or cron job running guardian.sh.
+**Scope:** HTTP check + container restart only. No log analysis, no image updates, no other containers.
