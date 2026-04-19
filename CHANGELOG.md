@@ -1,3 +1,13 @@
+## [1.4.0] - 2026-04-18
+
+### Added
+- Credential audit (.env health) workflow folded into diagnostics section — tests active `.env` keys against their live APIs, classifies valid/broken/alternate-auth, updates `.env` with annotations
+- `references/api_endpoints.md` — per-service test endpoints, auth methods, provider-key locations, alternate-auth rules, and audit pitfalls
+
+### Changed
+- Consolidated appended `## Integrated: api-key-audit` block into the existing diagnostics area (per review feedback on PR #2)
+- Moved service endpoint/auth lookup table out of SKILL.md into `references/api_endpoints.md` to keep SKILL.md operational
+
 ## [1.3.4] - 2026-04-12
 
 ### Changed
