@@ -12,7 +12,7 @@ description: >
 metadata:
   author: Indigo Karasu
   email: mx.indigo.karasu@gmail.com
-  version: "1.3.4+hermes"
+  version: "1.3.6+hermes"
   hermes:
     tags: [monitoring, maintenance, health]
     category: interface
@@ -197,7 +197,7 @@ Custodian may read skill config files and journal metadata.
 | Field | Value |
 |---|---|
 | Branch | `merge/skill-status-diagnostic` |
-| Version | `1.3.4+hermes` |
+| Version | `1.3.5+hermes` |
 | Latest GitHub release | v1.3.4 |
 | Known incompatible tag | v1.5.1 (historical, pre-Hermes, OpenClaw paths) |
 
@@ -564,9 +564,79 @@ The escalation runner is a dedicated cron job (`custodian:escalation-runner`) th
 - `oc_http_429_concurrent` — "too many concurrent requests". Caused by peak concurrent API calls (e.g., 10+ cron jobs firing at the same minute). Remediation: stagger cron schedules to spread load, or upgrade plan for higher concurrency.
 Do NOT merge these into a single fingerprint — they have different recurrence patterns and different fixes. When verifying a resolved 429 rate limit issue, check whether a NEW concurrent 429 pattern has emerged since the original was resolved.
 
+**⚠️ Stale OAuth credential → confusing HTTP 400 error substitution:** When a credential pool entry has an expired `agent_key` (its `agent_key_expires_at` has passed) but `last_status: ok`, the round-robin strategy will still select it. Instead of returning HTTP 401 (expected for expired auth), the upstream provider may return HTTP 400 "This request is not valid. Check the model name and other parameters." — an error that looks like a model-name issue but is actually an auth issue.
+
+The credential pool is stored at `~/.hermes/auth.json` under `credential_pool.{provider_name}`. Each entry has `agent_key_expires_at` (the agent key's expiry) and `expires_at` (the OAuth refresh token's expiry). An entry is stale when BOTH are in the past.
+
+**Diagnostic pattern:**
+- Error in logs: `HTTP 400 "This request is not valid"` from the LLM provider
+- The model name IS valid and works with other credential entries
+- The credential pool uses `round_robin` strategy
+- Error is intermittent (only on some API calls)
+- Inspect `~/.hermes/auth.json` → `credential_pool.{provider}` entries for expired `agent_key_expires_at` dates with `last_status: ok`
+
+**Fix options:**
+1. **Change strategy to `fill_first`** — set `credential_pool_strategies.{provider}: fill_first` in config.yaml. Prefers the first (fresh) credential exclusively.
+2. **Remove stale entry** — delete the expired entry from `credential_pool.{provider}` in auth.json. ⚠️ Manual/AI action, not auto-fixable — modifying auth.json could break auth if done incorrectly.
+3. **Code-level fix** — the credential pool module could be patched to check `agent_key_expires_at` and auto-exhaust expired entries.
+
 **⚠️ Proposal directory accumulation:** InsightProposals marked `resolved: true` accumulate in the proposals/ directory over time. Each deep scan may generate new proposals for resolved fingerprints. The escalation runner should periodically consolidate: count resolved proposals, verify their underlying issues are still closed, and note accumulation in the report. Consider removing proposals older than 7 days that are already resolved. Track the count in the journal as `proposals_cleaned`.
 
 **⚠️ Midnight UTC cron collision:** On this system, 10+ cron jobs fire simultaneously at `0 0 * * *` (midnight UTC): custodian:update, weave:sync-contacts, corvus:update, vesper:update, scout:update, elephas:update, taste:sync-spotify, mentor:update, praxis:update, voyage:update, forge:update, sift:update, sands:update. This causes concurrent API request spikes leading to 429 errors and session summarization failures. When checking rate-limit cascade patterns, always check the cron schedule for simultaneous job triggers.
+
+### Tier 1 Fix: Cron Schedule Staggering (for `oc_http_429_concurrent`)
+
+When multiple cron jobs use the same shorthand pattern (e.g., `*/10 * * * *` or `0 7 * * *`), they all execute at the identical minute tick. If those jobs make LLM API calls, they create concurrency spikes that trigger `HTTP 429: too many concurrent requests`. The fix is staggering: offset each job's start minute so they fire sequentially instead of simultaneously.
+
+**Diagnosis:** Query `jobs.json` for same-minute fire patterns:
+```bash
+python3 -c "
+import json
+from collections import Counter
+with open('<hermes-root>/cron/jobs.json') as f:
+    jobs = json.load(f)['jobs']
+schedules = Counter()
+for j in jobs:
+    s = j.get('schedule','')
+    if isinstance(s, dict): s = s.get('expr','')
+    schedules[s] += 1
+for s, count in schedules.most_common():
+    if count > 1:
+        names = [j['name'] for j in jobs if (j.get('schedule','') == s or (isinstance(j.get('schedule'), dict) and j['schedule'].get('expr','') == s))]
+        print(f'{count}x | {s:20s} | {\" \".join(names)}')
+"
+```
+
+**Staggering technique:** Replace `*/N` with `N-59/M` using unique offset minutes:
+
+| Shorthand | Staggered form | Fires at minutes |
+|-----------|---------------|-----------------|
+| `*/10 * * * *` | `0-59/10 * * * *` | :00, :10, :20, :30, :40, :50 |
+| `*/10 * * * *` | `1-59/10 * * * *` | :01, :11, :21, :31, :41, :51 |
+| `*/10 * * * *` | `3-59/10 * * * *` | :03, :13, :23, :33, :43, :53 |
+| `*/15 * * * *` | `5-59/15 * * * *` | :05, :20, :35, :50 |
+| `*/15 * * * *` | `12-59/15 * * * *` | :12, :27, :42, :57 |
+
+**Procedure (idempotent):**
+```bash
+# Use the cronjob tool to update the schedule
+cronjob action=update job_id=<job_id> schedule="1-59/10 * * * *"
+```
+
+**Concrete example (from 2026-04-26):** 6 high-frequency jobs (`dispatch:check`, `dispatch:draft`, `Gateway health monitor`, `weave-sync-10min`, `elephas:ingest`, `dispatch:briefing-deliver`) were all firing at `:00` of every 10/15-minute interval, hitting OpenRouter with 7 simultaneous requests. Each was staggered +1/+2/+3/+7/+5/+12 minutes off the hour. 429 errors dropped significantly.
+
+**Verification:** After staggering, pick a time when the old schedule would have fired, check `error.log` for 429s at that minute:
+```bash
+grep "HTTP 429" <hermes-root>/logs/errors.log | grep "$(date +%H:%M)" | head -5
+```
+
+**When to use this fix (trigger conditions):**
+- Error log shows `HTTP 429: Provider returned error` with `provider=openrouter` (or any concurrent-rate-limited provider)
+- Multiple cron jobs share the same schedule (check with the diagnosis script above)
+- Jobs are `last_status: ok` despite 429 errors (they retry and succeed, but the retries waste API calls)
+- 429 errors cluster at specific minutes (e.g., every 10 minutes on the :00, :10, :20 marks)
+
+**Reversibility:** Change the schedule back to the original `*/N` shorthand.
 
 **⚠️ Log file locations:** On Hermes, the date-stamped log pattern `agent-YYYY-MM-DD.log` may not exist. The actual log files are: `~/.hermes/logs/agent.log` (general), `~/.hermes/logs/errors.log` (errors/warnings), `~/.hermes/logs/gateway.log` (gateway platform events). Use `tail` and `grep` on these files rather than trying to construct date-stamped paths.
 
