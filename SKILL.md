@@ -12,7 +12,7 @@ description: >
 metadata:
   author: Indigo Karasu
   email: mx.indigo.karasu@gmail.com
-  version: "1.3.4+hermes"
+  version: "1.3.7+hermes"
   hermes:
     tags: [monitoring, maintenance, health]
     category: interface
@@ -197,7 +197,7 @@ Custodian may read skill config files and journal metadata.
 | Field | Value |
 |---|---|
 | Branch | `merge/skill-status-diagnostic` |
-| Version | `1.3.4+hermes` |
+| Version | `1.3.5+hermes` |
 | Latest GitHub release | v1.3.4 |
 | Known incompatible tag | v1.5.1 (historical, pre-Hermes, OpenClaw paths) |
 
@@ -489,6 +489,8 @@ Written to `{agent_root}/commons/data/ocas-custodian/proposals/{proposal_id}.jso
 
 **⚠️ Stale open issues:** When verifying issues during a scan, always re-check the actual system state before assuming an issue persists. Issues from previous cycles may have been silently resolved (e.g., a cron job that was timing out may now be running OK, a config error may have been fixed by another process). Only keep `status: open` if the underlying condition still exists. Resolve stale issues and record the resolution method in `issues.jsonl`.
 
+**⚠️ Prematurely closed issues (critical — 429 cascade):** Issues with `status: resolved` and `resolution_method: cascade_self_resolved` may have been closed prematurely. The deep scan's "self-resolve" heuristic (no new errors in X hours) can trigger even when the underlying rate limit has not actually reset — only the surge temporarily paused. **Do not trust `self_resolved` as final.** Always verify by grepping `errors.log` for the fingerprint with TODAY's date. If ANY match is found, re-open the issue. The safety threshold: require a full 24-hour clean window before accepting a `self_resolved` closure on rate-limit-related fingerprints. Document re-opened issues with `status: reopened` and `reopened_at` in `issues.jsonl`.
+
 **⚠️ Cron next_run_at=None for weekly jobs:** Some cron jobs with weekly schedules (e.g., `0 1 * * 0` for Sunday-only) may have `next_run_at: None` in the registry. This appears to be a scheduler bug where it fails to compute the next occurrence. Fix by pausing and resuming the job via `hermes cron pause <id>` then `hermes cron resume <id>`, which forces the scheduler to recalculate `next_run_at`.
 
 **⚠️ Cron name matching pitfall:** The cron registry may use display names that differ from SKILL.md canonical names (e.g., `"Vesper: Morning Briefing"` in cron vs `vesper:morning` in SKILL.md). When checking conformance, do fuzzy matching — a cron job with a different display name but matching skill tag and schedule is likely the same task. Only flag as Tier 1 `oc_background_task_missing` if no cron job exists with the same skill tag AND schedule pattern. Name mismatches with matching functionality are Tier 2 (surface only).
@@ -534,6 +536,7 @@ The escalation runner is a dedicated cron job (`custodian:escalation-runner`) th
 2. **Check open escalated issues** — read `issues.jsonl` for any with `status: escalated` or `status: fix_attempted_failed` or `escalation_needed: true`.
 3. **Check proposals** — list files in `{agent_root}/commons/data/ocas-custodian/proposals/` that haven't been marked `resolved: true`.
 4. **Re-verify against current state** — for each open issue, check the actual system condition (cron job last_status, log error counts, provider availability) before assuming the issue persists. This is critical — stale issues waste cycles and mask real problems.
+   - **Also check resolved issues with `self_resolved` or `cascade_self_resolved` status** — especially for rate-limit-related fingerprints. Grep `errors.log` for today's occurrences of the fingerprint. If ANY match is found, RE-OPEN the issue (set `status: reopened` and `reopened_at`). These are the most common type of prematurely-closed issue because rate limits pause between daily update waves.
 5. **Apply known auto-fixes** if the root cause matches a known pattern:
    - `invalid_grant` → `cp <hermes-root>-indigo/google_token.json <hermes-root>/google_token.json`
    - "no delivery target resolved" → fix cron job `deliver` field to correct target
@@ -559,14 +562,110 @@ The escalation runner is a dedicated cron job (`custodian:escalation-runner`) th
 
 **⚠️ Rate-limit cascade re-verification:** When checking if a rate-limit cascade is still active, grep errors.log for the specific error codes (429, 403, "no available entries") with today's date. If no matches in the last 4+ hours, the cascade has likely self-resolved and issues can be closed. Do NOT keep issues open based on historical counts — always check recurrence recency.
 
+**⚠️ Rate-limit cascade verification window pitfall:** The "4+ hours without recurrence" heuristic is NOT sufficient for definitive closure. A rate-limit cascade can pause for 10+ hours (e.g., overnight when no cron jobs fire) and then resume with the next daily update wave. This happened on 2026-04-26: No 429s from 00:33 to 06:50 UTC (6+ hours), issue marked `self_resolved`, then 429s resumed at 06:50 and 07:26 UTC. **Safe practice:** For rate-limit issues, require a full 24-hour clean window OR verify across at least one complete daily cron cycle (24h) before marking `self_resolved`. Until then, keep the issue `open` and document it as "dormant between daily update waves" rather than resolved.
+
 **⚠️ 429 sub-pattern distinction:** HTTP 429 errors from LLM providers can have different root causes requiring different fingerprints and remediation:
 - `oc_http_429_rate_limit` — "weekly usage limit" / plan-level rate limit. Self-resolves when limit resets. Remediation: wait or upgrade plan.
 - `oc_http_429_concurrent` — "too many concurrent requests". Caused by peak concurrent API calls (e.g., 10+ cron jobs firing at the same minute). Remediation: stagger cron schedules to spread load, or upgrade plan for higher concurrency.
 Do NOT merge these into a single fingerprint — they have different recurrence patterns and different fixes. When verifying a resolved 429 rate limit issue, check whether a NEW concurrent 429 pattern has emerged since the original was resolved.
 
+**⚠️ Practical cascade pattern:** In practice, `oc_http_429_rate_limit` and `oc_http_429_concurrent` rarely occur in isolation. A concentrated cron wave (e.g., 17 jobs in 25 min at 07:00 UTC) creates concurrent spikes that accelerate consumption of plan-level rate limits, causing both patterns simultaneously. Document the issue as the dominant fingerprint (`oc_http_429_rate_limit`) but note the concurrent contribution. Staggering helps with the concurrent component; the plan-level limit needs separate remediation (upgrade).
+
+**⚠️ Stale OAuth credential → confusing HTTP 400 error substitution:** When a credential pool entry has an expired `agent_key` (its `agent_key_expires_at` has passed) but `last_status: ok`, the round-robin strategy will still select it. Instead of returning HTTP 401 (expected for expired auth), the upstream provider may return HTTP 400 "This request is not valid. Check the model name and other parameters." — an error that looks like a model-name issue but is actually an auth issue.
+
+The credential pool is stored at `~/.hermes/auth.json` under `credential_pool.{provider_name}`. Each entry has `agent_key_expires_at` (the agent key's expiry) and `expires_at` (the OAuth refresh token's expiry). An entry is stale when BOTH are in the past.
+
+**Diagnostic pattern:**
+- Error in logs: `HTTP 400 "This request is not valid"` from the LLM provider
+- The model name IS valid and works with other credential entries
+- The credential pool uses `round_robin` strategy
+- Error is intermittent (only on some API calls)
+- Inspect `~/.hermes/auth.json` → `credential_pool.{provider}` entries for expired `agent_key_expires_at` dates with `last_status: ok`
+
+**Fix options:**
+1. **Change strategy to `fill_first`** — set `credential_pool_strategies.{provider}: fill_first` in config.yaml. Prefers the first (fresh) credential exclusively.
+2. **Remove stale entry** — delete the expired entry from `credential_pool.{provider}` in auth.json. ⚠️ Manual/AI action, not auto-fixable — modifying auth.json could break auth if done incorrectly.
+3. **Code-level fix** — the credential pool module could be patched to check `agent_key_expires_at` and auto-exhaust expired entries.
+
 **⚠️ Proposal directory accumulation:** InsightProposals marked `resolved: true` accumulate in the proposals/ directory over time. Each deep scan may generate new proposals for resolved fingerprints. The escalation runner should periodically consolidate: count resolved proposals, verify their underlying issues are still closed, and note accumulation in the report. Consider removing proposals older than 7 days that are already resolved. Track the count in the journal as `proposals_cleaned`.
 
 **⚠️ Midnight UTC cron collision:** On this system, 10+ cron jobs fire simultaneously at `0 0 * * *` (midnight UTC): custodian:update, weave:sync-contacts, corvus:update, vesper:update, scout:update, elephas:update, taste:sync-spotify, mentor:update, praxis:update, voyage:update, forge:update, sift:update, sands:update. This causes concurrent API request spikes leading to 429 errors and session summarization failures. When checking rate-limit cascade patterns, always check the cron schedule for simultaneous job triggers.
+
+### Tier 1 Fix: Cron Schedule Staggering (for `oc_http_429_concurrent`)
+
+When multiple cron jobs use the same shorthand pattern (e.g., `*/10 * * * *` or `0 7 * * *`), they all execute at the identical minute tick. If those jobs make LLM API calls, they create concurrency spikes that trigger `HTTP 429: too many concurrent requests`. The fix is staggering: offset each job's start minute so they fire sequentially instead of simultaneously.
+
+**Diagnosis:** Query `jobs.json` for same-minute fire patterns:
+```bash
+python3 -c "
+import json
+from collections import Counter
+with open('<hermes-root>/cron/jobs.json') as f:
+    jobs = json.load(f)['jobs']
+schedules = Counter()
+for j in jobs:
+    s = j.get('schedule','')
+    if isinstance(s, dict): s = s.get('expr','')
+    schedules[s] += 1
+for s, count in schedules.most_common():
+    if count > 1:
+        names = [j['name'] for j in jobs if (j.get('schedule','') == s or (isinstance(j.get('schedule'), dict) and j['schedule'].get('expr','') == s))]
+        print(f'{count}x | {s:20s} | {\" \".join(names)}')
+"
+```
+
+**Staggering technique:** Replace `*/N` with `N-59/M` using unique offset minutes:
+
+| Shorthand | Staggered form | Fires at minutes |
+|-----------|---------------|-----------------|
+| `*/10 * * * *` | `0-59/10 * * * *` | :00, :10, :20, :30, :40, :50 |
+| `*/10 * * * *` | `1-59/10 * * * *` | :01, :11, :21, :31, :41, :51 |
+| `*/10 * * * *` | `3-59/10 * * * *` | :03, :13, :23, :33, :43, :53 |
+| `*/15 * * * *` | `5-59/15 * * * *` | :05, :20, :35, :50 |
+| `*/15 * * * *` | `12-59/15 * * * *` | :12, :27, :42, :57 |
+
+**Procedure (idempotent):**
+```bash
+# Use the cronjob tool to update the schedule
+cronjob action=update job_id=<job_id> schedule="1-59/10 * * * *"
+```
+
+**Concrete example (from 2026-04-26):** 6 high-frequency jobs (`dispatch:check`, `dispatch:draft`, `Gateway health monitor`, `weave-sync-10min`, `elephas:ingest`, `dispatch:briefing-deliver`) were all firing at `:00` of every 10/15-minute interval, hitting OpenRouter with 7 simultaneous requests. Each was staggered +1/+2/+3/+7/+5/+12 minutes off the hour. 429 errors dropped significantly.
+
+**Verification:** After staggering, pick a time when the old schedule would have fired, check `error.log` for 429s at that minute:
+```bash
+grep "HTTP 429" <hermes-root>/logs/errors.log | grep "$(date +%H:%M)" | head -5
+```
+
+**Large wave staggering (17+ jobs in a 25-min window):** When a concentrated wave of daily-update jobs (e.g., 17 jobs scheduled 07:00-07:25 UTC) all fire within minutes of each other, the 5-minute stagger found in the diagnosis step is insufficient — jobs overlap and their API calls stack. The fix is to spread the wave across a much wider window:
+
+1. **Identify the wave** — Use the diagnosis script above to find all jobs in the same hour block
+2. **Assign each job a unique minute** — With 17 jobs and a 60-minute hour, assign each job a distinct minute (e.g., 07:00, 07:06, 07:12, ..., 08:36). The formula: `base_hour + (index * (60 / count))` rounded to nearest minute offset
+3. **Use two hours if needed** — For waves > 30 jobs or jobs that are resource-intensive, spill into the next hour. Example from 2026-04-26: 17 jobs spread from 07:00 to 08:36 (96-min window vs original 25-min window)
+4. **Apply via `cronjob action=update`** — Use the tool for each job individually:
+   ```bash
+   cronjob action=update job_id=<job_id> schedule="12 7 * * *"
+   ```
+5. **Verify during the next wave** — Do NOT verify immediately. Wait for the next scheduled wave time, then check for 429s at the old conflict minutes. The verification window is the NEXT natural occurrence of the wave.
+
+**Concrete large-wave example (2026-04-26, 17 jobs staggered from 07:00-07:25 to 07:00-08:36):**
+| Original | Jobs | After | Jobs |
+|---|---|---|---|
+| 07:00 | custodian:update, corvus:update (2) | 07:00 | custodian:update only |
+| 07:05 | vesper:update, scout:update, elephas:update (3) | 07:05 | corvus:update only |
+| 07:10 | taste:sync-spotify, mentor:update, praxis:update (3) | 07:12 | vesper:update |
+| 07:15 | voyage:update, forge:update, sift:update (3) | 07:18 | scout:update |
+| 07:20 | sands:update, look:update, fellow:update (3) | 07:24 | elephas:update |
+| 07:25 | weave:update, lucid:update, taste:update (3) | 07:30-08:36 | remaining 12 jobs at 6-min intervals |
+
+**When to use this fix (trigger conditions):**
+- Error log shows `HTTP 429: Provider returned error` with `provider=openrouter` (or any concurrent-rate-limited provider)
+- Multiple cron jobs share the same schedule (check with the diagnosis script above)
+- Jobs are `last_status: ok` despite 429 errors (they retry and succeed, but the retries waste API calls)
+- 429 errors cluster at specific minutes (e.g., every 10 minutes on the :00, :10, :20 marks, or a dense wave like 07:00-07:25 UTC)
+- **High-risk pattern:** A "daily update wave" where 10+ jobs fire within a 30-minute block AND all make LLM API calls — this is the most common source of 429 concurrency spikes
+
+**Reversibility:** Change the schedule back to the original `*/N` shorthand.
 
 **⚠️ Log file locations:** On Hermes, the date-stamped log pattern `agent-YYYY-MM-DD.log` may not exist. The actual log files are: `~/.hermes/logs/agent.log` (general), `~/.hermes/logs/errors.log` (errors/warnings), `~/.hermes/logs/gateway.log` (gateway platform events). Use `tail` and `grep` on these files rather than trying to construct date-stamped paths.
 
