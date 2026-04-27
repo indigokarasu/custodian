@@ -1,3 +1,8 @@
+## [1.4.1+hermes] - 2026-04-26
+
+### Changed
+- Version alignment: SKILL.md frontmatter, CHANGELOG.md, and GitHub release tag now in sync per spec-ocas-skill-publishing.md. No functional change in this release.
+
 ## [1.4.0] - 2026-04-18
 
 ### Added
