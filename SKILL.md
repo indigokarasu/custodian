@@ -12,7 +12,7 @@ description: >
 metadata:
   author: Indigo Karasu
   email: mx.indigo.karasu@gmail.com
-  version: "1.3.7+hermes"
+  version: "1.3.8+hermes"
   hermes:
     tags: [monitoring, maintenance, health]
     category: interface
@@ -495,7 +495,25 @@ Written to `{agent_root}/commons/data/ocas-custodian/proposals/{proposal_id}.jso
 
 **⚠️ Cron name matching pitfall:** The cron registry may use display names that differ from SKILL.md canonical names (e.g., `"Vesper: Morning Briefing"` in cron vs `vesper:morning` in SKILL.md). When checking conformance, do fuzzy matching — a cron job with a different display name but matching skill tag and schedule is likely the same task. Only flag as Tier 1 `oc_background_task_missing` if no cron job exists with the same skill tag AND schedule pattern. Name mismatches with matching functionality are Tier 2 (surface only).
 
-**Activity model:** On Hermes, `message.processed` events may not be labeled in gateway.log. Gateway log files at `~/.hermes/logs/agent-YYYY-MM-DD.log` may not exist (no files were found there). Use `~/.hermes/state.db` instead — it's a SQLite database with a `sessions` table containing `started_at` (Unix timestamp REAL, NOT `created_at` which does not exist) and `source` columns. Query sessions from the last 14 days, bucket by hour, and compute `active_days / total_days` per hour. The `source` field distinguishes `user` from `cron`/`heartbeat` activity. Build hourly confidence from the proportion of active hours vs. total observed hours across the 7-14 day window. Example query: `SELECT started_at, source FROM sessions WHERE started_at > ?`. Then convert `started_at` from Unix timestamp to datetime for hourly bucketing.
+**Activity model:** On Hermes, `message.processed` events may not be labeled in gateway.log. Gateway log files at `~/.hermes/logs/agent-YYYY-MM-DD.log` may not exist (no files were found there). Use `~/.hermes/state.db` instead — it's a SQLite database with a `sessions` table containing `started_at` (Unix timestamp REAL, NOT `created_at` which does not exist) and `source` columns.
+
+**⚠️ Critical: Filter out cron/heartbeat sessions.** The state.db includes ALL sessions — but on a production Hermes system, cron/heartbeat jobs typically account for 95%+ of sessions (e.g., 4437 of 4573). If you don't filter them out, every hour appears equally active at "medium" confidence, making quiet-hour detection useless. The activity model must only consider **user-initiated sessions** (source IN ('telegram', 'cli', 'test', 'user')) for quiet-hour computation. Cron sessions are continuous and don't indicate user activity.
+
+Query pattern:
+```python
+import sqlite3, datetime, time
+conn = sqlite3.connect(os.path.expanduser('~/.hermes/state.db'))
+fourteen_days_ago = time.time() - (14 * 86400)
+cursor = conn.execute(
+    "SELECT started_at, source FROM sessions WHERE started_at > ?",
+    (fourteen_days_ago,)
+)
+user_sessions = [row for row in cursor.fetchall()
+                 if row[1] not in ('cron', 'heartbeat', 'dojo-seed')]
+# Now bucket user_sessions by hour, compute active_days/total_days per hour
+```
+
+Build hourly confidence from `active_days / total_days` per hour using only user sessions. The `source` field distinguishes `user` from `cron`/`heartbeat` activity. Common user sources: `telegram`, `cli`. Common system sources: `cron`, `heartbeat`, `dojo-seed`. Example query: `SELECT started_at, source FROM sessions WHERE started_at > ?`. Then convert `started_at` from Unix timestamp to datetime for hourly bucketing.
 
 **Schedule scoring:** Score each slot -2 to +2 based on quietness (lower activity = higher score). Quiet slots score +2, moderate +1, high activity -2. Total max = 8. If score < 6 and confidence >= med, shift each slot max 30 minutes toward the target.
 
@@ -537,6 +555,46 @@ The escalation runner is a dedicated cron job (`custodian:escalation-runner`) th
 3. **Check proposals** — list files in `{agent_root}/commons/data/ocas-custodian/proposals/` that haven't been marked `resolved: true`.
 4. **Re-verify against current state** — for each open issue, check the actual system condition (cron job last_status, log error counts, provider availability) before assuming the issue persists. This is critical — stale issues waste cycles and mask real problems.
    - **Also check resolved issues with `self_resolved` or `cascade_self_resolved` status** — especially for rate-limit-related fingerprints. Grep `errors.log` for today's occurrences of the fingerprint. If ANY match is found, RE-OPEN the issue (set `status: reopened` and `reopened_at`). These are the most common type of prematurely-closed issue because rate limits pause between daily update waves.
+
+   **4a. ⚠️ Mandatory Evidence Verification Checklist (MUST run before writing ANY evidence to issues.jsonl):**
+   Do NOT trust `last_429`, `last_seen`, `hours_since_last_429`, `recurrence_count`, or `today` fields from the issue record. They may have been propagated stale from the previous run. Instead, re-grep primary sources every time:
+
+   ```bash
+   # For rate-limit fingerprints (HTTP 429, 403, etc.):
+   LAST_429=$(grep "HTTP 429" <hermes-root>/logs/errors.log | tail -1)
+   TOTAL=$(grep "HTTP 429" <hermes-root>/logs/errors.log | wc -l)
+   TODAY=$(grep "HTTP 429" <hermes-root>/logs/errors.log | grep "$(date +%Y-%m-%d)" | wc -l)
+   YESTERDAY=$(grep "HTTP 429" <hermes-root>/logs/errors.log | grep "$(date -d yesterday +%Y-%m-%d)" | wc -l)
+   echo "Last: $LAST_429"
+   echo "Total: $TOTAL | Today: $TODAY | Yesterday: $YESTERDAY"
+   ```
+
+   Then compare against the issue record. If BOTH `last_429` AND `recurrence_count` match the grep output, the record is fresh. If EITHER differs, the record is stale — use the grep results, NOT the record fields.
+
+   **4b. Hourly Distribution Analysis (for rate-limit fingerprints):**
+   After getting the raw counts, check the hourly distribution to detect pattern drift:
+
+   ```bash
+   grep "HTTP 429" <hermes-root>/logs/errors.log | grep "$(date +%Y-%m-%d)" \
+     | sed 's/^[0-9-]* \([0-9]*\):.*/\1/' | sort | uniq -c | sort -n
+   ```
+
+   Compare against the issue record's `recurring_pattern` description. A pattern shift (e.g., "single daily wave" → "persistent throughout day" or vice versa) means the issue's characterization is stale and needs updating. The hourly distribution is the ground truth — the `recurring_pattern` text is commentary that goes stale.
+
+   **4c. Post-update cross-check:**
+   After writing updated evidence to the issue record, do a final sanity check:
+
+   ```bash
+   # Verify the record matches the grep
+   python3 -c "
+   import json
+   with open('<hermes-root>/commons/data/ocas-custodian/issues.jsonl') as f:
+       i = json.loads(f.readline().strip())
+   print(f'Record: Total {i[\"recurrence_count\"]}, Last {i[\"last_429\"]}')
+   "
+   ```
+
+   If the record's numbers still don't match the grep output from step 4a, something went wrong during the write — re-run the verification.
 5. **Apply known auto-fixes** if the root cause matches a known pattern:
    - `invalid_grant` → `cp <hermes-root>-indigo/google_token.json <hermes-root>/google_token.json`
    - "no delivery target resolved" → fix cron job `deliver` field to correct target
