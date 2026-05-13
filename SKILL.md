@@ -255,7 +255,11 @@ Runs on optimized 6-hour cron schedule. Isolated session, lightContext.
 3. **Fingerprint + classify** -- match against `references/known_issues.json` then `learned_issues.jsonl`. Unknowns default Tier 3.
 4. **Rebuild activity model** -- parse gateway log `message.processed` events (`source: user` vs `source: cron|heartbeat`). Blend Corvus if present (70/30). Update `activity_model.json`. Determine `current_state`.
 5. **Optimize schedule** -- score current schedule against activity model. If score < 6, compute better schedule. Shift max 30 min per slot. Update cron if changed.
-6. **Skill conformance** -- scan installed skills, parse `## Background tasks`, cross-reference against the platform scheduling registry and `HEARTBEAT.md`. Register missing (Tier 1). Surface mismatches (Tier 2).
+6. **Skill conformance** -- scan installed skills, parse `## Background tasks`, cross-reference against the platform scheduling registry and `HEARTBEAT.md`. Register missing (Tier 1). Surface mismatches (Tier 2). **Also run the cron registry health sub-pass** (Step 6b, see below).
+6b. **Cron registry health** -- parse `~/.hermes/cron/jobs.json` (see control char cleaning pitfall below). Three checks, all Tier 1:
+   - **Dead skill references**: for each job with a `skills` array, verify every listed skill directory exists under `~/.hermes/skills/`. Remove non-existent skill entries from the array, or delete the job if the skill was its only purpose.
+   - **Dead script references**: for each job with a `script` field, verify the script file exists on disk. Update or delete the job if missing.
+   - **Duplicate function detection**: group jobs by `script` path, by prompt prefix (first 200 chars), and by display `name`. If multiple jobs share the same script/prompt/name, keep the one whose name matches the SKILL.md canonical name (or the earliest ID), and delete the rest. Log all deletions in the action journal.
 7. **Skill init pass** -- initialize any skill missing data dir, config.json, or journal dir.
 8. **Repair pass** -- all Tier 1 fixes. Activity-aware: if active, only urgent fixes (failure in last 5 min); defer rest. Register verify jobs. Execute prior deferred fixes if now quiet.
 9. **Web search pass** -- for unknown fingerprints with `recurrence_count >= 1`, run next mutation query (see Web Search Protocol).
@@ -301,6 +305,9 @@ All Tier 1 fixes defined in `references/known_issues.json`. Read at start of eve
 | `oc_gateway_token_missing` | `platform diagnostics --generate-gateway-token` |
 | `oc_oauth_token_expiring` | OAuth refresh (token still valid, expiry <= 12h) |
 | `oc_background_task_missing` | Register cron or heartbeat entry per SKILL.md |
+| `oc_cron_dead_skill_ref` | Remove dead skill from job's `skills` array, or delete job |
+| `oc_cron_dead_script_ref` | Update script path or delete job |
+| `oc_cron_duplicate_function` | Delete duplicate job (keep canonical name/earliest ID) |
 | `oc_skill_uninitialized` | Create storage dirs, default config, empty JSONL |
 | `oc_platform_missing_webhook` | Disable platform in config.yaml (`platforms.{name}.enabled: false`) |
 | `oc_model_metadata_context_length` | Set `model.context_length` / `fallback_model.context_length` in config.yaml |
@@ -316,6 +323,11 @@ After successful verification, run fix-specific cleanup (check backoff, confirm 
 ## Skill Conformance Checking
 
 On every deep scan: scan `{agent_root}/skills/`, parse each SKILL.md `## Background tasks`, cross-reference against the platform scheduling registry and `HEARTBEAT.md`. Missing tasks: Tier 1 fix. Schedule mismatches: Tier 2. Orphaned `custodian:*` jobs: Tier 2. Write `skill_conformance.jsonl` per skill.
+
+**Cron registry health checks** (also on every deep scan):
+- **Dead skill references**: verify each job's `skills` array entries exist as directories under `~/.hermes/skills/`. Remove dead entries or delete the job. Tier 1.
+- **Dead script references**: verify each job's `script` file exists on disk. Update or delete if missing. Tier 1.
+- **Duplicate function detection**: group jobs by script path, prompt prefix (200 chars), and display name. Keep canonical (matches SKILL.md name or earliest ID), delete duplicates. Tier 1.
 
 ## Skill Initialization
 
@@ -485,7 +497,13 @@ Written to `{agent_root}/commons/data/ocas-custodian/proposals/{proposal_id}.jso
 2. `{agent_root}/commons/data/{skill-name}/config.json` (default `{"skill_name": "...", "version": "1.0.0", "initialized_at": "..."}` — only if absent)
 3. `{agent_root}/commons/journals/{skill-name}/` (if missing)
 
-**Background task scan:** Read each `~/.hermes/skills/ocas-*/SKILL.md`, find `## Background tasks` section, parse the table rows for Job name/Mechanism/Schedule. Cross-reference against `hermes cron list` output and HEARTBEAT.md. Skills with `mechanism: heartbeat` → add to HEARTBEAT.md. Skills with `mechanism: cron` → register via `hermes cron add`.
+**Background task scan:** Read each `~/.hermes/skills/ocas-*/SKILL.md`, find `## Background tasks` section, parse the table rows for Job name/Mechanism/Schedule. Cross-reference against the cron registry (read `~/.hermes/cron/jobs.json` directly — see control char pitfall below) and HEARTBEAT.md. Skills with `mechanism: heartbeat` → add to HEARTBEAT.md. Skills with `mechanism: cron` → register via `cronjob(action='create', ...)`.
+
+**Cron registry health sub-pass** (runs after Background task scan): Using the same jobs.json data, run three additional checks:
+1. **Dead skill references**: For each job with a `skills` array, verify every listed skill exists as a directory under `~/.hermes/skills/`. Remove dead entries or delete the job.
+2. **Dead script references**: For each job with a `script` field, verify the file exists. Check both the literal path and `~/.hermes/<script>`.
+3. **Duplicate detection**: Group jobs by script path, prompt prefix (200 chars), and display name. Keep the canonical one (matches SKILL.md name or earliest ID), delete the rest.
+All three are Tier 1 auto-fixes. Log all changes in the action journal.
 
 **⚠️ Stale open issues:** When verifying issues during a scan, always re-check the actual system state before assuming an issue persists. Issues from previous cycles may have been silently resolved (e.g., a cron job that was timing out may now be running OK, a config error may have been fixed by another process). Only keep `status: open` if the underlying condition still exists. Resolve stale issues and record the resolution method in `issues.jsonl`.
 
@@ -494,6 +512,31 @@ Written to `{agent_root}/commons/data/ocas-custodian/proposals/{proposal_id}.jso
 **⚠️ Cron next_run_at=None for weekly jobs:** Some cron jobs with weekly schedules (e.g., `0 1 * * 0` for Sunday-only) may have `next_run_at: None` in the registry. This appears to be a scheduler bug where it fails to compute the next occurrence. Fix by pausing and resuming the job via `hermes cron pause <id>` then `hermes cron resume <id>`, which forces the scheduler to recalculate `next_run_at`.
 
 **⚠️ Cron name matching pitfall:** The cron registry may use display names that differ from SKILL.md canonical names (e.g., `"Vesper: Morning Briefing"` in cron vs `vesper:morning` in SKILL.md). When checking conformance, do fuzzy matching — a cron job with a different display name but matching skill tag and schedule is likely the same task. Only flag as Tier 1 `oc_background_task_missing` if no cron job exists with the same skill tag AND schedule pattern. Name mismatches with matching functionality are Tier 2 (surface only).
+
+**⚠️ jobs.json control character corruption:** The `~/.hermes/cron/jobs.json` file may contain control characters (0x00–0x1F) that break standard JSON parsers. Always clean before parsing:
+```python
+import re, json
+with open('<hermes-root>/cron/jobs.json', 'r') as f:
+    raw = f.read()
+cleaned = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]', '', raw)
+data = json.loads(cleaned)
+jobs = data['jobs']  # list of job objects, NOT a dict
+```
+The file structure is `{"jobs": [...], "updated_at": "..."}`, not a bare list. The `hermes cron list` CLI may crash with `AttributeError: 'str' object has no attribute 'get'` when `schedule` is a plain string instead of a dict — always read the file directly.
+
+**⚠️ Dead skill reference detection:** When checking a job's `skills` array, verify each skill directory exists under `~/.hermes/skills/`. Common dead references found in the wild:
+- `google-workspace` — does not exist as a skill directory; remove from skills array
+- `weave-enrichment-proper` — does not exist; the correct skill is `ocas-weave`
+- `mcp-mempalace` — does not exist; was likely confused with the MCP server name
+A job with a dead skill reference may still function if its `prompt` contains standalone instructions. Fix by removing the dead entry from the `skills` array (preserving other valid entries), not by deleting the entire job.
+
+**⚠️ Duplicate cron job detection:** Duplicates arise when init commands are run multiple times or when a job is re-created under a slightly different name. Detection method:
+1. Group jobs by `script` path — identical scripts = duplicate function
+2. Group jobs by prompt prefix (first 200 chars) — identical prompts = duplicate function
+3. Group jobs by display `name` — identical names = exact duplicate
+When duplicates are found, keep the job whose name matches the SKILL.md canonical name (e.g., `vesper:morning` over `Vesper: Morning Briefing`). If neither matches, keep the one with the earliest/smallest ID. Delete the rest using `cronjob(action='remove', job_id=...)`. Always log deletions in the action journal.
+
+**⚠️ Script path resolution:** Cron job `script` fields may be stored as relative paths (e.g., `scripts/refresh_google_tokens.py`) or as paths relative to the skill directory. When verifying script existence, check both the literal path and the path relative to `~/.hermes/`. The Hermes cron runner resolves relative paths from the agent working directory, not from the skill directory.
 
 **Activity model:** On Hermes, `message.processed` events may not be labeled in gateway.log. Gateway log files at `~/.hermes/logs/agent-YYYY-MM-DD.log` may not exist (no files were found there). Use `~/.hermes/state.db` instead — it's a SQLite database with a `sessions` table containing `started_at` (Unix timestamp REAL, NOT `created_at` which does not exist) and `source` columns. Query sessions from the last 14 days, bucket by hour, and compute `active_days / total_days` per hour. The `source` field distinguishes `user` from `cron`/`heartbeat` activity. Build hourly confidence from the proportion of active hours vs. total observed hours across the 7-14 day window. Example query: `SELECT started_at, source FROM sessions WHERE started_at > ?`. Then convert `started_at` from Unix timestamp to datetime for hourly bucketing.
 
