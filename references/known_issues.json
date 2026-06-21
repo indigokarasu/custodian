@@ -1,0 +1,514 @@
+{
+  "oc_background_task_missing": {
+    "auto_fix": "Register missing cron entry per SKILL.md declaration",
+    "description": "Declared background task not found in cron registry",
+    "match_patterns": ["missing.*cron.*job", "background task.*not registered"],
+    "reversibility": "Remove registered entry",
+    "source": "ocas_data",
+    "technology_context": "Node.js launchd cron scheduler",
+    "tier": 1
+  },
+  "oc_commons_dir_missing": {
+    "auto_fix": "mkdir -p {commons_path}",
+    "description": "Skill journal payload missing, blocking inter-skill signal delivery",
+    "match_patterns": ["ENOENT.*commons", "commons.*directory.*not found", "cannot write.*commons"],
+    "reversibility": "rmdir {commons_path}",
+    "source": "skill_journal",
+    "technology_context": "filesystem POSIX directory",
+    "tier": 1
+  },
+  "oc_cron_disabled_transient": {
+    "auto_fix": "platform.scheduling.enable({job_id})",
+    "description": "Cron job transiently disabled, likely from a failed run or timeout",
+    "match_patterns": ["job.*disabled", "enabled.*false"],
+    "reversibility": "platform.scheduling.disable({job_id})",
+    "source": "cron_log",
+    "technology_context": "Node.js launchd cron scheduler",
+    "tier": 1
+  },
+  "oc_cron_stuck_missed": {
+    "auto_fix": "platform.scheduling.run({job_id})",
+    "description": "Cron job missed its scheduled run window",
+    "match_patterns": ["missed.*schedule", "stuck.*cron", "overdue.*run"],
+    "reversibility": "No side effects -- run was already missed",
+    "source": "cron_log",
+    "technology_context": "Node.js launchd cron scheduler",
+    "tier": 1
+  },
+  "oc_cron_timeout": {
+    "auto_fix": null,
+    "description": "Cron job hit idle timeout waiting for provider response -- may indicate API issue or oversized prompt",
+    "match_patterns": ["idle for.*limit.*s", "TimeoutError.*Cron job", "timed out after"],
+    "reversibility": null,
+    "source": "cron_log",
+    "technology_context": "Hermes cron job execution timeout",
+    "tier": 2
+  },
+  "oc_cron_no_agent_mismatch": {
+    "auto_fix": "Remove the broken cron job and re-create it with 'hermes cron add --name ... --skill ...'. The scheduler may read no_agent=True from internal state even when jobs.json has no_agent=False. Re-creating the job resets the scheduler internal state.",
+    "description": "Cron job fails with 'no_agent=True but no script is set for this job' despite no_agent=False in jobs.json. This is a scheduler state mismatch bug where the scheduler's internal representation differs from the JSON file.",
+    "hermes_specific": true,
+    "match_patterns": ["no_agent=True but no script is set", "no_agent.*script.*not set"],
+    "diagnostic_steps": "Check jobs.json for the job: if no_agent=False and script=None but the job has a prompt and skill, the scheduler has a stale internal state.",
+    "reversibility": "Re-create the job with the original settings",
+    "source": "cron_log|errors.log",
+    "technology_context": "Hermes cron scheduler no_agent state mismatch",
+    "tier": 1
+  },
+  "oc_cron_null_field_crash": {
+    "auto_fix": null,
+    "description": "execute_code script crashes with TypeError when formatting cron job fields that are JSON null (Python None). Not a runtime error in the cron system itself — an agent-side scripting pitfall. Fields like last_status, last_run_at, next_run_at can be null for jobs that have never run.",
+    "hermes_specific": true,
+    "match_patterns": ["TypeError.*NoneType.*format", "unsupported format string passed to NoneType"],
+    "diagnostic_steps": "Check the execute_code script that processes jobs.json. Look for f-string format specs like {field:8s} applied to nullable fields.",
+    "fix_pattern": "Use str(field or 'null') or f'{field or \"null\":8s}' for all nullable cron job fields",
+    "reversibility": null,
+    "source": "execute_code sandbox",
+    "technology_context": "Python f-string formatting of JSON null values from jobs.json",
+    "tier": 2
+  },
+  "oc_email_delivery_failed": {
+    "auto_fix": "Ensure config.yaml has platforms.email.enabled: true and platforms.email.address set; ensure deliver field uses full address format",
+    "description": "Email delivery failing because bare 'email' deliver target or missing platform config",
+    "match_patterns": ["no delivery target resolved.*deliver=email", "platform.*email.*not configured", "platform.*not configured/enabled"],
+    "reversibility": "Remove email platform from config.yaml",
+    "source": "cron_log",
+    "technology_context": "Hermes cron scheduler delivery resolution",
+    "tier": 1
+  },
+  "oc_email_not_configured": {
+    "auto_fix": "Set platforms.email.enabled: false in config.yaml (or provide EMAIL_ADDRESS, EMAIL_PASSWORD, EMAIL_IMAP_HOST, EMAIL_SMTP_HOST in .env)",
+    "description": "Email platform enabled in config.yaml but IMAP/SMTP credentials not configured in .env",
+    "match_patterns": ["No adapter available for email", "email.*enabled.*no credentials", "EMAIL_ADDRESS.*not set"],
+    "reversibility": "Set platforms.email.enabled: true and provide credentials",
+    "source": "gateway_log",
+    "technology_context": "Hermes email platform IMAP/SMTP",
+    "tier": 4
+  },
+  "oc_gateway_process_down": {
+    "auto_fix": null,
+    "description": "Gateway process is not running -- requires manual restart",
+    "match_patterns": ["gateway.*not running", "ECONNREFUSED.*18789", "gateway process.*dead"],
+    "reversibility": null,
+    "source": "gateway_log",
+    "technology_context": "Node.js HTTP server process",
+    "tier": 4
+  },
+  "oc_gateway_service_failed": {
+    "auto_fix": "Run 'hermes gateway install --force' to update the systemd unit file, then 'systemctl --user reset-failed hermes-gateway.service' and 'systemctl --user start hermes-gateway.service'. If the gateway is already running (health endpoint returns ok), the --replace takeover pattern is in effect — the fix ensures systemd tracks the process correctly going forward.",
+    "description": "hermes-gateway.service systemd unit in failed state. Common cause: ExecStart references a Python path that no longer exists, or TimeoutStopSec crash loop from SIGKILL during shutdown. The --replace takeover pattern can also cause systemd to lose track of a healthy gateway process.",
+    "match_patterns": ["hermes-gateway.service.*failed", "Unable to locate executable.*hermes-agent.*venv", "gateway.*service.*failed.*EXEC", "Start request repeated too quickly.*gateway", "Failed with result.*signal.*gateway"],
+    "diagnostic_steps": "Run 'systemctl status hermes-gateway' and 'journalctl -u hermes-gateway --since \"7 days ago\" --no-pager'. Look for 'Unable to locate executable', 'No such file or directory', or SIGKILL during shutdown. Also check 'curl -s http://localhost:8080/health' — if healthy, the gateway is running but systemd lost track (--replace takeover).",
+    "fix_pattern": "hermes gateway install --force && systemctl --user reset-failed hermes-gateway && systemctl --user start hermes-gateway",
+    "reversibility": "Restore original ExecStart path in the systemd unit file",
+    "source": "systemctl|journalctl",
+    "technology_context": "systemd service unit, Hermes gateway process management",
+    "tier": 2
+  },
+  "oc_gateway_token_missing": {
+    "auto_fix": "platform diagnostics --generate-gateway-token",
+    "description": "Gateway authentication token missing or invalid",
+    "match_patterns": ["gateway token.*missing", "authentication.*gateway.*failed", "no gateway token"],
+    "reversibility": "Remove generated token from config",
+    "source": "gateway_log",
+    "technology_context": "Node.js HTTP authentication token",
+    "tier": 1
+  },
+  "oc_google_token_invalid": {
+    "tier": 1,
+    "match_patterns": ["invalid_grant", "token has been expired or revoked", "Google OAuth.*failed", "gmail.api.*401"],
+    "source": "cron_log",
+    "auto_fix": "cp <hermes-root>-indigo/google_token.json <hermes-root>/google_token.json",
+    "precondition": "Verify <hermes-root>-indigo/google_token.json exists and is non-empty before running auto-fix. If BOTH primary and backup tokens are missing, classify as oc_google_token_missing (Tier 3) instead.",
+    "reversibility": "Restore previous google_token.json from .bak.user-only backup",
+    "description": "Google OAuth token invalid or revoked -- agent profile token (with gmail.send scope) needs to be restored. Assumes backup token exists at <hermes-root>-indigo/google_token.json. NOTE: This auto-fix only helps jobs that read from <hermes-root>/google_token.json. The email_check.py script uses google_auth_mcp which reads from /root/.google_workspace_mcp/credentials/<email>.json — this auto-fix does NOT help email:check. For email:check invalid_grant, the MCP credential file must be re-authorized via browser OAuth (google-workspace-auth skill).",
+    "technology_context": "Google Workspace OAuth2 token refresh"
+  },
+  "oc_google_token_missing": {
+    "tier": 3,
+    "match_patterns": ["No valid Google credentials found", "Expecting value.*google_token", "cannot read token file", "google_token.json.*not found", "google_token.json.*empty"],
+    "source": "cron_log|errors.log",
+    "auto_fix": null,
+    "diagnostic_steps": "Check if <hermes-root>/google_token.json exists and is non-empty. Check if <hermes-root>-indigo/google_token.json exists and is non-empty. If BOTH are missing/empty, the auto-fix for oc_google_token_invalid cannot work — requires user to re-run OAuth.",
+    "escalation_note": "If both token files are absent, escalate to Tier 3: user must re-authorize via `python3 <hermes-root>/skills/infrastructure/google-workspace-auth/scripts/google_oauth_init.py`. Do NOT attempt the oc_google_token_invalid auto-fix when the backup file also doesn't exist.",
+    "reversibility": null,
+    "description": "Google OAuth token file missing or empty -- primary and/or backup token files do not exist. Distinct from oc_google_token_invalid (which assumes the backup exists). Requires user re-auth.",
+    "technology_context": "Google Workspace OAuth2 token file presence check"
+  },
+  "oc_git_branch_no_tracking": {
+    "auto_fix": "cd {skill_repo_path} && git branch --set-upstream-to=origin/{branch} {branch}",
+    "description": "Skill repo on a feature branch with no upstream tracking information, causing git pull to fail in update cron jobs",
+    "hermes_specific": true,
+    "match_patterns": ["There is no tracking information for the current branch", "no tracking information.*branch", "git pull failed.*no upstream"],
+    "reversibility": "git branch --unset-upstream {branch}",
+    "source": "cron_log|errors.log",
+    "technology_context": "Git branch upstream tracking for skill repo auto-update",
+    "tier": 1
+  },
+  "oc_journal_dir_missing": {
+    "auto_fix": "mkdir -p {agent_root}/commons/journals/{skill_name}",
+    "description": "Skill journal directory missing, blocking journal writes",
+    "match_patterns": ["ENOENT.*journals", "journal.*directory.*missing", "cannot write.*journal"],
+    "reversibility": "rmdir {agent_root}/commons/journals/{skill_name}",
+    "source": "skill_journal",
+    "technology_context": "filesystem POSIX directory",
+    "tier": 1
+  },
+  "oc_jsonl_malformed_lines": {
+    "auto_fix": "Move malformed lines to {file}.error",
+    "description": "JSONL file contains malformed JSON lines blocking parsing",
+    "match_patterns": ["JSON parse error", "malformed.*jsonl", "invalid JSON.*line"],
+    "reversibility": "Move .error lines back to original file",
+    "source": "ocas_data",
+    "technology_context": "JSON Lines parsing",
+    "tier": 1
+  },
+  "oc_jsonl_oversized": {
+    "auto_fix": "mv {file}.jsonl {file}.{date}.jsonl && touch {file}.jsonl",
+    "description": "JSONL log file exceeded max_records threshold, needs rotation",
+    "match_patterns": ["file size exceeded", "jsonl.*too large", "rotation needed"],
+    "reversibility": "mv {file}.{date}.jsonl {file}.jsonl",
+    "source": "ocas_data",
+    "technology_context": "JSON Lines append-only log",
+    "tier": 1
+  },
+  "oc_model_init_failed": {
+    "auto_fix": null,
+    "match_patterns": ["Failed to initialize OpenAI client", "model.*init.*failed", "OpenAI client.*No such file", "RuntimeError.*initialize.*client"],
+    "reversibility": null,
+    "source": "cron_log",
+    "tier": 3
+  },
+  "oc_model_400_deprecated": {
+    "auto_fix": null,
+    "description": "OpenRouter model no longer available (deprecated/removed). Affects any job/skill that references the deprecated model via model:null (inherits default). Cron jobs with model:null inherit the default model from config.yaml. If the default model is deprecated, all inheriting jobs fail with HTTP 400.",
+    "hermes_specific": true,
+    "match_patterns": ["is not a valid model ID", "model.*not.*valid.*ID", "400.*model.*deprecated"],
+    "diagnostic_steps": "Check which model the job uses (model field in jobs.json). If model:null, check config.yaml default model. Test the model directly: curl -s https://openrouter.ai/api/v1/models | jq '.data[] | select(.id contains \"<model_name>\")'. If model is gone, update config.yaml default_model to a currently available model.",
+    "escalation_note": "Single occurrence (consecutive_failures=0) is likely transient or a one-time config drift. If recurring across multiple jobs or multiple runs, the default model in config.yaml needs updating. Check all jobs with model:null when this fires.",
+    "reversibility": null,
+    "source": "cron_log|errors.log",
+    "technology_context": "OpenRouter API, model deprecation, default model inheritance",
+    "tier": 2
+  },
+  "oc_disk_full": {
+    "auto_fix": null,
+    "description": "Root filesystem is 100% full",
+    "match_patterns": ["database or disk is full", "No space left on device", "Root filesystem.*100% full"],
+    "reversibility": "Clean up state-snapshots directory, prune old sessions, WAL checkpoint state.db",
+    "source": "doctor|gateway_log|cron_log",
+    "tier": 3
+  },
+  "oc_http_401_upstream_error_transient": {
+    "auto_fix": null,
+    "description": "OpenRouter upstream_error 401 — transient provider-side auth failure. Distinct from true API key revocation. The API key is valid; the provider's own upstream handshake fails momentarily. Self-resolves on next run. Diagnostic: curl /api/v1/models to verify key, check consecutive_failures=None, cross-reference with other jobs using same provider.",
+    "hermes_specific": true,
+    "match_patterns": ["upstream_error.*401", "Authentication failed with upstream provider", "type.*upstream_error.*status.*401"],
+    "diagnostic_steps": "1. Verify API key: curl -s -o /dev/null -w '%{http_code}' -H 'Authorization: Bearer $KEY' https://openrouter.ai/api/v1/models. HTTP 200 = key valid. 2. Check consecutive_failures: None = first occurrence (transient). 3. Check if other jobs using same provider are ok: if yes, confirms transient.",
+    "escalation_note": "Do NOT escalate if API key is valid and consecutive_failures=None. Mark as transient and move on. Only escalate if key is actually invalid (direct API test returns 401) or consecutive_failures >= 2.",
+    "reversibility": null,
+    "source": "cron_log|errors.log",
+    "technology_context": "OpenRouter upstream provider transient auth failure",
+    "tier": 2
+  },
+  "oc_http_401_invalid_api_key": {
+    "auto_fix": null,
+    "description": "API key authentication failure (401/403)",
+    "match_patterns": ["invalid_api_key", "Invalid API Key", "401 Unauthorized", "Unauthorized", "authentication failed", "403 Forbidden", "APIError.*401", "APIError.*403"],
+    "reversibility": "Validate API key in .env and config.yaml",
+    "source": "cron_log|errors.log|gateway_log",
+    "tier": 3
+  },
+  "oc_http_404_model_deprecated": {
+    "auto_fix": null,
+    "description": "OpenRouter model no longer available as free tier. Affects any job/skill that references the deprecated model. Cron jobs with model:null inherit the default model from skill config.",
+    "match_patterns": ["HTTP 404.*no longer available", "model.*no longer available.*free", "404.*model.*deprecated"],
+    "reversibility": "Update config.yaml or SKILL.md to reference a supported model",
+    "source": "cron_log|errors.log",
+    "technology_context": "OpenRouter API, model selection, free tier deprecation",
+    "tier": 3
+  },
+  "oc_http_429_rate_limit": {
+    "auto_fix": null,
+    "description": "HTTP 429 rate limit from LLM provider. Two sub-patterns: (1) plan-level rate limit ('weekly usage limit') — self-resolves when limit resets; (2) concurrent rate limit ('too many concurrent requests') — caused by multiple cron jobs firing simultaneously.",
+    "hermes_specific": true,
+    "match_patterns": ["HTTP 429: Provider returned error", "429.*rate-limit", "temporarily rate-limited upstream", "no usable entries.*credentials may be exhausted", "credential pool.*exhausted", "too many concurrent requests"],
+    "diagnostic_steps": "Check auth.json credential_pool.{provider} for last_status=exhausted. Check errors.log for agent.auxiliary_client warnings. Check jobs.json for simultaneous cron schedules.",
+    "reversibility": null,
+    "source": "cron_log|errors.log",
+    "technology_context": "OpenRouter API rate limiting, credential pool exhaustion",
+    "tier": 2
+  },
+  "oc_http_502_provider_unavailable": {
+    "auto_fix": null,
+    "description": "OpenRouter HTTP 502 provider_unavailable — upstream model provider is temporarily down. Self-resolving. No auto-fix available. Distinct from HTTP 429 rate limits. Diagnostic: read request_dump_*.json for error.body.metadata.error_type='provider_unavailable'. Verify API key valid, model exists, no 429 errors. See references/openrouter-502-provider-unavailable.md.",
+    "hermes_specific": true,
+    "match_patterns": ["HTTP 502.*provider_unavailable", "error_type.*provider_unavailable", "Provider returned error.*502"],
+    "diagnostic_steps": "Read most recent request_dump_*.json, check error.body.metadata.error_type. Verify API key valid (curl models endpoint). Verify model exists. Check no HTTP 429 errors today. See references/openrouter-502-provider-unavailable.md.",
+    "reversibility": null,
+    "source": "cron_log|errors.log",
+    "technology_context": "OpenRouter HTTP 502 upstream provider outage",
+    "tier": 2
+  },
+  "oc_auxiliary_compression_exhaustion": {
+    "auto_fix": "Run python3 <hermes-root>/scripts/fix-auxiliary-compression.py to re-apply the pool-fallback patch and verify config. The post-merge hook (.git/hooks/post-merge) handles this automatically on future updates.",
+    "description": "Auxiliary compression fails with 'No auxiliary LLM provider configured' when the OpenRouter credential pool entry is exhausted, even though OPENROUTER_API_KEY env var is set and working. Root cause: _try_openrouter() in auxiliary_client.py returns None when pool entry is exhausted instead of falling through to env var. The fix patches the source to fall through, and a post-merge hook re-applies the patch after hermes update.",
+    "hermes_specific": true,
+    "match_patterns": ["No auxiliary LLM provider configured", "context compression will drop middle turns", "auxiliary.*compression.*unavailable", "auxiliary_client.*exhausted"],
+    "diagnostic_steps": "Check auth.json credential_pool.openrouter for last_status=exhausted. Verify OPENROUTER_API_KEY is set in .env. Check if .git/hooks/post-merge exists and is executable.",
+    "fix_pattern": "1. Source patch: _try_openrouter() falls through to env var when pool entry is exhausted. 2. Config: auxiliary.compression.provider=openrouter, model=openrouter/owl-alpha, api_key set explicitly. 3. Post-merge hook re-applies source patch after git pull.",
+    "reversibility": "Remove the post-merge hook and revert auxiliary.compression config changes.",
+    "source": "gateway_log|errors.log",
+    "technology_context": "Hermes auxiliary client credential pool exhaustion, context compression auth",
+    "tier": 2
+  },
+  "oc_provider_error_transient": {
+    "auto_fix": null,
+    "description": "Transient 'Provider returned error' from OpenRouter. Two sub-patterns: (1) HTTP 502 provider_unavailable — upstream provider outage (see oc_http_502_provider_unavailable); (2) HTTP 503 — transient server error. Distinct from HTTP 429 rate limits. See references/openrouter-502-provider-unavailable.md for full diagnostic procedure.",
+    "hermes_specific": true,
+    "match_patterns": ["Provider returned error", "HTTP 502.*Provider returned error", "HTTP 503.*Provider returned error", "InternalServerError.*provider=openrouter"],
+    "diagnostic_steps": "Read request dump files to get error.body.metadata.error_type. Check for provider_unavailable (502) vs rate_limit (429). See references/openrouter-502-provider-unavailable.md.",
+    "reversibility": null,
+    "source": "cron_log|errors.log",
+    "technology_context": "OpenRouter Stealth provider transient errors",
+    "tier": 2
+  },
+  "oc_provider_config_mismatch": {
+    "auto_fix": null,
+    "description": "Invalid config key in providers section causing repeated warnings",
+    "hermes_specific": true,
+    "match_patterns": ["unknown config keys ignored", "providers.*unknown config keys", "enabled.*unknown config key"],
+    "reversibility": null,
+    "source": "gateway_log",
+    "technology_context": "Hermes config.yaml providers section",
+    "tier": 2
+  },
+  "oc_node_version_mismatch": {
+    "auto_fix": null,
+    "description": "Node.js version does not meet platform requirements",
+    "match_patterns": ["node.*version.*mismatch", "unsupported.*node.*version", "requires node"],
+    "reversibility": null,
+    "source": "doctor",
+    "technology_context": "Node.js runtime version",
+    "tier": 4
+  },
+  "oc_platform_auto_detected_no_config": {
+    "auto_fix": "Add explicit platforms.{name}.enabled: false to config.yaml to override env-var auto-detection",
+    "description": "Gateway auto-detects platform from env vars even when no explicit config entry exists",
+    "hermes_specific": true,
+    "match_patterns": ["Refusing to start.*WEBHOOK_URL", "platform.*auto.*detect", "no explicit.*platform.*entry.*env vars"],
+    "reversibility": "Remove the platforms.{name} entry from config.yaml",
+    "source": "gateway_log",
+    "technology_context": "Hermes gateway platform auto-detection from environment variables",
+    "tier": 4
+  },
+  "oc_port_collision": {
+    "auto_fix": null,
+    "description": "Port 18789 in use by another process -- requires manual resolution",
+    "match_patterns": ["EADDRINUSE.*18789", "port.*18789.*in use", "address already in use"],
+    "reversibility": null,
+    "source": "gateway_log",
+    "technology_context": "Node.js TCP port binding",
+    "tier": 4
+  },
+  "oc_skill_data_dir_missing": {
+    "auto_fix": "mkdir -p {agent_root}/commons/data/{skill_name} && write default config.json",
+    "description": "Skill data directory or config.json missing, skill uninitialized",
+    "match_patterns": ["ENOENT.*data/ocas-", "data directory.*missing", "config.json.*not found"],
+    "reversibility": "Remove created directory and config.json",
+    "source": "ocas_data",
+    "technology_context": "filesystem JSON configuration",
+    "tier": 1
+  },
+  "oc_skill_uninitialized": {
+    "auto_fix": "Create storage dirs, default config.json, empty JSONL files",
+    "description": "Installed skill has no data directory, config, or journal directory",
+    "match_patterns": ["skill.*uninitialized", "missing.*data directory.*config", "init required"],
+    "reversibility": "Remove created files and directories",
+    "source": "ocas_data",
+    "technology_context": "filesystem JSON configuration",
+    "tier": 1
+  },
+  "oc_systemd_linger_disabled": {
+    "auto_fix": null,
+    "description": "systemd linger not enabled -- background services will not persist across logout",
+    "match_patterns": ["linger.*disabled", "systemd.*linger.*not enabled", "user service.*not persistent"],
+    "reversibility": null,
+    "source": "doctor",
+    "technology_context": "systemd loginctl linger",
+    "tier": 4
+  },
+  "oc_cron_dead_skill_ref": {
+    "auto_fix": "Remove the dead skill reference from the job's `skills` array in jobs.json, or delete the job if the skill was its only purpose",
+    "description": "Cron job references a skill directory that does not exist on disk",
+    "hermes_specific": true,
+    "match_patterns": ["skill.*not found", "skill directory.*missing", "no such file.*skills/", "cannot load skill"],
+    "reversibility": "Re-add the skill directory or restore the skills array entry",
+    "source": "cron_log|gateway_log",
+    "technology_context": "Hermes cron job skills array",
+    "tier": 1
+  },
+  "oc_cron_duplicate_function": {
+    "auto_fix": "Remove the duplicate cron job (keep the one with the lower/smaller ID or the one whose name matches the SKILL.md canonical name)",
+    "description": "Two or more cron jobs perform the same function",
+    "hermes_specific": true,
+    "match_patterns": ["duplicate.*cron", "identical.*job", "same.*function.*multiple"],
+    "reversibility": "Re-create the deleted job from backup or SKILL.md declaration",
+    "source": "ocas_data",
+    "technology_context": "Hermes cron job registry",
+    "tier": 1
+  },
+  "oc_cron_dead_script_ref": {
+    "auto_fix": "First check if the script exists at {agent_root}/scripts/{bare_filename}. If so, update the job's script field to the absolute path. Otherwise, delete the job.",
+    "description": "Cron job references a script file that does not exist on disk at the literal path. Bare filenames (e.g., update_voyage.sh) may resolve from skill dirs but not from cron cwd. Always check {agent_root}/scripts/ as a fallback location before declaring dead.",
+    "hermes_specific": true,
+    "match_patterns": ["script.*not found", "no such file.*script", "cannot execute.*script"],
+    "fix_pattern": "Check {agent_root}/scripts/{basename} — if exists, update job script field to absolute path. Backup jobs.json first.",
+    "reversibility": "Restore original script path from jobs.json backup",
+    "source": "cron_log",
+    "technology_context": "Hermes cron job script execution with relative vs absolute path resolution",
+    "tier": 1
+  },
+  "oc_cron_orphaned_job": {
+    "auto_fix": "Remove the orphaned cron job from jobs.json",
+    "description": "Cron job not declared in any SKILL.md Background tasks section and has never run (last_status=null, last_run_at=null)",
+    "hermes_specific": true,
+    "match_patterns": ["job.*not declared.*SKILL.md", "orphaned.*cron", "never.*ran.*last_status.*null"],
+    "reversibility": "Re-create the job manually if the functionality is needed",
+    "source": "ocas_data",
+    "technology_context": "Hermes cron job registry",
+    "tier": 1
+  },
+  "oc_old_path_reference": {
+    "auto_fix": null,
+    "description": "Cron job references outdated /usr/local/lib/hermes-agent/ paths instead of <hermes-root>/. Non-fatal due to symlinks.",
+    "hermes_specific": true,
+    "match_patterns": ["/usr/local/lib/hermes-agent/", "File not found: /usr/local/lib/hermes-agent/"],
+    "reversibility": null,
+    "source": "cron_log|errors.log",
+    "technology_context": "Hermes path migration legacy references",
+    "tier": 2
+  },
+  "oc_read_file_too_large": {
+    "auto_fix": null,
+    "description": "Agent attempted to read a file larger than the 100K character read_file tool limit. Non-fatal — agent should paginate with offset/limit or use terminal grep/tail.",
+    "hermes_specific": true,
+    "match_patterns": ["Read produced.*characters which exceeds the safety limit", "read_file_too_large", "exceeds the safety limit"],
+    "reversibility": null,
+    "source": "cron_log|errors.log",
+    "technology_context": "Hermes read_file tool 100K character limit",
+    "tier": 2
+  },
+  "oc_mcp_stdio_parse_error": {
+    "auto_fix": null,
+    "description": "MCP server stdout contains non-JSON content (ANSI escape codes, colored text, non-English output) that fails JSONRPC parsing. Non-fatal — MCP client skips malformed messages. Common with stealth-browser MCP server outputting Chinese ANSI-colored text.",
+    "hermes_specific": true,
+    "match_patterns": ["Failed to parse JSONRPC message from server", "mcp.client.stdio.*ValidationError", "Invalid JSON.*expected.*or.*]", "input_value=.*\\\\x1b\\\\["],
+    "diagnostic_steps": "Check which MCP server is producing non-JSON output by examining the input_value in the error.",
+    "reversibility": null,
+    "source": "errors.log",
+    "technology_context": "MCP JSON-RPC stdio transport, MCP server stdout pollution",
+    "tier": 2
+  },
+  "oc_cron_no_git_repo": {
+    "auto_fix": null,
+    "description": "Cron job update script fails with 'Not a git repository' because the skill directory was installed via tarball extraction (no .git). The skill's self_update.py may use git operations that fails on non-git directories. Non-fatal if the update script has a fallback (e.g., GitHub API + tarball download).",
+    "hermes_specific": true,
+    "match_patterns": ["Not a git repository.*skills/", "ERROR: Not a git repository"],
+    "diagnostic_steps": "Check if the skill directory has a .git subdirectory. Test the update script manually: python3 <skill>/scripts/self_update.py. If it succeeds, the error may be from an older code path.",
+    "fix_pattern": "Ensure the update script uses GitHub API + tarball download instead of git pull. If self_update.py works correctly, the error may be from an older wrapper script version.",
+    "reversibility": null,
+    "source": "cron_log|errors.log",
+    "technology_context": "Hermes skill auto-update, git vs tarball installation",
+    "tier": 2
+  },
+  "oc_sands_conflict_scan_runtime_error": {
+    "auto_fix": null,
+    "description": "sands:conflict-scan cron job fails with 'RuntimeError: ERROR' — a generic runtime error distinct from provider errors. Observed 2026-05-19 at 14:09 UTC. May indicate a Google Calendar API issue, auth token expiry, or internal sands logic error. Check gateway logs for the full traceback.",
+    "hermes_specific": true,
+    "match_patterns": ["sands:conflict-scan.*RuntimeError", "sands:conflict.*error"],
+    "diagnostic_steps": "Check gateway logs for the full error traceback: grep -A 20 'sands:conflict' <hermes-root>/logs/gateway.log | tail -30. Check if the error is a provider error (transient) or a logic error (needs code fix).",
+    "reversibility": null,
+    "source": "cron_log",
+    "technology_context": "ocas-sands conflict scan cron job",
+    "tier": 2
+  },
+  "oc_post_merge_hook_missing": {
+    "auto_fix": "Run: mkdir -p /usr/local/lib/hermes-agent/.git/hooks/post-merge.d && cp <hermes-root>/skills/ocas-custodian/references/post-merge-hook.sh /usr/local/lib/hermes-agent/.git/hooks/post-merge && chmod +x /usr/local/lib/hermes-agent/.git/hooks/post-merge",
+    "description": "The post-merge hook that re-applies source patches after hermes update is missing or not executable. Without it, source-level fixes (like the auxiliary compression pool-fallback patch) are lost on git pull.",
+    "hermes_specific": true,
+    "match_patterns": ["post-merge hook.*missing", "post-merge.*not executable", "source patch.*lost.*update"],
+    "diagnostic_steps": "Check if .git/hooks/post-merge exists and is executable. Check if .git/hooks/post-merge.d/ contains the expected patch scripts.",
+    "reversibility": "Remove .git/hooks/post-merge and .git/hooks/post-merge.d/",
+    "source": "gateway_log|errors.log",
+    "technology_context": "Git post-merge hooks for persistent source patches",
+    "tier": 2
+  },
+  "kanban_dispatcher_tick_failed": {
+    "auto_fix": "Create missing indexes in <hermes-root>/kanban.db: idx_tasks_session_id, idx_tasks_idempotency, idx_tasks_status, idx_tasks_assignee, idx_tasks_created_at. See references/kanban-dispatcher-index-gap.md for the SQL and full procedure.",
+    "description": "Kanban dispatcher tick fails with 'no such column: session_id' when creating idx_tasks_session_id index. Root cause: legacy DB has columns but missing indexes from SCHEMA_SQL. _migrate_add_optional_columns handles columns but not indexes. Recurs every 60s (every dispatcher tick) after gateway restart until indexes are created.",
+    "hermes_specific": true,
+    "match_patterns": ["kanban dispatcher: tick failed", "no such column: session_id.*kanban", "idx_tasks_session_id"],
+    "diagnostic_steps": "Check if indexes exist: sqlite3 <hermes-root>/kanban.db \"SELECT name FROM sqlite_master WHERE type='index' AND tbl_name='tasks'\". If idx_tasks_session_id is missing, the DB needs indexes created. Also verify session_id column exists: sqlite3 <hermes-root>/kanban.db \"PRAGMA table_info(tasks)\".",
+    "fix_pattern": "CREATE INDEX IF NOT EXISTS idx_tasks_session_id ON tasks(session_id) and 4 more indexes. See references/kanban-dispatcher-index-gap.md.",
+    "reversibility": "DROP INDEX idx_tasks_session_id (and others)",
+    "source": "gateway_log",
+    "tier": 2
+  },
+  "oc_chronicle_kwargs_get_duplicate": {
+    "auto_fix": "grep -rn 'kwargs\\.get.*hermes_home' /usr/local/lib/hermes-agent/plugins/memory/chronicle/plugins/ && sed -i 's/kwargs\\.get(\\\"hermes_home\\\"/kwargs.pop(\\\"hermes_home\\\"/g; s/kwargs\\.get(\\\"principal_id\\\"/kwargs.pop(\\\"principal_id\\\"/g' <file>",
+    "description": "Plugin initialize() or on_session_start() uses kwargs.get() instead of kwargs.pop() for hermes_home/principal_id. Value stays in kwargs and is passed again via **kwargs to ChronicleCore.initialize(), causing TypeError: got multiple values. Check BOTH context_engine.py AND memory_provider.py — fixing only one leaves the other firing.",
+    "hermes_specific": true,
+    "match_patterns": ["Chronicle.*initialize.*got multiple values.*hermes_home", "Chronicle Context Engine init failed.*multiple values", "memory_provider.*multiple values.*hermes_home"],
+    "diagnostic_steps": "1. Grep errors.log for 'multiple values.*hermes_home'. 2. Grep ALL sibling .py files in plugins/memory/chronicle/plugins/ for 'kwargs\\.get.*hermes_home'. 3. Fix every occurrence. 4. Gateway restart required.",
+    "fix_pattern": "Change kwargs.get to kwargs.pop for hermes_home and principal_id in ALL plugin files that pass **kwargs through to ChronicleCore.initialize().",
+    "escalation_note": "Always check sibling files. Same bug existed in both context_engine.py and memory_provider.py — fixing only one left the other firing 292+ errors.",
+    "reversibility": "git checkout -- <file>",
+    "source": "errors.log",
+    "technology_context": "Chronicle plugin kwargs.get vs kwargs.pop duplicate keyword argument",
+    "tier": 2
+  },
+  "oc_mcp_google_search_connection_failure": {
+    "auto_fix": null,
+    "description": "MCP server 'google-search' persistently failing to connect. Error: unhandled errors in a TaskGroup (1 sub-exception), Connection closes immediately. Affects any skill/job relying on web search via google-search MCP. Transient — may resolve on its own; if persistent across multiple scans, the MCP server binary or its Node.js runtime may need restart.",
+    "hermes_specific": true,
+    "match_patterns": ["google-search.*initial connection failed", "google-search.*Connection closed", "unhandled errors in a TaskGroup.*google-search", "google-search.*failed initial connection after 3 attempts"],
+    "diagnostic_steps": "Check errors.log for the most recent google-search failure timestamps. If failures are within the last 30 minutes and the gateway has been running, the MCP server process may be unhealthy. Check if the MCP server binary exists at the configured path. A gateway restart may revive the MCP connection.",
+    "reversibility": null,
+    "source": "errors.log",
+    "tier": 2
+  },
+  "oc_mcp_server_files_missing": {
+    "auto_fix": null,
+    "description": "MCP servers enabled in config.yaml but server script files don't exist on disk. MCP client tries 3 connection attempts per server, fails, gives up gracefully. Produces 380+ WARNINGS per startup cycle. Non-fatal. User decision required: install the MCP server packages or set enabled: false in config.yaml for each affected server. Do NOT auto-disable — this changes capability.",
+    "hermes_specific": true,
+    "match_patterns": ["MCP server.*failed initial connection after 3 attempts", "MCP server.*Connection closed", "unhandled errors in a TaskGroup.*MCP"],
+    "diagnostic_steps": "Check which MCP servers are enabled in config.yaml. Verify each server script file exists at the configured path. Count failure occurrences in errors.log. If files are missing AND servers are enabled → this pattern.",
+    "escalation_note": "First occurrence: escalate for user decision. If user wants the MCP servers, they need to install them. If not, disable them to eliminate noise. Confirmed 2026-06-14: instagram, pdsx, spotify, threads all have missing server files.",
+    "reversibility": null,
+    "source": "errors.log",
+    "technology_context": "Hermes MCP server process spawn, config.yaml enabled flag vs file existence",
+    "tier": 2
+  },
+  "oc_chronicle_plugins_empty": {
+    "auto_fix": null,
+    "description": "plugins/memory/chronicle/ and/or plugins/context_engine/chronicle/ directories contain only __pycache__/ — no .py source files. Directories exist but source files were removed (not in git HEAD). Affects Chronicle context engine and memory provider initialization. Non-fatal — degrades gracefully. See references/chronicle-plugin-dirs-empty-pattern.md.",
+    "hermes_specific": true,
+    "match_patterns": ["EMPTY CHRONICLE PLUGIN DIR", "chronicle.*plugins.*empty", "plugins/memory/chronicle.*no.*py"],
+    "diagnostic_steps": "Run: for d in /usr/local/lib/hermes-agent/plugins/memory/chronicle/ /usr/local/lib/hermes-agent/plugins/context_engine/chronicle/; do count=$(find \"$d\" -maxdepth 1 -name '*.py' -not -path '*__pycache__' | wc -l); [ \"$count\" -eq 0 ] && echo \"EMPTY: $d\"; done. Verify with git: git show HEAD:plugins/memory/chronicle/ (will say 'exists on disk, but not in HEAD' if not tracked).",
+    "fix_pattern": "Re-install Chronicle plugin package appropriate for current hermes-agent version. Files not in git history — must be restored from package, not git checkout.",
+    "escalation_note": "First occurrence should be escalated for investigation into how files were lost (gateway update? manual cleanup?). Recurring occurrences indicate a systemic issue with the installation method.",
+    "reversibility": null,
+    "source": "plugin_dirs",
+    "tier": 2
+  },
+  "oc_subdirectory_hints_home_dir": {
+    "fingerprint": "oc_subdirectory_hints_home_dir",
+    "tier": 2,
+    "escalation_needed": false,
+    "description": "subdirectory_hints.py _add_path_candidate fails when $HOME unset in cron env. RuntimeError from Path.expanduser(). Non-fatal, agent handles gracefully.",
+    "first_seen": "2026-06-17",
+    "pattern": "RuntimeError: Could not determine home directory.*subdirectory_hints",
+    "fix_direction": "Framework patch: try/except around expanduser() or ensure $HOME in cron env. Escalate if recurrence_count >= 2."
+  }
+}
