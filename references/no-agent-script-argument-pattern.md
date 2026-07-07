@@ -33,6 +33,52 @@ hermes cron edit <job_id> --script <name>_wrapper.sh
 
 **Verified example (2026-06-20):** `thread-renamer:active` had `script: 'active_thread_renamer.py --active'`. Created `thread_renamer_active.sh` wrapper with `--active` baked in. Same for `thread-renamer:backfill` with `--backfill`.
 
+**Compound `&&` command pattern (2026-05-28, updated 2026-06-25):** A variant of this pattern occurs when the `script` field contains `&&` chaining multiple commands. Detected on `dispatch:triage-morning` and `dispatch:triage-evening`:
+```
+script: triage.py && python3 <hermes-root>/skills/ocas-dispatch/scripts/journal.py
+```
+Both jobs have `no_agent: true`. The `&&` is not a path — the executor treats the entire string as a literal path and fails with "Script not found." **Fix direction:** Create a wrapper script that runs both commands sequentially:
+```bash
+cat > <hermes-root>/profiles/<profile>/scripts/triage_dispatch.sh << 'EOF'
+#!/bin/bash
+cd <hermes-root>/skills/ocas-dispatch/scripts || exit 1
+python3 triage.py && python3 journal.py
+EOF
+chmod +x <hermes-root>/profiles/<profile>/scripts/triage_dispatch.sh
+```
+Then update the cron job's `script` field to `triage_dispatch.sh`.
+
+**Confirmed fix (2026-06-25):** Both `dispatch:triage-morning` and `dispatch:triage-evening` were hit by this pattern. The morning job was fixed 2026-06-20 with `triage_morning.sh`. The evening job still had the compound command in its `script` field and was failing every night at 02:45. Fixed by creating `triage_evening.sh` with identical structure and updating the cron job's `script` field via direct jobs.json edit (Python heredoc pattern — `execute_code` blocked in cron context):
+
+```bash
+# Create wrapper
+cat > <hermes-home>/scripts/triage_evening.sh << 'EOF'
+#!/usr/bin/env bash
+set -e
+cd <hermes-home>/skills/ocas-dispatch/scripts
+python3 triage.py
+python3 <hermes-root>/skills/ocas-dispatch/scripts/journal.py
+EOF
+chmod +x <hermes-home>/scripts/triage_evening.sh
+
+# Update jobs.json (Python via terminal — execute_code blocked in cron)
+python3 << 'PYEOF'
+import json
+with open("<hermes-home>/cron/jobs.json") as f:
+    data = json.load(f)
+jobs = data.get("jobs", data) if isinstance(data, dict) else data
+for job in jobs:
+    if job.get("name") == "dispatch:triage-evening" and job.get("no_agent") == True:
+        job["script"] = "triage_evening.sh"
+        break
+with open("<hermes-home>/cron/jobs.json", "w") as f:
+    json.dump(data, f, indent=2, ensure_ascii=False)
+```
+
+**Diagnosis tip for future scans:** Distinguish stale vs active:
+- `dispatch:triage-morning`: `script=triage_morning.sh` + `last_error` shows old `&&` command → **stale** (fixed 2026-06-20)
+- Any job where `script` still contains `&&`, `;`, `|`, or spaces with `no_agent: true` → **active** (apply wrapper fix)
+
 ## Distinction from Other Patterns
 
 | Pattern | Error | Root Cause |

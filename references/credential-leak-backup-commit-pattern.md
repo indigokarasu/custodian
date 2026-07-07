@@ -26,17 +26,30 @@ A backup cron job (`<hermes-root>/scripts/backup_hermes_config.py` or similar) c
 
 ## Fix Pattern
 
-1. **Rotate ALL credentials** in the 3 compromised files immediately
-2. **Rewrite git history** to remove commit `ed1271e`:
+1. **Rotate ALL credentials** in the compromised files immediately
+2. **Add `.gitignore` entries** to prevent future commits (safe, non-force-push, can be applied immediately):
    ```bash
-   git filter-branch --force --index-filter \
-     'git rm --cached --ignore-unmatch config/.env config/auth.json credentials/auth/nous-auth.json' \
-     --prune-empty --tag-name-filter cat -- --all
+   echo -e "\n# Secrets - never commit auth/credential files\nconfig/auth.json\ncredentials/\nconfig/credentials/\n*.auth.json" >> .gitignore
+   git add .gitignore && git commit -m "fix: exclude auth/credential files from git"
+   git push origin main
    ```
-   Or use BFG Repo-Cleaner for larger repos.
-3. **Force-push** to remote (private repo only — coordinate if shared)
-4. **Verify GitGuardian incidents resolve** after rotation
-5. **Update backup script** to exclude secret files via `.gitignore` or explicit filter
+3. **Analyze token expiry before history rewrite** — not every committed secret is still live:
+   - `access_token` fields: Check `expires_at` — many expire in minutes (Nous tokens: 899-second TTL)
+   - `refresh_token` fields: Unknown expiry — treat as LIVE until confirmed revoked by provider
+   - **Rotation timing**: Rotate provider (portal.nousresearch.com, Cloud Console) BEFORE rewriting history, otherwise the new tokens get exposed by the next backup
+4. **Rewrite git history** (only after token rotation) if secrets span multiple commits:
+   ```bash
+   git filter-repo --path config/auth.json --path credentials/auth/nous-auth.json --invert-paths
+   git push origin --force --all
+   ```
+   **Prefer `git filter-repo`** over `git filter-branch` — faster, handles tags/LFS correctly, no stale refs. Requires `pip install git-filter-repo`.
+   **Last resort for most recent commit only**: `git reset --hard HEAD~1` then force-push (loses one commit of non-secret changes too).
+5. **Check remote URL for embedded credentials** — `git remote -v` may show PAT in URL (`https://user:***@github.com/...`). Rotate and update url:
+   ```bash
+   git remote set-url origin https://github.com/indigokarasu/indigo.git  # remove embedded token
+   ```
+6. **Verify GitGuardian incidents resolve** after rotation + history rewrite
+7. **Update backup script** to never `cp` secret files into the repo
 
 ## Custodian Integration
 
@@ -54,9 +67,10 @@ git log --oneline --grep="backup:" -20 --name-only | grep -E "\.env$|auth\.json$
 - **Confidence:** High if GitGuardian alert correlates
 
 ### Auto-Fix (Tier 1)
-1. Add `config/.env`, `config/auth.json`, `credentials/auth/*.json` to backup repo's `.gitignore`
-2. If commit is most recent: `git reset --hard HEAD~1` and force-push
-3. If commit is older: rewrite history (requires coordination)
+1. Add `config/.env`, `config/auth.json`, `credentials/auth/*.json` to backup repo's `.gitignore` and push immediately
+2. Analyze committed secrets for expiry: `access_token` may be expired (check `expires_at`), but `refresh_token` is likely still valid
+3. If commit is most recent AND secrets are rotated: `git reset --hard HEAD~1` and force-push
+4. If secrets span multiple commits OR tokens are still live: escalate to owner for provider-side rotation BEFORE history rewrite
 
 ## Prevention
 

@@ -28,6 +28,34 @@ Blocked: script path resolves outside the scripts directory (<ALLOWED_DIR>): '<B
 
 Match `<BLOCKED_PATH>` against `<ALLOWED_DIR>` — the path must start with `<ALLOWED_DIR>`.
 
+## Symlink Fix Does NOT Work For This Pattern
+
+A **symlink** satisfies `oc_cron_dead_script_ref` (script-not-found — see the "Symlink Fix for Dead Script Refs" section below) but does **NOT** satisfy `oc_cron_script_path_security_block`. The security validator resolves the script's **realpath** and rejects anything whose realpath lands outside the allowed scripts directory. A symlink whose target lives in the system `<hermes-root>/scripts/` (e.g., profile symlink `deploy-site.sh -> <hermes-root>/scripts/deploy-site.sh`) realpaths to `<hermes-root>/scripts/...` → **still blocked**, even though the symlink file itself sits inside the profile dir.
+
+**Correct fix (Tier 1):**
+1. Copy a **real file** into the allowed dir — do NOT symlink:
+   `cp -p <hermes-root>/scripts/<basename> <hermes-root>/profiles/<profile>/scripts/<basename> && chmod +x <hermes-root>/profiles/<profile>/scripts/<basename>`
+2. Set the job `script` field to the **absolute path inside the allowed dir**:
+   `<hermes-root>/profiles/<profile>/scripts/<basename>`
+3. Prefer the absolute path over a bare basename so the validator checks the exact allowed path.
+
+## Verification
+
+Do NOT trust a prior scan's "FIXED via symlink" claim — re-verify against the LIVE `jobs.json`:
+
+```python
+import os
+script = "<hermes-root>/profiles/<profile>/scripts/<basename>"
+allowed = "<hermes-root>/profiles/<profile>/scripts"
+print("is_symlink:", os.path.islink(script))            # MUST be False
+print("realpath_inside:", os.path.realpath(script).startswith(allowed))  # MUST be True
+```
+Also run `bash -n <script>` for syntax. The job's next scheduled run is the final confirmation; if `last_error` still shows the security block, the realpath check failed and the prior fix did not hold.
+
+## Re-Verify Prior "FIXED via symlink" Claims
+
+A prior light/deep scan may have classified this fingerprint as `oc_no_agent_script_path_mismatch` and applied a **symlink** fix, logging `tier1_fixed` / "FIXED via symlink". That claim is **wrong for this pattern** — the symlink still fails the realpath check. Always re-derive from the LIVE `jobs.json`: if `last_error` still shows "Blocked: script path resolves outside the scripts directory", the prior symlink fix did not hold. Re-apply the real-file + absolute-path fix above. Confirmed 2026-07-07: prior scan (run_20260707_070853) marked `indigokarasu-site-feed-refresh` FIXED via symlink; live re-derivation showed the security block still active; real-file copy + absolute path applied and verified (regular file, realpath inside allowed dir, executable, `bash -n` clean).
+
 ## Distinction from `oc_cron_dead_script_ref`
 
 | Pattern | Error | Root Cause |

@@ -62,4 +62,16 @@ The old reauth scripts (`google_reauth_url.py`, `google_oauth_finish.py`) have b
 | `403: access_denied` | Account not in OAuth consent screen test users (Testing mode) | Add email to test users in Google Cloud Console |
 | File is 0 bytes | Non-atomic write during failed refresh | Apply atomic write patch to `credential_store.py` |
 
+## Cascade Pattern: When Google OAuth Tokens Die
+
+When a Google refresh token is revoked (`invalid_grant`), it affects not just the obvious email jobs but cascades through subprocess calls:
+
+- `email:check` → directly imports `googleapiclient` → fails on token refresh
+- `monitor:list` → calls `tasks_monitor.py` as subprocess → that script also uses Google credentials → fails with same `invalid_grant`
+- `sands:*`, `taste:*`, `vesper:*` → all use Gmail/Calendar/Tasks APIs via the same OAuth client
+
+**Detection**: During scan, if `email:check` shows `invalid_grant`, immediately check `monitor:list` and other Google-dependent jobs. The error may appear as `Script exited with code 1` on wrapper scripts that call subprocesses — run the wrapper manually to see the actual subprocess error before classifying.
+
+**Confirmed 2026-06-28**: `email:check` and `monitor:list` both hit `invalid_grant` from the same dead refresh token. `monitor:list` showed `Script exited with code 1` which would be misclassified as `oc_cron_no_agent_exit_1_noop` without subprocess inspection.
+
 ```

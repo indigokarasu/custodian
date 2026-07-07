@@ -13,20 +13,34 @@ Check its output for failures:
 ## How to check
 
 ```bash
-# Check last run
-hermes cron list 2>/dev/null | grep -A5 "memory-guard-floor"
-
-# Check DecisionRecords for failures
-tail -20 <hermes-home>/commons/data/ocas-finch/decisions.jsonl | python3 -c "
-import sys, json
-for line in sys.stdin:
-    d = json.loads(line)
-    if d.get('over_cap_after') or d.get('outcome') == 'error':
-        print(json.dumps(d, indent=2))
+# Check job last_run from jobs.json (NOT hermes cron list — broken in cron context)
+python3 -c "
+import json
+with open('<hermes-home>/cron/jobs.json') as f:
+    data = json.load(f)
+jobs = data.get('jobs', data) if isinstance(data, dict) else data
+for j in jobs:
+    if 'memory-guard-floor' in j.get('name',''):
+        print(j.get('last_run_at'), j.get('last_status'))
 "
 
-# Check MEMORY.md current size
-wc -c <hermes-home>/MEMORY.md
+# Check DecisionRecords for recent over_cap_after (last 24h)
+grep -v "^$" <hermes-home>/commons/data/ocas-finch/decisions.jsonl | python3 -c "
+import sys, json
+from datetime import datetime, timezone, timedelta
+cutoff = datetime.now(timezone.utc) - timedelta(hours=24)
+for line in sys.stdin:
+    line = line.strip()
+    if not line: continue
+    d = json.loads(line)
+    if d.get('over_cap_after'):
+        ts = d.get('timestamp','')
+        if ts >= cutoff.isoformat():
+            print(json.dumps(d, indent=2))
+"
+
+# Check MEMORY.md current size (correct path: memories/ not profile root)
+wc -c <hermes-home>/memories/MEMORY.md
 ```
 
 ## Severity

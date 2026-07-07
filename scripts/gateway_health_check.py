@@ -497,5 +497,23 @@ def check():
 
 
 if __name__ == "__main__":
+    import argparse as _ap
+    _parser = _ap.ArgumentParser(
+        description="Gateway health check — verifies systemd service, platform connections, PID files."
+    )
+    _parser.add_argument("--dry-run", action="store_true", help="Check only, do not restart service")
+    _parser.add_argument("--json", action="store_true", help="Output structured JSON (default)")
+    _parser.add_argument("--text", action="store_true", help="Output human-readable text")
+    _args = _parser.parse_args()
+
+    if _args.dry_run:
+        # In dry-run mode, skip the restart action but still report status
+        import os
+        os.environ["CUSTODIAN_DRY_RUN"] = "1"
+
     status = check()
-    print(json.dumps(status, indent=2))
+    if _args.text:
+        for k, v in status.items():
+            print(f"  {k}: {v}")
+    else:
+        print(json.dumps(status, indent=2))

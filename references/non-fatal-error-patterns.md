@@ -73,7 +73,13 @@ These patterns are detected during scans but are NOT auto-fixed. They are logged
 | `oc_context_engine_chronicle_not_found` | "Context engine 'chronicle' not found — falling back to built-in compressor" warnings in errors.log. The Chronicle context engine plugin is not being loaded despite the kwargs bug being fixed (issue `oc_chronicle_kwargs_get_20260604`, resolved). May indicate empty plugin directory (`plugins/context_engine/chronicle/` has no `.py` files), plugin not installed, or plugin discovery misconfiguration. Non-fatal — degrades gracefully to built-in compressor. | Surface in report. Check if `plugins/context_engine/chronicle/` has `.py` files. If empty, re-install Chronicle plugin. If present, check plugin discovery config. |
 | `oc_context_engine_chronicle_session_lookup_noise` | **Sub-pattern** (2026-06-16): Plugin loads successfully at gateway startup (confirmed by "already registered by a plugin" messages in logs), plugin directory has `__init__.py` and code, but agent-session-level context engine lookup still falls back to compressor. Config has `context.engine: chronicle`. Occurs 10-20+ times per day during agent sessions. **Distinguished from empty-plugin-dir case by**: (1) plugin dir has `.py` files, (2) "already registered" messages confirm plugin loaded, (3) `import hermes_chronicle_plugin` may fail from system Python (not installed as editable package) even though the gateway's plugin loader finds it. Non-fatal — degrades gracefully. | Surface once in report with count. No auto-fix. Known pattern. |
 
-## Gateway Instance Collision Noise
+## Kanban Dispatcher Stuck
+
+| Fingerprint | Description | Action |
+|---|---|---|
+| `oc_kanban_dispatcher_stuck` | Kanban dispatcher reports "ready queue non-empty for N consecutive ticks but 0 workers spawned". Workers failing to stall — often correlated with gateway mass-restarts. | Surface with tick count. <15 ticks: monitor. >=15: investigate profile health (venv, PATH, credentials). See `references/kanban-dispatcher-stuck-pattern.md`. |
+
+## Gateway Collision Noise
 
 | Fingerprint | Description | Action |
 |---|---|---|
@@ -117,8 +123,28 @@ These patterns are detected during scans but are NOT auto-fixed. They are logged
 
 ## Database Size\n\n| Fingerprint | Description | Action |\n|---|---|---|\n| `oc_state_db_oversized` | `state.db` exceeds 10GB (expected <1GB). VACUUM requires ~2x the DB size in temporary disk space. If disk >80%, VACUUM may fail — recommend message pruning instead. | Surface in report. No auto-fix. Track disk headroom before recommending VACUUM. |\n\n## Cron Interpreter Futures Shutdown\n\n| Fingerprint | Description | Action |\n|---|---|---|\n| `oc_cron_interpreter_futures_shutdown` | `RuntimeError: cannot schedule new futures after interpreter shutdown` — cron job uses `concurrent.futures` and the executor is reused across runs; the interpreter shuts down between runs. The job shows `status=error` with this message but `consecutive_failures=0`. **Self-resolving**: job succeeds on next run. **Fix if persistent**: `hermes cron pause <id>` then `hermes cron resume <id>`. Observed affecting: `thread-renamer:active`, `thread-renamer:backfill`, `finch:scan`, `gateway health monitor`, `weave:sync-google`. All showed CF=0 and status=ok after next run — confirmed transient (2026-06-17, 2026-06-19). | Surface in report with affected job count. No auto-fix for first occurrence (transient). If same job hits this 3+ times, apply pause/resume fix. |
 
+## Vision Model Returns Invalid ChatCompletion
+
+| Fingerprint | Description | Action |
+|---|---|---|
+| `oc_vision_model_invalid_response` | Vision model returns `ChatCompletion` with null `choices` (e.g., `nvidia/nemeron-nano-12b-v2-vl:free`). Distinct from `oc_vision_model_incompatible` (which is about `provider: auto`). Here the provider is correctly set but the specific free model returns malformed responses. Affects `vision_analyze` and `browser_vision` tools. Non-fatal — tools fail gracefully but user sessions lose vision capability. **First seen 2026-06-22**: 12 occurrences over 2 days, all from telegram user sessions. | Surface in report. No auto-fix — requires switching the vision model to a working one. If recurring, recommend changing `auxiliary.vision.model` in config.yaml. |
+
+## Telegram Platform Noise
+
+| Fingerprint | Description | Action |
+|---|---|---|
+| `oc_telegram_message_thread_not_found` | "Message thread not found" + "Fallback send also failed" in gateway log. Caused by Telegram bot token collision (gateway SIGTERM while old instance still holds the token). The new instance reconnects, sends to a thread the old instance created, and gets thread-not-found. Self-resolves on next message. | Surface in report if frequency >5/hour. No auto-fix. Correlates with gateway restart events. |
+| `oc_telegram_send_timeout` | "Failed to send Telegram message: Timed out" — httpx network timeout to Telegram API. Non-systemic, single-occurrence. | Surface in report. No auto-fix. |
+| `oc_telegram_flood_control` | "Flood control exceeded. Retry in N seconds" — Telegram rate limit on message edits. Recurring during high-volume send periods (201+ occurrences in 3 min). Self-resolves with built-in retry. | Surface in report with occurrence count. No auto-fix. Distinct from provider 429 rate limits. |
+
 ## no_agent Exit 1 No-Op Pattern
 
 | Fingerprint | Description | Action |
 |---|---|---|
-| `oc_cron_no_agent_exit_1_noop` | A `no_agent: true` cron job's script exits with code 1 when there is no work to do (e.g., no new journals, no undelivered briefings, no new tasks). The script is functioning correctly — exit 1 means "no data to process." But the cron scheduler interprets any non-zero exit as an error. **Diagnostic**: check `last_error` for stdout content like "no undelivered briefings", "no new journals", or empty stderr. If the script's stdout/stderr indicates a no-op (not a real error), classify as this pattern. **Fix**: modify the script to exit 0 for no-op cases, or accept the false-positive error. Do NOT escalate. **Verified examples (2026-06-20)**: `monitor:journals` (exit 1, no new journals), `monitor:list` (exit 1, no new tasks), `dispatch:briefing-deliver` (exit 1, "no undelivered briefings"). All have `consecutive_failures=None/0`. | Surface in report with count. No auto-fix needed — this is a script design choice. If the false-positive noise becomes problematic, fix the script to exit 0 for no-op cases. |
+| `oc_cron_no_agent_exit_1_noop` | A `no_agent: true` cron job's script exits with code 1 when there is no work to do (e.g., no new journals, no undelivered briefings, no new tasks). The script is functioning correctly — exit 1 means "no data to process." But the cron scheduler interprets any non-zero exit as an error. **Diagnostic**: check `last_error` for stdout content like "no undelivered briefings", "no new journals", or empty stderr. If the script's stdout/stderr indicates a no-op (not a real error), classify as this pattern. **Fix**: modify the script to exit 0 for no-op cases, or accept the false-positive error. Do NOT escalate. **Verified examples (2026-06-24)**: `monitor:journals` (exit 1, no new journals), `monitor:list` (exit 1, no new tasks), `dispatch:briefing-deliver` (exit 1, "no undelivered briefings"), `monitor:email` (exit 1, "no new actionable emails"), `monitor:koda-issues` (exit 1, no new), `monitor:spot` (exit 1, "no watches file"), `monitor:styx` (exit 1, "no new transactions"). All have `consecutive_failures=None/0`. | Surface in report with count. No auto-fix needed — this is a script design choice. If the false-positive noise becomes problematic, fix the script to exit 0 for no-op cases. |
+
+## No-Agent Missing Dependency
+
+| Fingerprint | Description | Action |
+|---|---|---|
+| `oc_no_agent_missing_dependency` | A `no_agent: true` cron job fails with `ModuleNotFoundError` because a Python package is missing from the hermes-agent venv (the system Python cron uses). Distinct from `oc_gateway_restart_import_window` (which affects agent-mode jobs and is transient). The package may exist in other venvs on the system. **Diagnostic**: (1) confirm `no_agent: true`, (2) identify missing module from traceback, (3) check if package exists elsewhere (`find /root -name "<module>" -type d`), (4) determine last success vs first failure from cron output files, (5) correlate with gateway restart events (mem-watchdog RSS drops), (6) trace import chain — the missing module may be imported transitively via a local helper module. **Fix**: install package into hermes-agent venv. **Tier 2** — requires package install confirmation. See `references/no-agent-missing-dependency-pattern.md`. | Surface in report with diagnostic details. Escalate as Tier 2. Do NOT auto-install. |
