@@ -221,11 +221,11 @@
   },
   "oc_http_404_model_deprecated": {
     "auto_fix": null,
-    "description": "OpenRouter model no longer available as free tier. Affects any job/skill that references the deprecated model. Cron jobs with model:null inherit the default model from skill config.",
-    "match_patterns": ["HTTP 404.*no longer available", "model.*no longer available.*free", "404.*model.*deprecated"],
-    "reversibility": "Update config.yaml or SKILL.md to reference a supported model",
+    "description": "OpenRouter model no longer available (deprecated/removed). Affects any job/skill that references the deprecated model. Cron jobs with model:null inherit the default model from config.yaml OR from auxiliary.compression.model. When 10+ diverse jobs fail simultaneously with identical 404, check auxiliary.compression.model in config.yaml FIRST — it is commonly the source.",
+    "match_patterns": ["HTTP 404.*no longer available", "model.*no longer available.*free", "404.*model.*deprecated", "No endpoints found for openrouter/"],
+    "reversibility": "Update config.yaml or SKILL.md to reference a supported model. Most commonly: change auxiliary.compression.model from the removed model to a working alternative.",
     "source": "cron_log|errors.log",
-    "technology_context": "OpenRouter API, model selection, free tier deprecation",
+    "technology_context": "OpenRouter API, model selection, free tier deprecation, auxiliary.compression model leakage",
     "tier": 3
   },
   "oc_http_429_rate_limit": {
