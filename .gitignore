@@ -1,0 +1,7 @@
+config.yaml
+.env
+*.jsonl
+session-*.md
+*-cookies.json
+__pycache__/
+*.pyc
