@@ -90,11 +90,37 @@ It reports: live paused counts by fingerprint, INVERSE-gotcha count, FORWARD-sta
 candidates (issues whose jobs all recovered), whether a reconcile write is needed, and which
 enabled+erroring jobs are intentionally left running (transient).
 
+**Run `scripts/find_missed_user_gated_jobs.py` AFTER `verify_escalation_state.py`.**
+`verify_escalation_state.py` lists `Enabled+erroring NOT in any jobs_paused` and heuristically
+labels them `expected=transient, leave running` — but that label is only a default. The missed-
+enrollment probe classifies each such job's `last_error` against known user-gated fingerprints
+(Nous 401, OpenRouter 402, owl-alpha 404, Google 403/401) and reports which are MISSED
+enrollments (pause + enroll into the matching issue) vs genuinely transient vs UNKNOWN (inspect).
+This catches jobs that failed in the inter-scan window *after* the last esc pass and were never
+added to an issue's `jobs_paused`.
+
 ## Honesty rule
 
 Do NOT report user-gated billing / API-key / skill-internal issues as "fixed". Pausing is
 mitigation, not resolution. They stay `user_gated` + `escalation_needed: true` until owner adds
 credits, rotates the key, or edits skill code (Custodian must not edit skill-internal files).
+
+## Inter-scan missed-enrollment pitfall (2026-07-07)
+
+`verify_escalation_state.py` reports `Enabled+erroring NOT in any jobs_paused` and labels them
+`expected=transient, leave running`. That label is ONLY a default — each must be inspected
+individually. In the 2026-07-07T23:34Z loop, 3 of 6 such jobs (`bones:research`,
+`bones:position-tracker`, `finch:work`) were emitting the Nous 401 message (`portal.nousresearch.com`)
+but had never been added to `oc_nous_401_key_invalid_20260707`'s `jobs_paused` — they failed in
+the inter-scan window *after* the 21:04 esc pass. They were real missed escalations, not
+transient. Rule: if a job in that list matches a user-gated fingerprint, it is a MISSED
+enrollment, not transient — pause it and enroll it into the matching issue (keep
+`user_gated` + `escalation_needed: true`). Use `scripts/find_missed_user_gated_jobs.py` to
+auto-classify; for each MISSED job: set `enabled: false`, `state: 'paused'` in `jobs.json` and
+append its id to the recommended issue's `jobs_paused`.
+
+This is the escalation-loop instance of the `custodian:light` gotcha "a job can fail in the
+inter-scan window between scans" — it applies identically to the loop's own passes.
 
 ## Safe `issues.jsonl` edit pattern (brace-depth parser + one-per-line rewrite)
 
