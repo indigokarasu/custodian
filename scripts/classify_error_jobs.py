@@ -77,4 +77,18 @@ def main():
 
 
 if __name__ == "__main__":
+    import argparse
+    ap = argparse.ArgumentParser(
+        description="Custodian light-scan probe: bucket enabled error jobs by last_error fingerprint and list every 'Script exited with code 1' job for de-aggregation.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="Examples:\n  python3 classify_error_jobs.py\n  python3 classify_error_jobs.py --profile koda",
+    )
+    ap.add_argument("--profile", default=PROFILE, help="Profile name or HOME dir")
+    args = ap.parse_args()
+    PROFILE = args.profile
+    CANDIDATES[:] = [
+        f"<hermes-root>/profiles/{PROFILE}/cron/jobs.json",
+        "<hermes-home>/cron/jobs.json",
+        "<hermes-root>/cron/jobs.json",
+    ]
     main()

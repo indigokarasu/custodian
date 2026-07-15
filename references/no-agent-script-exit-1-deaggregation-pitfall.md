@@ -49,3 +49,22 @@ claims when one job in the group happens to pass.
 - `light-scan-stale-no-agent-error-triage.md` — stale vs active on no_agent jobs
 - "Classification bias: don't assume root cause from a tracked issue on a different job" gotcha
 - `scripts/classify_error_jobs.py` — deterministic probe that lists every "Script exited with code 1" job with its `script` name so each can be inspected
+
+## Enrollment-coverage blind spot (skill-code-bug jobs slip past both probes)
+
+The escalation-loop procedure says: run `verify_escalation_state.py` (internal consistency of jobs already in `jobs_paused`), THEN `find_missed_user_gated_jobs.py` (jobs that failed in the inter-scan window and were never enrolled). **Both probes miss a job whose failure is a SKILL-CODE bug rather than a billing/auth error.**
+
+- `find_missed_user_gated_jobs.py` only matches billing/auth fingerprints: Nous 401 (`portal.nousresearch.com`), OpenRouter 402 (credits), owl-alpha 404, Google 403/401. A job failing with **`FileNotFoundError` from `Path.home()` double-path resolution**, **`sqlite3.OperationalError: no such table: facts_fts`**, or any traceback inside a skill script is NOT matched — it sails through as "no discrepancy."
+- `verify_escalation_state.py` only validates jobs ALREADY listed in `jobs_paused`; it cannot discover a job that should be there but isn't.
+
+**Result:** a job can be enabled+burning with an open issue already tracking its exact bug, yet never enrolled. Confirmed 2026-07-13: `weave:sync-google` (32b72994b28d, `Path.home()` `FileNotFoundError`) and `Chronicle Embedding Enrichment` (39d06c70d0a6, `facts_fts` schema error) were both enabled+erroring while open issues `oc_weave_path_home_resolution_bug` and `oc_chronicle_facts_fts_missing` existed with `jobs_paused` lists that omitted them. The light scan caught and enrolled them only because it manually cross-checked the stderr traceback against the issue fingerprints.
+
+### Required cross-check (after de-aggregation, before closing the scan)
+For every enabled+error job whose `last_error` is a SKILL-CODE bug (stderr traceback naming a skill script, `Path.home()`/`expanduser` resolution, missing table/column, missing module inside a skill):
+1. Grep `issues.jsonl` for the matching fingerprint (the bug's known fingerprint, e.g. `oc_weave_path_home_resolution_bug`, `oc_chronicle_facts_fts_missing`).
+2. If an **open** issue with that fingerprint exists AND the job's id is **absent** from its `jobs_paused` → missed enrollment.
+3. **Auto-pause the job** as mitigation: set `enabled: false`, `state: paused`, `paused_at`, and a `paused_reason` describing the deterministic skill-code bug + a re-enable-on-recovery check. Append its id to the issue's `jobs_paused` and (if missing) to `affected_components`.
+4. Note in the journal that the job was enrolled retroactively.
+
+This is a legitimate light-scan reconciliation action (like resolving forward-stale escalations): a burning job absent from its own issue's `jobs_paused` is itself an operational defect. A provider/auth/credits job that fails the same way is handled by `find_missed_user_gated_jobs.py` instead — do NOT double-pause.
+

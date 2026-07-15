@@ -19,6 +19,7 @@ correct action is verify-and-document (write action journal), NOT a forced rewri
 Run: python3 scripts/verify_escalation_state.py
 """
 import json
+import os
 
 PROFILE = "<hermes-home>"
 ISSUES = f"{PROFILE}/commons/data/ocas-custodian/issues.jsonl"
@@ -149,4 +150,15 @@ def main():
 
 
 if __name__ == "__main__":
+    import argparse
+    ap = argparse.ArgumentParser(
+        description="Custodian escalation-loop bidirectional verification probe: parse the profile issues.jsonl and jobs.json, check both staleness directions, report per-issue jobs_paused deltas vs the live paused set.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="Examples:\n  python3 verify_escalation_state.py\n  python3 verify_escalation_state.py --profile koda",
+    )
+    ap.add_argument("--profile", default=PROFILE, help="Profile name or HOME dir")
+    args = ap.parse_args()
+    PROFILE = args.profile if os.path.sep in args.profile else f"<hermes-root>/profiles/{args.profile}"
+    JOBS = f"{PROFILE}/cron/jobs.json"
+    ISSUES = f"{PROFILE}/commons/data/ocas-custodian/issues.jsonl"
     main()
