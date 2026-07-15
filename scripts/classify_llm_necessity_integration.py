@@ -261,4 +261,16 @@ def main():
 
 
 if __name__ == "__main__":
+    import argparse
+    ap = argparse.ArgumentParser(
+        description="Custodian cron-health integration for LLM necessity: runs the classifier, checks acknowledgment state, and writes/updates a single oc_cron_llm_unnecessary issue. REPORT-ONLY — never auto-converts jobs.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="Examples:\n  python3 classify_llm_necessity_integration.py\n  python3 classify_llm_necessity_integration.py --profile koda",
+    )
+    ap.add_argument("--profile", default=PROFILE, help="Profile name")
+    args = ap.parse_args()
+    PROFILE = args.profile
+    PROFILE_HOME = f"<hermes-root>/profiles/{PROFILE}"
+    ISSUES_PATH = f"{PROFILE_HOME}/commons/data/ocas-custodian/issues.jsonl"
+    ACK_PATH = f"{PROFILE_HOME}/commons/data/ocas-custodian/llm_necessity_ack.json"
     main()

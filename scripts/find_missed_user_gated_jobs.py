@@ -175,4 +175,15 @@ def main():
 
 
 if __name__ == "__main__":
+    import argparse
+    ap = argparse.ArgumentParser(
+        description="Custodian escalation-loop missed-enrollment probe: find ENABLED+erroring jobs not covered by any open issue's jobs_paused, classify against user-gated fingerprints.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="Examples:\n  python3 find_missed_user_gated_jobs.py\n  python3 find_missed_user_gated_jobs.py --profile koda",
+    )
+    ap.add_argument("--profile", default="indigo", help="Profile name")
+    args = ap.parse_args()
+    HOME = f"<hermes-root>/profiles/{args.profile}"
+    JOBS_PATH = f"{HOME}/cron/jobs.json"
+    ISSUES_PATHS[:] = [f"{HOME}/commons/data/ocas-custodian/issues.jsonl"]
     main()
