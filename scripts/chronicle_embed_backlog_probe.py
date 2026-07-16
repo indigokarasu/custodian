@@ -10,6 +10,13 @@ Usage:
     python3 scripts/chronicle_embed_backlog_probe.py
 """
 import sqlite3
+import sys
+
+_HELP_ARGS = {"--help", "-h"}
+if set(sys.argv[1:]) & _HELP_ARGS:
+    print((__doc__ or "").strip() or "Usage: python3 chronicle_embed_backlog_probe.py")
+    sys.exit(0)
+
 
 DB = "<hermes-home>/commons/db/chronicle/chronicle.db"
 

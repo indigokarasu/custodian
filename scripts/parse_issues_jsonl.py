@@ -30,6 +30,12 @@ copy until 2026-07-15 and manufactured 7 phantom escalations in one run.
 """
 import json, sys, os
 
+_HELP_ARGS = {"--help", "-h"}
+if set(sys.argv[1:]) & _HELP_ARGS:
+    print((__doc__ or "").strip() or "Usage: python3 parse_issues_jsonl.py")
+    sys.exit(0)
+
+
 DEFAULT = '<hermes-home>/commons/data/ocas-custodian/issues.jsonl'
 STALE_PATH = '<hermes-home>/commons/journals/ocas-custodian/issues.jsonl'
 
