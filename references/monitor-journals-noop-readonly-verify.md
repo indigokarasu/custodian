@@ -27,15 +27,42 @@ journal appeared in the last minute. Verify read-only instead.
      queue write failure) and treat as ACTIVE.
 
 ### One-liner (UTC datetime compare, safe)
+
+**CONCURRENT-SIBLING CONTAMINATION PITFALL (confirmed 2026-07-17):** the naive
+recipe below can FALSELY return `ACTIVE-new-journals` during a `custodian:light`
+run that coincides with other agents writing journals. The bug: `actual_latest_mtime`
+is sampled at wall-clock *now*, but OTHER cron jobs (e.g. `mentor:light`, a
+sibling `custodian:light`) write `commons/journals/**/*.json` continuously. If one
+lands even 1 second after `monitor:journals` ran, the comparison sees a "newer"
+journal than the checkpoint and wrongly concludes the monitor missed work. In the
+2026-07-17 case, `ocas-mentor/mentor-light-...005538Z.json` had mtime
+`00:55:38Z` — exactly 1s after the job's own `last_run_at` (`00:55:37Z`) —
+producing a false `ACTIVE` verdict that a manual mtime-window check overturned.
+
+**Corrected recipe:** compare the checkpoint only against journals that EXISTED at
+the job's own run time. Pass the job's `last_run_at` (from jobs.json) and filter
+`commons/journals/**` to `st_mtime <= job_run_epoch` BEFORE taking the max.
+
 ```python
 from pathlib import Path
-import json
+import json, datetime
 J = Path("<hermes-home>/commons/journals")
 S = Path("<hermes-root>/commons/data/monitor_state/journal_ingest_state.json")
-latest = max((f.stat().st_mtime for f in J.rglob("*.json") if f.is_file()), default=0.0)
-last = json.loads(S.read_text()).get("latest_mtime", 0.0) if S.exists() else 0.0
+last = json.loads(S.read_text()).get("latest_mtime",0.0) if S.exists() else 0.0
+# Job's own run time (from jobs.json last_run_at). Journals written AFTER this
+# are from OTHER agents and must NOT count as work the monitor missed.
+job_run_at = datetime.datetime.fromisoformat("2026-07-17T00:55:37-07:00")
+job_run_epoch = job_run_at.timestamp()
+relevant = [f for f in J.rglob("*.json")
+             if f.is_file() and f.stat().st_mtime <= job_run_epoch]
+latest = max((f.stat().st_mtime for f in relevant), default=0.0)
 print("noop" if latest <= last else "ACTIVE-new-journals")
 ```
+
+If you lack the job's exact `last_run_at`, subtract a small tolerance (e.g. 5s)
+so a sibling journal written milliseconds later is excluded — but prefer the real
+run time. After applying the filter, if the verdict flips to `noop`, the original
+`ACTIVE` was a false positive from sibling write contention, NOT a genuine miss.
 
 ## Why this matters
 The escalation-execution-loop requires every UNKNOWN job to be fully classified
