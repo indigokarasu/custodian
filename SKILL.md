@@ -218,25 +218,18 @@ See `references/conformance.md` for background task checking and cron registry h
 
 Activity model rebuilt each deep scan from 14-day window. See `references/deep-scan.md` and `references/schedule-optimization.md`.
 
-## Non-Fatal Error Patterns
+## Core Fingerprints (Operational Detection Set)
 
-All patterns below have full documentation in `references/` (see Support File Map for "When to read"). Key fingerprints:
+The fingerprints Custodian actively matches during a scan are kept out of
+SKILL.md to preserve progressive disclosure — they change as new patterns are
+confirmed. **When to read:** during light-scan **Step 3 (fingerprint matching)**
+and **Step 6 (recurrence check)**, or whenever a new error job must be
+classified. Full table + the `monitor:list` access-token case breakdown:
+`references/custodian-core-fingerprints.md`. This is the **operational** set;
+the Tier-2 surface-only catalog (detected, never auto-fixed) lives in
+`references/non-fatal-error-patterns.md`.
 
-| Fingerprint | Pattern | Tier |
-|-------------|---------|------|
-| `oc_gateway_restart_import_window` | ModuleNotFoundError / certifi SSL after restart | Transient |
-| `oc_cron_no_agent_script_args` | no_agent script field has embedded arguments → wrapper fix | Tier 1 |
-| `oc_no_agent_script_path_mismatch` | Script at system path, not profile path → symlink fix | Tier 1 |
-| `oc_cron_script_not_found_transient` | Write/read race, script exists and runs | Transient |
-|| `oc_cron_stale_error_script_mismatch` | last_error ≠ current script field | Tier 2 |
-|| `oc_cron_provider_error_transient` | Generic "Provider returned error", cf=None | Transient |
-|| `oc_cron_llm_unnecessary` | LLM job whose prompt is just a script-wrapper, self-update, or needless skill-load — no LLM reasoning needed | Tier 2 |
-|| `oc_fallback_model_manifest_build_401` | fallback_model has expired custom provider key | Tier 3 |
-| `oc_skill_reference_path_mismatch` | Skill reads refs from wrong path | Tier 2 |
-| `oc_script_timeout_chronicle_embed` | `chronicle:daily-embed` exceeds the 600s cron hard limit (SOFT_TIMEOUT_SECS=540 insufficient); daily embedding volume too large for the free nvidia endpoint | Tier 2 |
-| `oc_google_tasks_access_token_race` | `monitor:list` masked `Script exited with code 1` → real `KeyError: 'access_token'` from `tasks_monitor.py`. **TWO DISTINCT CASES (discriminate on the creds file!):** (a) `access_token` PRESENT (non-empty) + re-runs succeed → transient credential-refresh RACE, NOT a defect; `user_gated` issue is a false escalation, resolve, do not persist. (b) `access_token` ABSENT (only `token` + valid `refresh_token` + future `expiry`) → PERSISTENT CODE DEFECT in `tasks_monitor.get_access_token()`, NOT a race; the upstream credential store periodically strips `access_token` and the old code trusts the future `expiry` and crashes. Recoverable NON-interactively via `refresh_token()` (valid `refresh_token`, no owner re-auth) — apply the DURABLE code fix (fall back to `creds['token']` + refresh on absent token; see `references/monitor-list-access-token-recurrence-durable-fix-2026-07-15.md`) and VERIFY. Recurs after a one-off refresh if the durable fix is NOT applied — a prior "resolved" that re-fails live is a Step 8d FALSE RESOLUTION, not a new issue. | Transient (case a) / Code-defect fixable by this loop, non-interactive (case b) |
-
-Also see: `references/kanban-dispatcher-stuck-diagnostic.md`, `references/browser-cdp-502-loop-pattern.md`, `references/provider-401-diagnosis.md`, `references/oc-hook-post-tool-call-task-id-pattern.md`, , `references/transient-401-self-resolution-pattern.md`.
+Also see: `references/kanban-dispatcher-stuck-diagnostic.md`, `references/browser-cdp-502-loop-pattern.md`, `references/provider-401-diagnosis.md`, `references/oc-hook-post-tool-call-task-id-pattern.md`, `references/transient-401-self-resolution-pattern.md`.
 
 ## Known Code Fixes & MCP Cascade
 
@@ -430,6 +423,7 @@ The remaining operational gotchas (provider/credential traps, escalation-state h
 | `references/journal-escalation-stale-premise-guard-2026-07-14.md` | **Step 8b guard**: before persisting a journal→issues gap, verify the journal's live premise is still true (re-derive disk% for `oc_state_db_oversized`, re-scan `jobs.json` for auth/`*_access_token_missing`). Prevents persisting FALSE escalations from journals whose premise resolved post-write. |
 | `references/light-scan-2026-06-29-2206.md` | Clean verdict with new transients + stale paused errors — 5 error jobs: 3 transient first-occurrence provider errors, 2 permanently paused OAuth-frozen. 8-day journal gap. Pattern for "always filter paused jobs from error counts before classifying". |
 | `references/stale-model-error-diagnostic-pattern.md` | When many jobs show `404: No endpoints found for <model>` — distinguishes stale (config already fixed) from active errors. Four-step diagnostic flow with pitfalls |
+| `references/gateway-log-timestamp-range-filtering-pitfall.md` | When date-bounded grep on logs returns huge counts of OLD errors (multiline traceback tail mismatch). Now ALSO covers the inverse: the log is stamped in LOCAL naive time (no offset), so a UTC-window grep yields a false-zero — verify the log's zone before concluding a clean window. |
 | `references/journal-path-format-inconsistency.md` | When journal gap detection falsely reports gaps — different scan runs write to different date directory formats (`YYYY-MM-DD` vs `YYYYMMDD`) or as loose files. Diagnosis and fix direction |
 | `references/pipe-to-interpreter-security-block.md` | When ANY pipe-to-interpreter command gets blocked by tirith security filter — three reliable workarounds |
 | `references/self-resolved-module-verification-pattern.md` | During light/deep scan — when a prior scan classified a ModuleNotFoundError as self-resolved. Verify the module is actually importable in the cron execution context before accepting the classification. |
