@@ -4,10 +4,10 @@
 <img src="./assets/readme/hero.svg" width="100%" alt="Custodian: autonomous operations monitor — detects, classifies, and repairs agent platform failures during quiet hours.">
 </p>
 
-**custodian** Custodian: autonomous operations monitor — detects, classifies, and repairs agent platform failures during quiet hours.
+custodian — Custodian: autonomous operations monitor — detects, classifies, and repairs agent platform failures during quiet hours.
 
 
-> Tell it what you need. It does the work.
+> One clear job, done well.
 
 ---
 
