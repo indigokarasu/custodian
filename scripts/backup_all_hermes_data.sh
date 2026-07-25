@@ -21,7 +21,7 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-SCRIPT="<backup-repo>/scripts/backup_all_hermes_data.sh"
+SCRIPT="<repo-root>/scripts/backup_all_hermes_data.sh"
 if [ ! -f "$SCRIPT" ]; then
     echo "ERROR: canonical backup script not found at $SCRIPT" >&2
     exit 1
