@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import os
 """Escalation execution loop - actually PAUSE user-gated burning jobs and reconcile issues.jsonl.
 
 Generic + re-runnable. Reads jobs.json + the PROFILE issues.jsonl, classifies enabled+erroring
@@ -14,7 +15,7 @@ Safe: backs up jobs.json before editing. Use --dry-run to preview with zero writ
 import json, os, argparse
 from datetime import datetime, timezone
 
-PROFILE = "~/.hermes/profiles/indigo"
+PROFILE = os.path.expanduser("~/.hermes/profiles/indigo")
 JOBS = os.path.join(PROFILE, "cron/jobs.json")
 ISSUES = os.path.join(PROFILE, "commons/data/ocas-custodian/issues.jsonl")
 

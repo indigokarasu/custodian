@@ -2,7 +2,7 @@
 
 When a `no_agent: true` cron job fails with `ModuleNotFoundError` and the package is confirmed missing from the hermes-agent venv:
 
-1. Locate the active venv Python: `find /root -path "*/hermes-agent/.venv/bin/python3" 2>/dev/null` or check `<projects-root>/hermes-agent/.venv/bin/python3` (editable install path)
+1. Locate the active venv Python: `find <fs-root> -path "*/hermes-agent/.venv/bin/python3" 2>/dev/null` or check `<projects-root>/hermes-agent/.venv/bin/python3` (editable install path)
 2. Install: `<projects-root>/hermes-agent/.venv/bin/pip install <package>`
 3. Verify: `<projects-root>/hermes-agent/.venv/bin/python3 -c "from <module> import <thing>; print('OK')"`
 4. Run the script with the venv Python to confirm: `<projects-root>/hermes-agent/.venv/bin/python3 <script_path> --dry-run`

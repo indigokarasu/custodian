@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import os
 """Race-safe targeted patch of ONE issue in the PROFILE issues.jsonl.
 
 PROBLEM (confirmed 2026-07-14 escalation loop): `custodian:light` (top-of-hour) and
@@ -23,7 +24,7 @@ Usage:
 import argparse, json, os, sys, time
 from datetime import datetime, timezone
 
-DEFAULT_PATH = "~/.hermes/profiles/indigo/commons/data/ocas-custodian/issues.jsonl"
+DEFAULT_PATH = os.path.expanduser("~/.hermes/profiles/indigo/commons/data/ocas-custodian/issues.jsonl")
 
 
 def parse_line(line):

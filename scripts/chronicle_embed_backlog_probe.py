@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import os
 """Read-only backlog probe for chronicle:daily-embed timeout verification.
 
 Prints per-kind unembedded counts (items present in source tables but missing from
@@ -18,7 +19,7 @@ if set(sys.argv[1:]) & _HELP_ARGS:
     sys.exit(0)
 
 
-DB = "~/.hermes/profiles/indigo/commons/db/chronicle/chronicle.db"
+DB = os.path.expanduser("~/.hermes/profiles/indigo/commons/db/chronicle/chronicle.db")
 
 KINDS = [
     ("facts",

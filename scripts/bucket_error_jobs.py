@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import os
 """bucket_error_jobs.py — Custodian light/deep scan error-job bucketizer.
 
 Reads the profile jobs.json, classifies every ENABLED error job into a known
@@ -18,7 +19,7 @@ Run:
 import json, datetime, os, sys
 from collections import defaultdict
 
-JOBS = "~/.hermes/profiles/indigo/cron/jobs.json"
+JOBS = os.path.expanduser("~/.hermes/profiles/indigo/cron/jobs.json")
 
 
 def parse_ts(ts):
@@ -134,5 +135,5 @@ if __name__ == "__main__":
     ap.add_argument("--jobs", default=JOBS, help="Path to jobs.json (default: indigo profile)")
     ap.add_argument("--profile", default="indigo", help="Profile name, used only if --jobs is omitted")
     args = ap.parse_args()
-    JOBS = args.jobs or f"~/.hermes/profiles/{args.profile}/cron/jobs.json"
+    JOBS = args.jobs or fos.path.expanduser("~/.hermes/profiles/{args.profile}/cron/jobs.json")
     main()
