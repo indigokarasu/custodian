@@ -11,9 +11,9 @@ haven't re-run?** Misclassifying kills the verdict (false escalation or a false 
    differ from the failing jobs — still corroborate with #2.)
 
 2. **Scan the live gateway log for successful completions in the last hour.**
-   - Find it: `find <hermes-root>/profiles/<profile>/logs -name "*.log" -mmin -90`
-   - Path is normally `<hermes-root>/profiles/<profile>/logs/gateway.log`
-     (NOT `<hermes-root>/logs/gateway.log` — that one is stale/rotated).
+   - Find it: `find <hermes-home>/profiles/<profile>/logs -name "*.log" -mmin -90`
+   - Path is normally `<hermes-home>/profiles/<profile>/logs/gateway.log`
+     (NOT `<hermes-home>/logs/gateway.log` — that one is stale/rotated).
    - `grep -nE "response ready|Sending response" <live_gateway.log> | tail -20`
    - If real LLM responses landed in the last hour, the provider route works for live traffic → the
      job errors are stale.

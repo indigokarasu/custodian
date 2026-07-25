@@ -36,7 +36,7 @@ the root cause is upstream of the container, not the container itself.
      (`len(results) == 0`), so probe the real endpoint (e.g.
      `GET /search?q=test&format=json`) and count the returned results.
 2. Check the job's recent run history BEFORE classifying:
-   - `ls -t <hermes-root>/profiles/<profile>/cron/output/<job_id>/` — if the
+   - `ls -t <hermes-home>/profiles/<profile>/cron/output/<job_id>/` — if the
      monitor was **silent/healthy (empty output) minutes before** the failed
      run, the current failure is a **transient blip, not a persistent crash
      loop**. A persistent upstream-degraded fault shows failures across
@@ -87,7 +87,7 @@ Resolving when the monitor is green creates churn:
 `status: open` + `escalation_needed: true`, leave the monitor RUNNING. The
 running monitor IS the detection mechanism; it self-clears on upstream
 recovery. Only resolve when the root cause is GONE (engine re-enabled, model
-restored, etc.) — for user-gated billing/key issues that means owner added
+restored, etc.) — for user-gated billing/key issues that means <operator> added
 credits / rotated the key.
 
 **Distinguish the two forward-staleness cases:**

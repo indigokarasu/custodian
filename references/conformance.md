@@ -43,7 +43,7 @@ Do not run the skill's own `{skill}.init` command.
 When `oc_google_token_missing` or `oc_google_token_invalid` is detected during a scan:
 
 1. Check `google-workspace-auth` skill (under `infrastructure/`) for the re-auth procedure
-2. The init script is: `python3 <hermes-root>/skills/infrastructure/google-workspace-auth/scripts/google_oauth_init.py`
+2. The init script is: `python3 <hermes-home>/skills/infrastructure/google-workspace-auth/scripts/google_oauth_init.py`
 3. This is ALWAYS Tier 3 — requires interactive user action, cannot be automated
 4. Write escalation proposal to `references/proposals/` with `escalation_needed: true` for Mentor heartbeat
 

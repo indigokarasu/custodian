@@ -13,12 +13,12 @@ Key distinction this enforces:
 Do NOT conflate them: the former persists and recurs; the latter self-heals.
 
 Run:
-  python3 <hermes-home>/skills/ocas-custodian/scripts/bucket_error_jobs.py
+  python3 ~/.hermes/profiles/indigo/skills/ocas-custodian/scripts/bucket_error_jobs.py
 """
 import json, datetime, os, sys
 from collections import defaultdict
 
-JOBS = "<hermes-home>/cron/jobs.json"
+JOBS = "~/.hermes/profiles/indigo/cron/jobs.json"
 
 
 def parse_ts(ts):
@@ -129,10 +129,10 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser(
         description="Custodian light/deep-scan error-job bucketizer: bucket enabled error jobs by fingerprint, show counts, and surface UNKNOWN jobs needing inspection.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="Examples:\n  python3 bucket_error_jobs.py\n  python3 bucket_error_jobs.py --jobs <hermes-root>/profiles/koda/cron/jobs.json",
+        epilog="Examples:\n  python3 bucket_error_jobs.py\n  python3 bucket_error_jobs.py --jobs ~/.hermes/profiles/koda/cron/jobs.json",
     )
     ap.add_argument("--jobs", default=JOBS, help="Path to jobs.json (default: indigo profile)")
     ap.add_argument("--profile", default="indigo", help="Profile name, used only if --jobs is omitted")
     args = ap.parse_args()
-    JOBS = args.jobs or f"<hermes-root>/profiles/{args.profile}/cron/jobs.json"
+    JOBS = args.jobs or f"~/.hermes/profiles/{args.profile}/cron/jobs.json"
     main()

@@ -56,7 +56,7 @@ WHERE session_id IN (
 ## Detection During Scans
 
 **Deep scan Step 2 (Collect):**
-- `du -sh <hermes-home>/state.db`
+- `du -sh <hermes-home>/profiles/indigo/state.db`
 - `df -h /root`
 - `sqlite3 state.db "SELECT COUNT(*) FROM messages"`
 

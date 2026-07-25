@@ -30,7 +30,7 @@ identical low-information wrapper message):
    - Read the full `last_error` (including any `stderr:` traceback — see the
      "Classification bias" gotcha).
    - If `last_error` has no stderr, **RUN the script directly**
-     (`python3 <hermes-root>/profiles/<profile>/scripts/<script>`) and capture its
+     (`python3 <hermes-home>/profiles/<profile>/scripts/<script>`) and capture its
      exit + output. Inspect the script source for `sys.exit(1)` paths: a
      no-op-by-design exit (no stderr) ≠ a real failure (traceback).
    - For subprocess-wrapping monitors, run the wrapped subprocess directly to surface

@@ -18,7 +18,7 @@ The Chronicle context engine plugin is not being loaded. This can happen when:
 
 ## Diagnostic
 
-1. Check plugin directory: `ls -la <hermes-root>/plugins/context_engine/chronicle/`
+1. Check plugin directory: `ls -la <hermes-home>/plugins/context_engine/chronicle/`
 2. If empty (only `__pycache__/`): plugin files were removed or never installed
 3. If `.py` files exist: check plugin discovery config in `config.yaml`
 4. Check if the plugin is listed in `hermes plugins list`

@@ -29,7 +29,7 @@ The "check latest esc-run journal first" optimization (from 2026-06-08) continue
 ## Key Lesson: Verify Before Acting
 
 Multiple issues flagged in custodian journals as `escalation_needed: true` were already resolved by the time the escalation runner checked:
-- Google OAuth re-authorized by owner (email:check fixed)
+- Google OAuth re-authorized by <operator> (email:check fixed)
 - Plugin code bug fixed (custodian_status KeyError)
 - Transient errors self-resolved (SearXNG, script path blocks)
 

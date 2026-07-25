@@ -13,12 +13,12 @@ wrapper may translate the inner script's exit code — e.g. `rr_rally_daily_acti
 can then be STALE: recorded before a wrapper fix landed, even though the wrapper now exits 0.
 
 **Definitive stale-vs-active recipe (used 2026-07-14 on `rally:daily-activity-check`):**
-1. Read the job's `script` field → locate the wrapper (`find <hermes-root> -name "<basename>.sh"`).
-   Both profile (`<hermes-home>/scripts/`) and system (`<hermes-root>/scripts/`)
+1. Read the job's `script` field → locate the wrapper (`find <hermes-home> -name "<basename>.sh"`).
+   Both profile (`<hermes-home>/profiles/indigo/scripts/`) and system (`<hermes-home>/scripts/`)
    copies usually exist; the job runs the profile copy.
 2. `stat -c '%y' <wrapper>` → wrapper mtime.
 3. Read job `last_run_at` (UTC; mind `-07:00` offsets — convert before comparing).
-4. **Run the WRAPPER itself** with the same env it exports (`HERMES_HOME=<hermes-home>`),
+4. **Run the WRAPPER itself** with the same env it exports (`HERMES_HOME=<hermes-home>/profiles/indigo`),
    capture its real exit code: `bash <wrapper>; echo "EXIT=$?"`.
 5. If the wrapper exits 0 AND its mtime is AFTER the job's `last_run_at` → the stored
    "Script exited with code 1" is STALE; the job self-heals on its next scheduled run.

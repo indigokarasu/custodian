@@ -18,7 +18,7 @@ The `.git` directory may still contain: `HEAD`, `config`, `description`, `hooks/
 ## Fix
 
 ```bash
-STORE_DIR="<hermes-home>/checkpoints/store"
+STORE_DIR="<hermes-home>/profiles/indigo/checkpoints/store"
 GIT_DIR="$STORE_DIR/.git"
 
 # 1. Back up corrupted .git

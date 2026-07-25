@@ -26,21 +26,21 @@ systemctl --user status hermes-gateway.service
 systemctl --user status hermes-gateway-indigo.service
 
 # Verify the indigo gateway is actually running
-ps -p $(cat <hermes-home>/gateway.pid 2>/dev/null || echo 0) -o pid,cmd
+ps -p $(cat <hermes-home>/profiles/indigo/gateway.pid 2>/dev/null || echo 0) -o pid,cmd
 
 # Count collision errors
-grep -c "Another gateway instance" <hermes-home>/logs/errors.log
+grep -c "Another gateway instance" <hermes-home>/profiles/indigo/logs/errors.log
 ```
 
 ## Root Cause
 
 The `hermes-gateway.service` unit (default profile, no `--profile` flag) has:
-- `HERMES_HOME=<hermes-root>` (not indigo)
+- `HERMES_HOME=<hermes-home>` (not indigo)
 - `ExecStart=...hermes_cli.main gateway run` (no `--profile indigo`)
 - `Restart=always`, `RestartSec=5`
 
 The `hermes-gateway-indigo.service` unit has:
-- `HERMES_HOME=<hermes-home>`
+- `HERMES_HOME=<hermes-home>/profiles/indigo`
 - `ExecStart=...hermes_cli.main --profile indigo gateway run`
 
 Both try to bind the same gateway port. The indigo gateway starts first (or holds the PID file), so the default gateway fails immediately and systemd restarts it every 5 seconds.

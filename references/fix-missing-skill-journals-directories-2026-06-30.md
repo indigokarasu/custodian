@@ -5,23 +5,23 @@ During a light scan on 2026-06-30, the ocas-custodian skill identified three ski
 - ocas-genie
 - skilllab
 
-All three skills had their data directories and config.json files present, but were missing their `<hermes-root>/commons/journals/<skill_name>/` directories.
+All three skills had their data directories and config.json files present, but were missing their `<hermes-home>/commons/journals/<skill_name>/` directories.
 
 ## Fix Applied
 
 For each affected skill:
 ```bash
-mkdir -p <hermes-home>/commons/journals/ocas-critique/
-mkdir -p <hermes-home>/commons/journals/ocas-genie/
-mkdir -p <hermes-home>/commons/journals/skilllab/
+mkdir -p <hermes-home>/profiles/indigo/commons/journals/ocas-critique/
+mkdir -p <hermes-home>/profiles/indigo/commons/journals/ocas-genie/
+mkdir -p <hermes-home>/profiles/indigo/commons/journals/skilllab/
 ```
 
 ## Verification
 
 After applying the fix, the following directories existed:
-- `<hermes-home>/commons/journals/ocas-critique/` (directory)
-- `<hermes-home>/commons/journals/ocas-genie/` (directory)
-- `<hermes-home>/commons/journals/skilllab/` (directory)
+- `<hermes-home>/profiles/indigo/commons/journals/ocas-critique/` (directory)
+- `<hermes-home>/profiles/indigo/commons/journals/ocas-genie/` (directory)
+- `<hermes-home>/profiles/indigo/commons/journals/skilllab/` (directory)
 
 This corresponds to the `oc_skill_uninitialized` pattern documented in the skill's known issues, specifically addressing missing journals directories when data directories and config files are already present.
 

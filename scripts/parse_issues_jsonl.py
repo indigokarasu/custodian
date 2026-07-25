@@ -11,7 +11,7 @@ Prints a summary of open issues with fingerprints.
 
 Usage:
   python3 parse_issues_jsonl.py [path]
-Default path: <hermes-home>/commons/data/ocas-custodian/issues.jsonl
+Default path: ~/.hermes/profiles/indigo/commons/data/ocas-custodian/issues.jsonl
 (the AUTHORITATIVE profile data-path — NOT the .../journals/ocas-custodian/issues.jsonl
 stale copy, which lags by days and still carries old resolved/duplicate outages).
 
@@ -19,9 +19,9 @@ Use this (not naive json.loads(line)) whenever reading issues.jsonl in a
 scan or escalation runner — see references/escalation-runner-multi-path-issues.md.
 
 CRITICAL PATH GOTCHA (2026-07-15): there are TWO issues.jsonl files:
-  - AUTHORITATIVE:  <hermes-home>/commons/data/ocas-custodian/issues.jsonl
+  - AUTHORITATIVE:  ~/.hermes/profiles/indigo/commons/data/ocas-custodian/issues.jsonl
                      (live, written by escalation loop / custodian runs; ~80KB today)
-  - STALE COPY:     <hermes-home>/commons/journals/ocas-custodian/issues.jsonl
+  - STALE COPY:     ~/.hermes/profiles/indigo/commons/journals/ocas-custodian/issues.jsonl
                      (legacy path, NOT updated by current writes; ~25KB, last touched Jul 14)
 Reading the stale copy made the escalation loop believe old resolved/duplicate
 outage fingerprints (OpenRouter-402, Nous-401, Google-403, token_expired, etc.)
@@ -36,8 +36,8 @@ if set(sys.argv[1:]) & _HELP_ARGS:
     sys.exit(0)
 
 
-DEFAULT = '<hermes-home>/commons/data/ocas-custodian/issues.jsonl'
-STALE_PATH = '<hermes-home>/commons/journals/ocas-custodian/issues.jsonl'
+DEFAULT = '~/.hermes/profiles/indigo/commons/data/ocas-custodian/issues.jsonl'
+STALE_PATH = '~/.hermes/profiles/indigo/commons/journals/ocas-custodian/issues.jsonl'
 
 
 def parse(path):
@@ -106,7 +106,7 @@ if __name__ == '__main__':
             'WARNING: reading the STALE issues.jsonl copy at .../journals/ocas-custodian/.\n'
             '         This file is NOT updated by current writes and still carries old resolved/duplicate\n'
             '         outages. Use the authoritative data-path instead:\n'
-            '         <hermes-home>/commons/data/ocas-custodian/issues.jsonl\n')
+            '         ~/.hermes/profiles/indigo/commons/data/ocas-custodian/issues.jsonl\n')
     entries = parse(path)
     best = dedupe(entries)
     # Open-signal per escalation-loop guidance: not resolved/duplicate AND

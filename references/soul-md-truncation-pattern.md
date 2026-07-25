@@ -30,13 +30,13 @@ This is especially dangerous because:
 
 ```bash
 # Count occurrences in recent errors.log
-grep -c "SOUL.md TRUNCATED" <hermes-home>/logs/errors.log
+grep -c "SOUL.md TRUNCATED" <hermes-home>/profiles/indigo/logs/errors.log
 ```
 
 **Secondary signal**: Check actual size vs config:
 ```bash
-wc -c <hermes-home>/SOUL.md
-grep "context_file_max_chars" <hermes-home>/config.yaml
+wc -c <hermes-home>/profiles/indigo/SOUL.md
+grep "context_file_max_chars" <hermes-home>/profiles/indigo/config.yaml
 ```
 
 If `wc -c` exceeds the config value, truncation is active.
@@ -48,7 +48,7 @@ This is a **Tier 1 auto-fix** — apply immediately during the repair pass.
 **Fix option A (preferred): Increase `context_file_max_chars`**
 ```python
 import yaml
-path = '<hermes-home>/config.yaml'
+path = '<hermes-home>/profiles/indigo/config.yaml'
 with open(path) as f:
     cfg = yaml.safe_load(f)
 cfg['context_file_max_chars'] = <new_value>  # e.g. 12000 for ~10% headroom
@@ -66,11 +66,11 @@ If the user prefers to keep the current limit, trim SOUL.md to 90% of the limit.
 After fix:
 ```bash
 # 1. Verify config value
-grep context_file_max_chars <hermes-home>/config.yaml
+grep context_file_max_chars <hermes-home>/profiles/indigo/config.yaml
 
 # 2. Verify no new truncation warnings in errors.log
 # (wait for next cron job to run, then check)
-tail -5 <hermes-home>/logs/errors.log
+tail -5 <hermes-home>/profiles/indigo/logs/errors.log
 ```
 
 ### Pitfall: SOUL.md grows over time
