@@ -67,4 +67,3 @@ For every enabled+error job whose `last_error` is a SKILL-CODE bug (stderr trace
 4. Note in the journal that the job was enrolled retroactively.
 
 This is a legitimate light-scan reconciliation action (like resolving forward-stale escalations): a burning job absent from its own issue's `jobs_paused` is itself an operational defect. A provider/auth/credits job that fails the same way is handled by `find_missed_user_gated_jobs.py` instead — do NOT double-pause.
-
