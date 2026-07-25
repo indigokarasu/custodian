@@ -46,7 +46,11 @@ hermes kanban show <task_id> 2>/dev/null | grep -E "consecutive_failures|most_re
 hermes kanban list --status in_progress | wc -l
 
 # Check gateway log for crash counts
+<<<<<<< Updated upstream
 grep "kanban dispatcher.*crashed" <hermes-home>/profiles/indigo/logs/gateway.log | tail -3
+=======
+grep "kanban dispatcher.*crashed" ~/.hermes/profiles/indigo/logs/gateway.log | tail -3
+>>>>>>> Stashed changes
 ```
 
 ## Pitfall — Don't Confuse Stuck With Broken

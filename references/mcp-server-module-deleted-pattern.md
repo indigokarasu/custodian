@@ -39,17 +39,28 @@ python3 -c "import main"  # Should fail with ModuleNotFoundError
 pip show workspace-mcp 2>/dev/null || echo "Not a pip package"
 
 # 4. Count occurrences in errors.log
+<<<<<<< Updated upstream
 grep -c "No module named" <hermes-home>/profiles/indigo/logs/errors.log
 
 # 5. Check when it started (correlate with venv changes)
 grep "No module named" <hermes-home>/profiles/indigo/logs/errors.log | head -1
+=======
+grep -c "No module named" ~/.hermes/profiles/indigo/logs/errors.log
+
+# 5. Check when it started (correlate with venv changes)
+grep "No module named" ~/.hermes/profiles/indigo/logs/errors.log | head -1
+>>>>>>> Stashed changes
 ```
 
 ## Fix
 
 This is a **Tier 3 escalation** — the package source is unknown (not a pip package) and cannot be auto-reinstalled.
 
+<<<<<<< Updated upstream
 **Investigation steps for <operator>:**
+=======
+**Investigation steps for <operator>:**
+>>>>>>> Stashed changes
 1. Check if source exists in `<fs-root>/.workspace-mcp/` (data dir, not code)
 2. Look for git history: `find / -name "main.py" -path "*workspace*" 2>/dev/null`
 3. Check if there's a backup of the hermes-agent venv: `ls <hermes-venv>.bak* 2>/dev/null`
@@ -114,4 +125,8 @@ ls <hermes-venv>/lib/python3.14/site-packages/workspace_mcp-*.dist-info/top_leve
 ## History
 
 - 2026-06-29: First detected. `workspace-mcp-fixed` wrapper at `/usr/local/bin/` exists and is executable. Underlying `main` module missing from `<hermes-venv>`. 11+ failed connection attempts in `errors.log` since 22:50 UTC June 28. Recurring every ~15 minutes (each time the gateway tries to use the MCP tool). Not a pip package — was a manual/editable install that got cleaned. Distinct from the OAuth token revocation affecting `email:check` and `monitor:list`.
+<<<<<<< Updated upstream
 - 2026-06-29 (later): **False positive confirmed.** The module was actually present and functional. Light scan flagged stale error log entries. Verification showed `import main` succeeded and the binary ran correctly. Added false positive detection procedure above.
+=======
+- 2026-06-29 (later): **False positive confirmed.** The module was actually present and functional. Light scan flagged stale error log entries. Verification showed `import main` succeeded and the binary ran correctly. Added false positive detection procedure above.
+>>>>>>> Stashed changes

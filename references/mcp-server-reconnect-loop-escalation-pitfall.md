@@ -11,6 +11,7 @@ Reconnect lines are not self-evidently transient. Distinguish:
 ## Detection recipe (run in terminal)
 ```bash
 # last successful re-registration (the recovery signal)
+<<<<<<< Updated upstream
 grep "hail" <hermes-home>/logs/agent.log | grep -i "registered"
 
 # reconnect volume + first/last occurrence today
@@ -20,6 +21,17 @@ grep "hail" <hermes-home>/logs/agent.log | grep "2026-07-14" | tail -1
 
 # real connection-loss attempts (not just keepalive)
 grep "hail" <hermes-home>/logs/agent.log | grep "connection lost (attempt"
+=======
+grep "hail" ~/.hermes/logs/agent.log | grep -i "registered"
+
+# reconnect volume + first/last occurrence today
+grep "hail" ~/.hermes/logs/agent.log | grep "2026-07-14" | wc -l
+grep "hail" ~/.hermes/logs/agent.log | grep "2026-07-14" | head -1
+grep "hail" ~/.hermes/logs/agent.log | grep "2026-07-14" | tail -1
+
+# real connection-loss attempts (not just keepalive)
+grep "hail" ~/.hermes/logs/agent.log | grep "connection lost (attempt"
+>>>>>>> Stashed changes
 ```
 **Decision rule:** if `registered N tool(s)` is absent for longer than the normal reconnect window AND reconnect lines show `connection lost (attempt N/5)` or `Session termination failed: 404`, escalate even if a prior journal said "info-only."
 

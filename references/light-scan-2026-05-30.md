@@ -14,7 +14,11 @@ All transient, self-resolving. Tier 2, no action taken.
 - Already tracked in open issues as `oc_mcp_google_search_connection_failure`
 
 ### Finch Task List Missing
+<<<<<<< Updated upstream
 - `File not found: <hermes-home>/commons/finch/task-list.json`
+=======
+- `File not found: ~/.hermes/commons/finch/task-list.json`
+>>>>>>> Stashed changes
 - 7 occurrences across the day (finch:work job). Non-fatal.
 
 ### Jobs With Error Status But No Log Entry

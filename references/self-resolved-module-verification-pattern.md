@@ -13,7 +13,11 @@ During a light scan (2026-07-01), `dispatch:triage-morning` showed:
 The self-resolved claim could have been accepted without verification. Instead:
 1. Checked the actual python PATH cron jobs use (`<hermes-venv>/bin/python3`)
 2. Ran `python3 -c "import google.oauth2.credentials; print('OK')"` — returned OK
+<<<<<<< Updated upstream
 3. Found the script at `<hermes-home>/profiles/indigo/scripts/triage_morning.sh` (NOT at the previously-assumed path)
+=======
+3. Found the script at `~/.hermes/profiles/indigo/scripts/triage_morning.sh` (NOT at the previously-assumed path)
+>>>>>>> Stashed changes
 4. Confirmed the module IS importable → classification was correct
 
 Without step 2, the scan would have:
@@ -57,6 +61,10 @@ python3 -c "import google.oauth2.credentials; print('OK')"
 
 ## Pitfalls
 
+<<<<<<< Updated upstream
 - **Wrong venv assumption**: The profile venv at `<hermes-home>/profiles/<profile>/venv/bin/python3` may not exist. Cron uses PATH resolution, which typically resolves to `<hermes-venv>/bin/python3`.
+=======
+- **Wrong venv assumption**: The profile venv at `~/.hermes/profiles/<profile>/venv/bin/python3` may not exist. Cron uses PATH resolution, which typically resolves to `<hermes-venv>/bin/python3`.
+>>>>>>> Stashed changes
 - **Same job family ≠ same error**: Two "Script exited with code 1" errors from similar-sounding jobs (e.g., `email:check` and `dispatch:triage-morning`) can have completely different root causes (OAuth revocation vs. missing module). Read the COMPLETE `last_error` stderr traceback before classifying.
 - **Self-resolved by what mechanism?**: A ModuleNotFoundError self-resolves when the module is installed (by a package install cron, manual pip install, or gateway restart import-window closing). If no such event occurred, the error may still be active — verify before accepting.

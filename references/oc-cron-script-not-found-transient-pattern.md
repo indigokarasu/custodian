@@ -2,12 +2,20 @@
 
 ## When
 
+<<<<<<< Updated upstream
 A no_agent cron job reports `Script not found: <hermes-home>/profiles/<profile>/scripts/<basename>` but the script **exists at the exact path mentioned**, is executable, and runs correctly when invoked directly.
+=======
+A no_agent cron job reports `Script not found: ~/.hermes/profiles/<profile>/scripts/<basename>` but the script **exists at the exact path mentioned**, is executable, and runs correctly when invoked directly.
+>>>>>>> Stashed changes
 
 ## Distinct From
 
 - **`oc_cron_dead_script_ref`**: Script file genuinely doesn't exist (deleted or never created).
+<<<<<<< Updated upstream
 - **`oc_cron_script_path_security_block`**: Script exists but at wrong path (e.g., `<hermes-home>/scripts/` instead of `<hermes-home>/profiles/<profile>/scripts/`).
+=======
+- **`oc_cron_script_path_security_block`**: Script exists but at wrong path (e.g., `~/.hermes/scripts/` instead of `~/.hermes/profiles/<profile>/scripts/`).
+>>>>>>> Stashed changes
 - **`oc_cron_no_agent_script_args`**: Script field contains embedded arguments (`foo.py --flag`) treated as literal path.
 
 ## Root Cause

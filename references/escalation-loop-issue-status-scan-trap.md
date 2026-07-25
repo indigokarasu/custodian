@@ -7,7 +7,11 @@ current schema. Those string values are not used. This caused a real risk of emi
 
 ## Actual status vocabulary (verified 2026-07-15)
 
+<<<<<<< Updated upstream
 Parsed 37 entries in `<hermes-home>/profiles/indigo/commons/data/ocas-custodian/issues.jsonl`:
+=======
+Parsed 37 entries in `~/.hermes/profiles/indigo/commons/data/ocas-custodian/issues.jsonl`:
+>>>>>>> Stashed changes
 
 - `resolved` — closed (incl. stale-premise resolutions). NOT open.
 - `duplicate` — a MERGE of another issue (e.g. `oc_openrouter_402_credits_exhausted_20260712T040120`

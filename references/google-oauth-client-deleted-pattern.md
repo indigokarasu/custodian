@@ -12,13 +12,21 @@ When a Google OAuth client is deleted from Google Cloud Console, token refresh a
 
 ## Why Auto-Fix Cannot Work
 
+<<<<<<< Updated upstream
 The `oc_google_token_invalid` auto-fix (`cp <hermes-home>-indigo/google_token.json <hermes-home>/google_token.json`) restores a backup token, but if the OAuth client itself was deleted, no token will work. A new OAuth client must be created in Google Cloud Console.
+=======
+The `oc_google_token_invalid` auto-fix (`cp ~/.hermes-indigo/google_token.json ~/.hermes/google_token.json`) restores a backup token, but if the OAuth client itself was deleted, no token will work. A new OAuth client must be created in Google Cloud Console.
+>>>>>>> Stashed changes
 
 ## Required User Action
 
 1. Create a new OAuth client in Google Cloud Console
 2. Update `config.yaml` with new `GOOGLE_OAUTH_CLIENT_ID` and `GOOGLE_OAUTH_CLIENT_SECRET`
+<<<<<<< Updated upstream
 3. Re-authorize via `python3 <hermes-home>/skills/infrastructure/google-workspace-auth/scripts/google_oauth_init.py`
+=======
+3. Re-authorize via `python3 ~/.hermes/skills/infrastructure/google-workspace-auth/scripts/google_oauth_init.py`
+>>>>>>> Stashed changes
 
 ## Affected Jobs
 

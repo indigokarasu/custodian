@@ -14,10 +14,17 @@ journal appeared in the last minute. Verify read-only instead.
 - `sys.exit(2)` — exception, prints `error: ...` to stderr (real failure).
 
 ## Read-only verification (no state mutation)
+<<<<<<< Updated upstream
 1. Read `STATE_FILE = <hermes-home>/commons/data/monitor_state/journal_ingest_state.json`
    → `state["latest_mtime"]` (a unix epoch float).
 2. Compute the actual latest journal mtime under
    `JOURNALS_DIR = <hermes-home>/profiles/indigo/commons/journals`
+=======
+1. Read `STATE_FILE = ~/.hermes/commons/data/monitor_state/journal_ingest_state.json`
+   → `state["latest_mtime"]` (a unix epoch float).
+2. Compute the actual latest journal mtime under
+   `JOURNALS_DIR = ~/.hermes/profiles/indigo/commons/journals`
+>>>>>>> Stashed changes
    (`rglob("*.json")`, take `max(f.stat().st_mtime)`).
 3. Compare:
    - `state.latest_mtime >= actual_latest_mtime` → script hits `if latest_mtime <= last_mtime: sys.exit(1)`
@@ -46,8 +53,13 @@ the job's own run time. Pass the job's `last_run_at` (from jobs.json) and filter
 ```python
 from pathlib import Path
 import json, datetime
+<<<<<<< Updated upstream
 J = Path("<hermes-home>/profiles/indigo/commons/journals")
 S = Path("<hermes-home>/commons/data/monitor_state/journal_ingest_state.json")
+=======
+J = Path("~/.hermes/profiles/indigo/commons/journals")
+S = Path("~/.hermes/commons/data/monitor_state/journal_ingest_state.json")
+>>>>>>> Stashed changes
 last = json.loads(S.read_text()).get("latest_mtime",0.0) if S.exists() else 0.0
 # Job's own run time (from jobs.json last_run_at). Journals written AFTER this
 # are from OTHER agents and must NOT count as work the monitor missed.

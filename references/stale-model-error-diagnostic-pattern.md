@@ -27,7 +27,11 @@ Other providers: adjust the URL to the provider's /v1/models endpoint.
 
 ### Step 2: Check the profile config.yaml for the default model
 
+<<<<<<< Updated upstream
 The config `model:` section at `<hermes-home>/profiles/<profile>/config.yaml` defines the default model:
+=======
+The config `model:` section at `~/.hermes/profiles/<profile>/config.yaml` defines the default model:
+>>>>>>> Stashed changes
 
 ```yaml
 model:
@@ -37,12 +41,20 @@ model:
   api_mode: chat_completions
 ```
 
+<<<<<<< Updated upstream
 **Important:** The `model:` section is at the PROFILE config level, not the main `<hermes-home>/config.yaml`. The main config stores different settings. Always check the profile config.
+=======
+**Important:** The `model:` section is at the PROFILE config level, not the main `~/.hermes/config.yaml`. The main config stores different settings. Always check the profile config.
+>>>>>>> Stashed changes
 
 ### Step 3: Check config modification time vs jobs' last_run_at
 
 ```bash
+<<<<<<< Updated upstream
 stat <hermes-home>/profiles/<profile>/config.yaml | grep Modify
+=======
+stat ~/.hermes/profiles/<profile>/config.yaml | grep Modify
+>>>>>>> Stashed changes
 ```
 
 Then cross-reference: for each error job in jobs.json, compare `last_run_at` to the config's mtime. If ALL error jobs have `last_run_at < config_mtime`, the errors are **stale** — the config was fixed after the jobs failed. They will self-resolve on next scheduled run.

@@ -19,7 +19,7 @@
 
 3. **Check GitHub releases** (more reliable than tags):
    ```bash
-   gh release list -R indigokarasu/custodian --limit 5
+   gh release list -R <agent-handle>/custodian --limit 5
    ```
    The latest release is the canonical version. Tags like v1.5.1 may be historical artifacts on older branches.
 

@@ -10,17 +10,30 @@ profile-specific scripts directory.
 
 `cron/scheduler.py` line 943:
 ```python
+<<<<<<< Updated upstream
 scripts_dir = _get_hermes_home() / "scripts"  # → <hermes-home>/scripts/
 ```
 
 The `path.relative_to()` check at line 956 rejects paths in
 `<hermes-home>/profiles/indigo/scripts/` even though the error message
+=======
+scripts_dir = _get_hermes_home() / "scripts"  # → ~/.hermes/scripts/
+```
+
+The `path.relative_to()` check at line 956 rejects paths in
+`~/.hermes/profiles/indigo/scripts/` even though the error message
+>>>>>>> Stashed changes
 paradoxically names that directory.
 
 ## Fix Applied
 
+<<<<<<< Updated upstream
 Updated 8 job `script` fields in `<hermes-home>/profiles/indigo/cron/jobs.json`:
 - Changed `<hermes-home>/profiles/indigo/scripts/<name>` → `<hermes-home>/scripts/<name>`
+=======
+Updated 8 job `script` fields in `~/.hermes/profiles/indigo/cron/jobs.json`:
+- Changed `~/.hermes/profiles/indigo/scripts/<name>` → `~/.hermes/scripts/<name>`
+>>>>>>> Stashed changes
 - Verified target files exist and are identical (via `cmp`)
 - Verified path validation passes (via `path.relative_to()` test)
 
@@ -36,7 +49,12 @@ of this pattern, detection, fix, and verification procedure.
 
 ## Key Insight
 
+<<<<<<< Updated upstream
 The previous "fix" (2026-06-03) moved scripts from `<hermes-home>/scripts/` to
 `<hermes-home>/profiles/indigo/scripts/` to avoid a security block. But the
+=======
+The previous "fix" (2026-06-03) moved scripts from `~/.hermes/scripts/` to
+`~/.hermes/profiles/indigo/scripts/` to avoid a security block. But the
+>>>>>>> Stashed changes
 security model actually expects `HERMES_HOME/scripts/`. The move made things worse.
 Scripts existed in both locations — the fix was to point back to the main directory.

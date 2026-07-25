@@ -79,7 +79,11 @@ Do NOT merge these into a single fingerprint — they have different recurrence 
 
 **⚠️ Practical cascade pattern:** In practice, `oc_http_429_rate_limit` and `oc_http_429_concurrent` rarely occur in isolation. A concentrated cron wave (e.g., 17 jobs in 25 min at 07:00 UTC) creates concurrent spikes that accelerate consumption of plan-level rate limits, causing both patterns simultaneously. Document the issue as the dominant fingerprint (`oc_http_429_rate_limit`) but note the concurrent contribution. Staggering helps with the concurrent component; the plan-level limit needs separate remediation (upgrade).
 
+<<<<<<< Updated upstream
 **⚠️ Google OAuth token expiry field is stale after refresh:** The `expiry` field in `<user-google-email>.json` and `<third-party-or-user-email>.json` is set at token creation time and is NOT updated by the refresh script. After a successful refresh, the file modification time (mtime) is the ground truth for token freshness — NOT the `expiry` field. A token with `expiry: 2026-05-15T18:10:00Z` but mtime of `2026-05-15T17:17 UTC` is FRESH (refreshed after the old expiry). Always check `os.path.getmtime()` or `stat` to verify token freshness. Tokens refreshed within the last 24 hours are valid regardless of the JSON `expiry` field value.
+=======
+**⚠️ Google OAuth token expiry field is stale after refresh:** The `expiry` field in `<user-google-email>.json` and `<agent-email>.json` is set at token creation time and is NOT updated by the refresh script. After a successful refresh, the file modification time (mtime) is the ground truth for token freshness — NOT the `expiry` field. A token with `expiry: 2026-05-15T18:10:00Z` but mtime of `2026-05-15T17:17 UTC` is FRESH (refreshed after the old expiry). Always check `os.path.getmtime()` or `stat` to verify token freshness. Tokens refreshed within the last 24 hours are valid regardless of the JSON `expiry` field value.
+>>>>>>> Stashed changes
 
 **⚠️ Stale OAuth credential → confusing HTTP 400 error substitution:** When a credential pool entry has an expired `agent_key` (its `agent_key_expires_at` has passed) but `last_status: ok`, the round-robin strategy will still select it. Instead of returning HTTP 401 (expected for expired auth), the upstream provider may return HTTP 400 "This request is not valid. Check the model name and other parameters." — an error that looks like a model-name issue but is actually an auth issue.
 
@@ -99,7 +103,11 @@ The credential pool is stored at `{agent_root}/auth.json` under `credential_pool
 
 **⚠️ Proposal directory accumulation:** InsightProposals marked `resolved: true` accumulate in the proposals/ directory over time. Each deep scan may generate new proposals for resolved fingerprints. The escalation runner should periodically consolidate: count resolved proposals, verify their underlying issues are still closed, and note accumulation in the report. Consider removing proposals older than 7 days that are already resolved. Track the count in the journal as `proposals_cleaned`.
 
+<<<<<<< Updated upstream
 **⚠️ Disk trend monitoring:** After disk cleanup (removing old state-snapshots), a new snapshot can regenerate quickly — the system creates `state-snapshots/YYYYMMDD-HHMMSS-pre-update/` directories during custodian:update runs. Each snapshot is ~14G (a full copy of state.db). If disk crosses 85% again, check for new snapshots before assuming the cleanup failed. The snapshot lifecycle is: created during update → should be cleaned after successful update → but cleanup doesn't always run automatically. Monitor `du -sh <hermes-home>/state-snapshots/` on each deep scan.
+=======
+**⚠️ Disk trend monitoring:** After disk cleanup (removing old state-snapshots), a new snapshot can regenerate quickly — the system creates `state-snapshots/YYYYMMDD-HHMMSS-pre-update/` directories during custodian:update runs. Each snapshot is ~14G (a full copy of state.db). If disk crosses 85% again, check for new snapshots before assuming the cleanup failed. The snapshot lifecycle is: created during update → should be cleaned after successful update → but cleanup doesn't always run automatically. Monitor `du -sh ~/.hermes/state-snapshots/` on each deep scan.
+>>>>>>> Stashed changes
 
 **⚠️ State-snapshot auto-cleanup gap:** The `custodian:update` job (schedule: `0 7 * * *`) creates a `state-snapshots/YYYYMMDD-HHMMSS-pre-update/` directory before updating. This snapshot is a full copy of `state.db` (~14GB). The update process does NOT automatically clean up the snapshot after completion. Every deep scan should check for and remove snapshots from completed updates (any snapshot older than 1 hour is safe to remove). This is a recurring source of disk pressure — the snapshot was created at 02:43 UTC on 2026-05-14 and was not cleaned up until the deep scan at 09:21 UTC, during which time disk was at 86%. On this system, 10+ cron jobs fire simultaneously at `0 0 * * *` (midnight UTC): custodian:update, weave:sync-contacts, corvus:update, vesper:update, scout:update, elephas:update, taste:sync-spotify, mentor:update, praxis:update, voyage:update, forge:update, sift:update, sands:update. This causes concurrent API request spikes leading to 429 errors and session summarization failures. When checking rate-limit cascade patterns, always check the cron schedule for simultaneous job triggers.
 
@@ -112,7 +120,11 @@ When multiple cron jobs use the same shorthand pattern (e.g., `*/10 * * * *` or 
 python3 -c "
 import json
 from collections import Counter
+<<<<<<< Updated upstream
 with open('<hermes-home>/cron/jobs.json') as f:
+=======
+with open('~/.hermes/cron/jobs.json') as f:
+>>>>>>> Stashed changes
     jobs = json.load(f)['jobs']
 schedules = Counter()
 for j in jobs:
@@ -181,7 +193,11 @@ grep "HTTP 429" {agent_root}/logs/errors.log | grep "$(date +%H:%M)" | head -5
 
 **⚠️ Log file locations:** On Hermes, the date-stamped log pattern `agent-YYYY-MM-DD.log` may not exist. The actual log files are: `{agent_root}/logs/agent.log` (general), `{agent_root}/logs/errors.log` (errors/warnings), `{agent_root}/logs/gateway.log` (gateway platform events). Use `tail` and `grep` on these files rather than trying to construct date-stamped paths.
 
+<<<<<<< Updated upstream
 **⚠️ gateway.log is binary — use `strings` before `grep`:** The `gateway.log` file may be in a binary or non-text format that doesn't respond to standard `grep`. Always pipe through `strings` first: `strings <hermes-home>/logs/gateway.log | grep "pattern"`. This is especially important when searching for job run outcomes, error messages, or session IDs in gateway logs.
+=======
+**⚠️ gateway.log is binary — use `strings` before `grep`:** The `gateway.log` file may be in a binary or non-text format that doesn't respond to standard `grep`. Always pipe through `strings` first: `strings ~/.hermes/logs/gateway.log | grep "pattern"`. This is especially important when searching for job run outcomes, error messages, or session IDs in gateway logs.
+>>>>>>> Stashed changes
 
 **⚠️ errors.log format:** The errors.log format is `YYYY-MM-DD HH:MM:SS,mmm LEVEL [session_id] message` — NOT `| ERROR message`. When parsing with regex, use:
 ```python

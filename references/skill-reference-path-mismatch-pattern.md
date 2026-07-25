@@ -8,12 +8,20 @@
 
 A skill's agent-side code attempts to read reference/support files from:
 ```
+<<<<<<< Updated upstream
 <hermes-home>/commons/data/<skill-name>/references/
+=======
+~/.hermes/commons/data/<skill-name>/references/
+>>>>>>> Stashed changes
 ```
 
 But the files actually exist at:
 ```
+<<<<<<< Updated upstream
 <hermes-home>/profiles/<profile>/skills/<skill-name>/references/
+=======
+~/.hermes/profiles/<profile>/skills/<skill-name>/references/
+>>>>>>> Stashed changes
 ```
 
 This causes `File not found` errors when the agent executes the skill.
@@ -23,13 +31,18 @@ This causes `File not found` errors when the agent executes the skill.
 1. **Skill development convention**: Skills are developed with references in `skills/<skill>/references/`
 2. **Profile isolation**: When installed under a profile, the skill lives at `profiles/<profile>/skills/<skill>/`
 3. **Agent runtime**: The skill's code (or update scripts) hardcodes or derives the wrong base path
+<<<<<<< Updated upstream
 4. **Update script mismatch**: `update_skill.sh` pulls to global `<hermes-home>/skills/` not profile dir
+=======
+4. **Update script mismatch**: `update_skill.sh` pulls to global `~/.hermes/skills/` not profile dir
+>>>>>>> Stashed changes
 
 ## Observed Instance: `ocas-spot`
 
 **Job:** `spot:update` (77251188598b)
 **Error in logs:**
 ```
+<<<<<<< Updated upstream
 File not found: <hermes-home>/commons/data/ocas-spot/references/cron-sweep-pattern.md
 File not found: <hermes-home>/commons/data/ocas-spot/references/journal-schema.md
 ```
@@ -37,11 +50,24 @@ File not found: <hermes-home>/commons/data/ocas-spot/references/journal-schema.m
 **Actual location:** `<hermes-home>/profiles/indigo/skills/ocas-spot/references/`
 
 **Update script issue:** `update_skill.sh` targets `<hermes-home>/skills/ocas-spot/` (global) but profile uses `<hermes-home>/profiles/indigo/skills/ocas-spot/`
+=======
+File not found: ~/.hermes/commons/data/ocas-spot/references/cron-sweep-pattern.md
+File not found: ~/.hermes/commons/data/ocas-spot/references/journal-schema.md
+```
+
+**Actual location:** `~/.hermes/profiles/indigo/skills/ocas-spot/references/`
+
+**Update script issue:** `update_skill.sh` targets `~/.hermes/skills/ocas-spot/` (global) but profile uses `~/.hermes/profiles/indigo/skills/ocas-spot/`
+>>>>>>> Stashed changes
 
 ## Detection
 
 During log scanning, watch for:
+<<<<<<< Updated upstream
 - `File not found: <hermes-home>/commons/data/<skill>/references/`
+=======
+- `File not found: ~/.hermes/commons/data/<skill>/references/`
+>>>>>>> Stashed changes
 - Skill name in path matches an installed skill
 - References directory exists in profile skills dir but not in commons/data
 
@@ -69,8 +95,13 @@ During log scanning, watch for:
 ## Observed Instance: `memory-system-design` (2026-06-18)
 
 **Jobs:** `elephas:deep`, `elephas:update`, `elephas:ingest` all reference `skill: memory-system-design`
+<<<<<<< Updated upstream
 **Expected path:** `<hermes-home>/profiles/indigo/skills/memory-system-design/`
 **Actual location:** `<hermes-home>/profiles/indigo/skills/infrastructure/memory-system-design/`
+=======
+**Expected path:** `~/.hermes/profiles/indigo/skills/memory-system-design/`
+**Actual location:** `~/.hermes/profiles/indigo/skills/infrastructure/memory-system-design/`
+>>>>>>> Stashed changes
 
 **Symptoms:**
 - `skill_view(name='memory-system-design')` may fail or return wrong content
@@ -96,7 +127,11 @@ When using `sed -i '/pattern/{N;/other/d}'` to remove entries from config.yaml, 
 
 When creating/updating skills:
 - Use `skill_view(name, file_path)` for reading references (handles path resolution)
+<<<<<<< Updated upstream
 - Avoid hardcoding `<hermes-home>/commons/data/` or `<hermes-home>/skills/`
+=======
+- Avoid hardcoding `~/.hermes/commons/data/` or `~/.hermes/skills/`
+>>>>>>> Stashed changes
 - Derive paths from `$HERMES_HOME` or use Hermes-provided skill resolution
 
 ## Escalation

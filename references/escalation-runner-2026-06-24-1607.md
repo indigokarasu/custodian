@@ -15,17 +15,29 @@
 ### Problem
 The `oc_config_empty_section` fix-loop (4th occurrence as of 2026-06-24) was previously "fixed" on 2026-06-17, 06-18, and 06-23 — but null keys kept reappearing. Investigation revealed:
 
+<<<<<<< Updated upstream
 - **Profile config** (`<hermes-home>/profiles/indigo/config.yaml`): CLEAN — `context_file_max_chars: 10000` (proper value)
 - **Main config** (`<hermes-home>/config.yaml`): STILL HAS NULLS — `max_concurrent_sessions: null` (line 11), `context_file_max_chars: null` (line 89), `max_in_progress_per_profile: null` (line 125), `max_parallel_jobs: null` (line 495)
 
 ### Root Cause
 Previous fixes only addressed the profile config. The main config (`<hermes-home>/config.yaml`) retained null keys. Both files are loaded by the gateway — null keys in either generate TUI warnings and can trigger `oc_config_empty_section` fingerprint.
+=======
+- **Profile config** (`~/.hermes/profiles/indigo/config.yaml`): CLEAN — `context_file_max_chars: 10000` (proper value)
+- **Main config** (`~/.hermes/config.yaml`): STILL HAS NULLS — `max_concurrent_sessions: null` (line 11), `context_file_max_chars: null` (line 89), `max_in_progress_per_profile: null` (line 125), `max_parallel_jobs: null` (line 495)
+
+### Root Cause
+Previous fixes only addressed the profile config. The main config (`~/.hermes/config.yaml`) retained null keys. Both files are loaded by the gateway — null keys in either generate TUI warnings and can trigger `oc_config_empty_section` fingerprint.
+>>>>>>> Stashed changes
 
 ### Diagnostic Pattern
 When investigating config empty section fix-loops:
 ```bash
 # Check BOTH config files for null keys
+<<<<<<< Updated upstream
 grep -n ': null$' <hermes-home>/config.yaml <hermes-home>/profiles/*/config.yaml
+=======
+grep -n ': null$' ~/.hermes/config.yaml ~/.hermes/profiles/*/config.yaml
+>>>>>>> Stashed changes
 ```
 
 ### Fix Pattern

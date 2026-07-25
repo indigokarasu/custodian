@@ -13,7 +13,11 @@ When 10+ null-model, null-provider cron jobs simultaneously show `"No endpoints 
 ### Step 1: Check config.yaml for owl-alpha references
 
 ```bash
+<<<<<<< Updated upstream
 grep -n 'owl-alpha\|auxiliary.*compression' <hermes-home>/profiles/indigo/config.yaml
+=======
+grep -n 'owl-alpha\|auxiliary.*compression' ~/.hermes/profiles/indigo/config.yaml
+>>>>>>> Stashed changes
 ```
 
 The main `model.default` is typically a different model (e.g., `deepseek/deepseek-v4-flash`) and works fine. The `auxiliary.compression` section overrides the compression model independently:
@@ -37,7 +41,11 @@ If this returns nothing, the model has been fully removed from OpenRouter.
 
 ```python
 import json
+<<<<<<< Updated upstream
 with open("<hermes-home>/profiles/indigo/cron/jobs.json") as f:
+=======
+with open("~/.hermes/profiles/indigo/cron/jobs.json") as f:
+>>>>>>> Stashed changes
     data = json.load(f)
 jobs = data.get("jobs", [])
 affected = [j for j in jobs if "openrouter/owl-alpha" in (j.get("last_error") or "")]
@@ -49,7 +57,11 @@ print(f"{len(affected)} jobs affected")
 The `model.default` in config.yaml typically references a working model (e.g., `deepseek/deepseek-v4-flash`). Verify:
 
 ```bash
+<<<<<<< Updated upstream
 grep '^model:' -A 3 <hermes-home>/profiles/indigo/config.yaml | head -6
+=======
+grep '^model:' -A 3 ~/.hermes/profiles/indigo/config.yaml | head -6
+>>>>>>> Stashed changes
 # Should show model.default with a different model
 ```
 
