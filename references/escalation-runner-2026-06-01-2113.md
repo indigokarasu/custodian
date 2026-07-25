@@ -2,7 +2,7 @@
 
 ## Fix applied
 
-**look:update re-enabled** — Job `bbc802581354` was paused (`enabled: false`, `state: paused`) due to HTTP 429 rate limit on 2026-05-31. Error was transient. Re-enabled by setting `enabled: true`, `state: idle`, removing `paused_at`/`paused_reason` in `<hermes-root>/cron/jobs.json`.
+**look:update re-enabled** — Job `bbc802581354` was paused (`enabled: false`, `state: paused`) due to HTTP 429 rate limit on 2026-05-31. Error was transient. Re-enabled by setting `enabled: true`, `state: idle`, removing `paused_at`/`paused_reason` in `<hermes-home>/cron/jobs.json`.
 
 ## Issues verified (all unchanged, require user action)
 
@@ -14,7 +14,7 @@
 
 ## Key learning: jobs.json path
 
-**jobs.json is at `<hermes-root>/cron/jobs.json`** — NOT `<hermes-root>/jobs.json`. The escalation runner workflow must always use this path. The file structure is `{"jobs": [...], "updated_at": "..."}`.
+**jobs.json is at `<hermes-home>/cron/jobs.json`** — NOT `<hermes-home>/jobs.json`. The escalation runner workflow must always use this path. The file structure is `{"jobs": [...], "updated_at": "..."}`.
 
 ## Key learning: paused jobs from transient 429
 
@@ -26,4 +26,4 @@ Jobs auto-paused by the system due to HTTP 429 rate limits are transient. The es
 
 ## Key learning: google_auth_mcp.py function verification
 
-`get_gmail_service` DOES exist in `<hermes-root>/scripts/google_auth_mcp.py` (line 109). Previous reference documentation claiming it only exports `get_service` was incorrect. The import works fine; the actual email:check issue is the revoked OAuth token.
+`get_gmail_service` DOES exist in `<hermes-home>/scripts/google_auth_mcp.py` (line 109). Previous reference documentation claiming it only exports `get_service` was incorrect. The import works fine; the actual email:check issue is the revoked OAuth token.

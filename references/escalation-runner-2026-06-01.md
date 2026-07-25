@@ -55,11 +55,11 @@ MCP servers are **spawned on-demand by the gateway**, not persistent daemons. Wh
 
 When a job is paused with `last_status: error` and the error is a transient provider issue (HTTP 429, 502, 503), re-enable it. The system auto-pauses jobs on rate limits, but these self-resolve.
 
-**jobs.json location:** `<hermes-root>/cron/jobs.json` (NOT `<hermes-root>/jobs.json`). Always use this path.
+**jobs.json location:** `<hermes-home>/cron/jobs.json` (NOT `<hermes-home>/jobs.json`). Always use this path.
 
 ```python
 # In terminal() heredoc for cron mode
-jobs_path = Path('<hermes-root>/cron/jobs.json')
+jobs_path = Path('<hermes-home>/cron/jobs.json')
 data = json.loads(jobs_path.read_text())
 jobs = data if isinstance(data, list) else data.get('jobs', [])
 for job in jobs:
@@ -75,7 +75,7 @@ jobs_path.write_text(json.dumps(data, indent=2, default=str))
 
 ## Issues requiring user action (cannot auto-fix)
 
-- `invalid_grant` / OAuth revocation — interactive browser re-auth. **NOTE:** email_check.py reads from MCP credentials dir (`/root/.google_workspace_mcp/credentials/`), NOT from `google_token.json`. Both stores can drift. When both are revoked, re-auth via `google-workspace-auth` skill paste-back OAuth.
+- `invalid_grant` / OAuth revocation — interactive browser re-auth. **NOTE:** email_check.py reads from MCP credentials dir (`<gworkspace-creds>/credentials/`), NOT from `google_token.json`. Both stores can drift. When both are revoked, re-auth via `google-workspace-auth` skill paste-back OAuth.
 - Provider API key errors (HTTP 401) — user must update keys
 - Nous subscription/payment — user must check billing
 - Skill library stubs with data — user confirmation required
@@ -84,11 +84,11 @@ jobs_path.write_text(json.dumps(data, indent=2, default=str))
 
 ### `email_check.py` — auth status (updated 2026-06-01)
 
-The script at `<hermes-root>/scripts/email_check.py` imports `get_gmail_service` from `google_auth_mcp`. The import works correctly.
+The script at `<hermes-home>/scripts/email_check.py` imports `get_gmail_service` from `google_auth_mcp`. The import works correctly.
 
 The **primary** failure mode is `invalid_grant` (token revoked). Two token stores exist:
-- `<hermes-root>/google_token.json` (client: `550801240087...`) — NOT used by email_check.py
-- `/root/.google_workspace_mcp/credentials/google-workspace-user.json` (client: `112292610034...`) — **this is what email_check.py reads**
+- `<hermes-home>/google_token.json` (client: `550801240087...`) — NOT used by email_check.py
+- `<gworkspace-creds>/credentials/<user-google-email>.json` (client: `112292610034...`) — **this is what email_check.py reads**
 
 When diagnosing, test the MCP credentials directly (not google_token.json). When both stores have revoked tokens, no local recovery is possible — requires user re-auth.
 
@@ -108,7 +108,7 @@ import json
 from pathlib import Path
 from datetime import datetime, timezone
 
-issues_path = Path('<hermes-root>/commons/data/ocas-custodian/issues.jsonl')
+issues_path = Path('<hermes-home>/commons/data/ocas-custodian/issues.jsonl')
 issues = [json.loads(l) for l in issues_path.read_text().strip().split('\\n') if l.strip()]
 
 # ... modify issues ...

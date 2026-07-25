@@ -16,15 +16,15 @@ This signature looks identical to a *persistent* missing-token defect (the docum
 
 ## Why it was transient (root cause)
 The credential file was being **rewritten by a concurrent refresh** at the moment of the probe:
-- File: `/root/.google_workspace_mcp/credentials/google-workspace-user.json`
+- File: `<gworkspace-creds>/credentials/<user-google-email>.json`
 - `load_creds()` read a mid-write / just-before-refresh snapshot that lacked `access_token`.
 - The file's mtime coincided exactly with the probe timestamp.
 
 ## Discriminating test — run BEFORE persisting `oc_google_tasks_access_token_missing`
 1. **Inspect the creds file directly.** If it contains a valid `access_token` (and `refresh_token`), the failure was a race, NOT a persistently missing token:
    ```bash
-   F=/root/.google_workspace_mcp/credentials/google-workspace-user.json
-   <hermes-install>/.venv/bin/python -c "import json; d=json.load(open('$F')); print('access_token' in d, 'refresh_token' in d, 'expiry' in d)"
+   F=<gworkspace-creds>/credentials/<user-google-email>.json
+   <hermes-venv>/bin/python -c "import json; d=json.load(open('$F')); print('access_token' in d, 'refresh_token' in d, 'expiry' in d)"
    ```
 2. **Re-run the wrapper** `monitor_list.py` (and/or `hermes cron run <id>`) 1–2 more times. It succeeds once the refresh completes.
 3. **Only persist `oc_google_tasks_access_token_missing`** if the token is GENUINELY absent from the file AND the failure reproduces across re-runs. A one-shot failure with a valid token in the file is a false-escalation candidate.
@@ -49,7 +49,7 @@ The race recurred — but this time a prior light scan had ALREADY persisted/re-
 6. **Resolve the false escalation** with `scripts/race_safe_issue_patch.py --issue-id oc_google_tasks_access_token_missing_20260714 --require-status user_gated --set status=resolved --set user_gated=false --set escalation_needed=false --set resolved_at=... --set resolved_note='...' --set false_escalation=true`. The `--require-status user_gated` guard prevents clobbering a sibling's concurrent mutation; the patcher re-reads to confirm persistence.
 7. **Write an action journal** to `commons/journals/ocas-custodian/YYYY-MM-DD/esc-loop-<ts>.json` (json.dump, unique filename) recording the resolution + live evidence.
 
-**Key lesson:** a `user_gated`/`escalation_needed` issue for this fingerprint is NOT automatically actionable just because a prior scan re-opened it. The re-open itself may have been the trap. Always re-derive live state (creds file + `hermes cron run`) before either persisting OR resolving. If live state is healthy, RESOLVE as a false escalation — do not leave it open (leaving it open perpetuates the noise every future scan). Distinguished from the genuine-defect case: there, the token is GENUINELY absent from the file across re-runs and the issue correctly stays open/user_gated until owner re-auths.
+**Key lesson:** a `user_gated`/`escalation_needed` issue for this fingerprint is NOT automatically actionable just because a prior scan re-opened it. The re-open itself may have been the trap. Always re-derive live state (creds file + `hermes cron run`) before either persisting OR resolving. If live state is healthy, RESOLVE as a false escalation — do not leave it open (leaving it open perpetuates the noise every future scan). Distinguished from the genuine-defect case: there, the token is GENUINELY absent from the file across re-runs and the issue correctly stays open/user_gated until <operator> re-auths.
 
 ## Relationship to other gotchas
 - **INVERSE of mask-gap** (`references/monitor-list-exit1-mask-gap.md`): there, the KeyError was persistent → persist new issue. Here, it was a refresh race → do NOT persist.

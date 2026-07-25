@@ -118,10 +118,10 @@
     "tier": 1,
     "match_patterns": ["invalid_grant", "token has been expired or revoked", "Google OAuth.*failed", "gmail.api.*401"],
     "source": "cron_log",
-    "auto_fix": "cp <hermes-root>-indigo/google_token.json <hermes-root>/google_token.json",
-    "precondition": "Verify <hermes-root>-indigo/google_token.json exists and is non-empty before running auto-fix. If BOTH primary and backup tokens are missing, classify as oc_google_token_missing (Tier 3) instead.",
+    "auto_fix": "cp <hermes-home>-indigo/google_token.json <hermes-home>/google_token.json",
+    "precondition": "Verify <hermes-home>-indigo/google_token.json exists and is non-empty before running auto-fix. If BOTH primary and backup tokens are missing, classify as oc_google_token_missing (Tier 3) instead.",
     "reversibility": "Restore previous google_token.json from .bak.user-only backup",
-    "description": "Google OAuth token invalid or revoked -- agent profile token (with gmail.send scope) needs to be restored. Assumes backup token exists at <hermes-root>-indigo/google_token.json. NOTE: This auto-fix only helps jobs that read from <hermes-root>/google_token.json. The email_check.py script uses google_auth_mcp which reads from /root/.google_workspace_mcp/credentials/<email>.json — this auto-fix does NOT help email:check. For email:check invalid_grant, the MCP credential file must be re-authorized via browser OAuth (google-workspace-auth skill).",
+    "description": "Google OAuth token invalid or revoked -- agent profile token (with gmail.send scope) needs to be restored. Assumes backup token exists at <hermes-home>-indigo/google_token.json. NOTE: This auto-fix only helps jobs that read from <hermes-home>/google_token.json. The email_check.py script uses google_auth_mcp which reads from <gworkspace-creds>/credentials/<email>.json — this auto-fix does NOT help email:check. For email:check invalid_grant, the MCP credential file must be re-authorized via browser OAuth (google-workspace-auth skill).",
     "technology_context": "Google Workspace OAuth2 token refresh"
   },
   "oc_google_token_missing": {
@@ -129,8 +129,8 @@
     "match_patterns": ["No valid Google credentials found", "Expecting value.*google_token", "cannot read token file", "google_token.json.*not found", "google_token.json.*empty"],
     "source": "cron_log|errors.log",
     "auto_fix": null,
-    "diagnostic_steps": "Check if <hermes-root>/google_token.json exists and is non-empty. Check if <hermes-root>-indigo/google_token.json exists and is non-empty. If BOTH are missing/empty, the auto-fix for oc_google_token_invalid cannot work — requires user to re-run OAuth.",
-    "escalation_note": "If both token files are absent, escalate to Tier 3: user must re-authorize via `python3 <hermes-root>/skills/infrastructure/google-workspace-auth/scripts/google_oauth_init.py`. Do NOT attempt the oc_google_token_invalid auto-fix when the backup file also doesn't exist.",
+    "diagnostic_steps": "Check if <hermes-home>/google_token.json exists and is non-empty. Check if <hermes-home>-indigo/google_token.json exists and is non-empty. If BOTH are missing/empty, the auto-fix for oc_google_token_invalid cannot work — requires user to re-run OAuth.",
+    "escalation_note": "If both token files are absent, escalate to Tier 3: user must re-authorize via `python3 <hermes-home>/skills/infrastructure/google-workspace-auth/scripts/google_oauth_init.py`. Do NOT attempt the oc_google_token_invalid auto-fix when the backup file also doesn't exist.",
     "reversibility": null,
     "description": "Google OAuth token file missing or empty -- primary and/or backup token files do not exist. Distinct from oc_google_token_invalid (which assumes the backup exists). Requires user re-auth.",
     "technology_context": "Google Workspace OAuth2 token file presence check"
@@ -251,7 +251,7 @@
     "tier": 2
   },
   "oc_auxiliary_compression_exhaustion": {
-    "auto_fix": "Run python3 <hermes-root>/scripts/fix-auxiliary-compression.py to re-apply the pool-fallback patch and verify config. The post-merge hook (.git/hooks/post-merge) handles this automatically on future updates.",
+    "auto_fix": "Run python3 <hermes-home>/scripts/fix-auxiliary-compression.py to re-apply the pool-fallback patch and verify config. The post-merge hook (.git/hooks/post-merge) handles this automatically on future updates.",
     "description": "Auxiliary compression fails with 'No auxiliary LLM provider configured' when the OpenRouter credential pool entry is exhausted, even though OPENROUTER_API_KEY env var is set and working. Root cause: _try_openrouter() in auxiliary_client.py returns None when pool entry is exhausted instead of falling through to env var. The fix patches the source to fall through, and a post-merge hook re-applies the patch after hermes update.",
     "hermes_specific": true,
     "match_patterns": ["No auxiliary LLM provider configured", "context compression will drop middle turns", "auxiliary.*compression.*unavailable", "auxiliary_client.*exhausted"],
@@ -381,7 +381,7 @@
   },
   "oc_old_path_reference": {
     "auto_fix": null,
-    "description": "Cron job references outdated /usr/local/lib/hermes-agent/ paths instead of <hermes-root>/. Non-fatal due to symlinks.",
+    "description": "Cron job references outdated /usr/local/lib/hermes-agent/ paths instead of <hermes-home>/. Non-fatal due to symlinks.",
     "hermes_specific": true,
     "match_patterns": ["/usr/local/lib/hermes-agent/", "File not found: /usr/local/lib/hermes-agent/"],
     "reversibility": null,
@@ -427,14 +427,14 @@
     "description": "sands:conflict-scan cron job fails with 'RuntimeError: ERROR' — a generic runtime error distinct from provider errors. Observed 2026-05-19 at 14:09 UTC. May indicate a Google Calendar API issue, auth token expiry, or internal sands logic error. Check gateway logs for the full traceback.",
     "hermes_specific": true,
     "match_patterns": ["sands:conflict-scan.*RuntimeError", "sands:conflict.*error"],
-    "diagnostic_steps": "Check gateway logs for the full error traceback: grep -A 20 'sands:conflict' <hermes-root>/logs/gateway.log | tail -30. Check if the error is a provider error (transient) or a logic error (needs code fix).",
+    "diagnostic_steps": "Check gateway logs for the full error traceback: grep -A 20 'sands:conflict' <hermes-home>/logs/gateway.log | tail -30. Check if the error is a provider error (transient) or a logic error (needs code fix).",
     "reversibility": null,
     "source": "cron_log",
     "technology_context": "ocas-sands conflict scan cron job",
     "tier": 2
   },
   "oc_post_merge_hook_missing": {
-    "auto_fix": "Run: mkdir -p /usr/local/lib/hermes-agent/.git/hooks/post-merge.d && cp <hermes-root>/skills/ocas-custodian/references/post-merge-hook.sh /usr/local/lib/hermes-agent/.git/hooks/post-merge && chmod +x /usr/local/lib/hermes-agent/.git/hooks/post-merge",
+    "auto_fix": "Run: mkdir -p /usr/local/lib/hermes-agent/.git/hooks/post-merge.d && cp <hermes-home>/skills/ocas-custodian/references/post-merge-hook.sh /usr/local/lib/hermes-agent/.git/hooks/post-merge && chmod +x /usr/local/lib/hermes-agent/.git/hooks/post-merge",
     "description": "The post-merge hook that re-applies source patches after hermes update is missing or not executable. Without it, source-level fixes (like the auxiliary compression pool-fallback patch) are lost on git pull.",
     "hermes_specific": true,
     "match_patterns": ["post-merge hook.*missing", "post-merge.*not executable", "source patch.*lost.*update"],
@@ -445,11 +445,11 @@
     "tier": 2
   },
   "kanban_dispatcher_tick_failed": {
-    "auto_fix": "Create missing indexes in <hermes-root>/kanban.db: idx_tasks_session_id, idx_tasks_idempotency, idx_tasks_status, idx_tasks_assignee, idx_tasks_created_at. See references/kanban-dispatcher-index-gap.md for the SQL and full procedure.",
+    "auto_fix": "Create missing indexes in <hermes-home>/kanban.db: idx_tasks_session_id, idx_tasks_idempotency, idx_tasks_status, idx_tasks_assignee, idx_tasks_created_at. See references/kanban-dispatcher-index-gap.md for the SQL and full procedure.",
     "description": "Kanban dispatcher tick fails with 'no such column: session_id' when creating idx_tasks_session_id index. Root cause: legacy DB has columns but missing indexes from SCHEMA_SQL. _migrate_add_optional_columns handles columns but not indexes. Recurs every 60s (every dispatcher tick) after gateway restart until indexes are created.",
     "hermes_specific": true,
     "match_patterns": ["kanban dispatcher: tick failed", "no such column: session_id.*kanban", "idx_tasks_session_id"],
-    "diagnostic_steps": "Check if indexes exist: sqlite3 <hermes-root>/kanban.db \"SELECT name FROM sqlite_master WHERE type='index' AND tbl_name='tasks'\". If idx_tasks_session_id is missing, the DB needs indexes created. Also verify session_id column exists: sqlite3 <hermes-root>/kanban.db \"PRAGMA table_info(tasks)\".",
+    "diagnostic_steps": "Check if indexes exist: sqlite3 <hermes-home>/kanban.db \"SELECT name FROM sqlite_master WHERE type='index' AND tbl_name='tasks'\". If idx_tasks_session_id is missing, the DB needs indexes created. Also verify session_id column exists: sqlite3 <hermes-home>/kanban.db \"PRAGMA table_info(tasks)\".",
     "fix_pattern": "CREATE INDEX IF NOT EXISTS idx_tasks_session_id ON tasks(session_id) and 4 more indexes. See references/kanban-dispatcher-index-gap.md.",
     "reversibility": "DROP INDEX idx_tasks_session_id (and others)",
     "source": "gateway_log",

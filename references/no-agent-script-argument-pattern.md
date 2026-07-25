@@ -17,15 +17,15 @@ Create a wrapper script that bakes in the arguments, then point the cron job's `
 
 ```bash
 # Create wrapper
-cat > <hermes-root>/profiles/<profile>/scripts/<name>_wrapper.sh << 'EOF'
+cat > <hermes-home>/profiles/<profile>/scripts/<name>_wrapper.sh << 'EOF'
 #!/bin/bash
-exec python3 <hermes-root>/profiles/<profile>/scripts/<original>.py --<flag>
+exec python3 <hermes-home>/profiles/<profile>/scripts/<original>.py --<flag>
 EOF
-chmod +x <hermes-root>/profiles/<profile>/scripts/<name>_wrapper.sh
+chmod +x <hermes-home>/profiles/<profile>/scripts/<name>_wrapper.sh
 
 # Symlink to shared scripts dir (required by hermes cron edit --script)
-ln -sf <hermes-root>/profiles/<profile>/scripts/<name>_wrapper.sh \
-      <hermes-root>/scripts/<name>_wrapper.sh
+ln -sf <hermes-home>/profiles/<profile>/scripts/<name>_wrapper.sh \
+      <hermes-home>/scripts/<name>_wrapper.sh
 
 # Update cron job
 hermes cron edit <job_id> --script <name>_wrapper.sh
@@ -35,16 +35,16 @@ hermes cron edit <job_id> --script <name>_wrapper.sh
 
 **Compound `&&` command pattern (2026-05-28, updated 2026-06-25):** A variant of this pattern occurs when the `script` field contains `&&` chaining multiple commands. Detected on `dispatch:triage-morning` and `dispatch:triage-evening`:
 ```
-script: triage.py && python3 <hermes-root>/skills/ocas-dispatch/scripts/journal.py
+script: triage.py && python3 <hermes-home>/skills/ocas-dispatch/scripts/journal.py
 ```
 Both jobs have `no_agent: true`. The `&&` is not a path — the executor treats the entire string as a literal path and fails with "Script not found." **Fix direction:** Create a wrapper script that runs both commands sequentially:
 ```bash
-cat > <hermes-root>/profiles/<profile>/scripts/triage_dispatch.sh << 'EOF'
+cat > <hermes-home>/profiles/<profile>/scripts/triage_dispatch.sh << 'EOF'
 #!/bin/bash
-cd <hermes-root>/skills/ocas-dispatch/scripts || exit 1
+cd <hermes-home>/skills/ocas-dispatch/scripts || exit 1
 python3 triage.py && python3 journal.py
 EOF
-chmod +x <hermes-root>/profiles/<profile>/scripts/triage_dispatch.sh
+chmod +x <hermes-home>/profiles/<profile>/scripts/triage_dispatch.sh
 ```
 Then update the cron job's `script` field to `triage_dispatch.sh`.
 
@@ -52,26 +52,26 @@ Then update the cron job's `script` field to `triage_dispatch.sh`.
 
 ```bash
 # Create wrapper
-cat > <hermes-home>/scripts/triage_evening.sh << 'EOF'
+cat > <hermes-home>/profiles/indigo/scripts/triage_evening.sh << 'EOF'
 #!/usr/bin/env bash
 set -e
-cd <hermes-home>/skills/ocas-dispatch/scripts
+cd <hermes-home>/profiles/indigo/skills/ocas-dispatch/scripts
 python3 triage.py
-python3 <hermes-root>/skills/ocas-dispatch/scripts/journal.py
+python3 <hermes-home>/skills/ocas-dispatch/scripts/journal.py
 EOF
-chmod +x <hermes-home>/scripts/triage_evening.sh
+chmod +x <hermes-home>/profiles/indigo/scripts/triage_evening.sh
 
 # Update jobs.json (Python via terminal — execute_code blocked in cron)
 python3 << 'PYEOF'
 import json
-with open("<hermes-home>/cron/jobs.json") as f:
+with open("<hermes-home>/profiles/indigo/cron/jobs.json") as f:
     data = json.load(f)
 jobs = data.get("jobs", data) if isinstance(data, dict) else data
 for job in jobs:
     if job.get("name") == "dispatch:triage-evening" and job.get("no_agent") == True:
         job["script"] = "triage_evening.sh"
         break
-with open("<hermes-home>/cron/jobs.json", "w") as f:
+with open("<hermes-home>/profiles/indigo/cron/jobs.json", "w") as f:
     json.dump(data, f, indent=2, ensure_ascii=False)
 ```
 

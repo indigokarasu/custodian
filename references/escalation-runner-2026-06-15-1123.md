@@ -8,12 +8,12 @@ Escalation runner cron job ran at 11:23 PT. The 11:08 UTC runner had already res
 
 | Issue ID | Root Cause | Resolution |
 |----------|------------|------------|
-| `oc_google_auth_owner_operator` | Empty token file | Token valid, auto-refreshing. email:check job healthy. |
+| `oc_google_auth_<account-identity>` | Empty token file | Token valid, auto-refreshing. email:check job healthy. |
 | `oc_google_oauth_client_deleted_20260604` | OAuth client deleted | Client functional, token refreshed today. |
 | `oc_mcp_server_files_missing_20260614` | 4 MCP servers missing files | All 4 disabled in config.yaml (resolved by 11:08 runner). |
 | `oc_gateway_collision_default_profile_20260613` | Default gateway crash loop | Service no longer exists. |
 | `iss-20260528-005` | Bones Kalshi API breakage | Transient, job now ok. |
-| `iss-20260531-001` | Email auth token corrupt | Duplicate of oc_google_auth_owner_operator. |
+| `iss-20260531-001` | Email auth token corrupt | Duplicate of oc_google_auth_<account-identity>. |
 
 ## Issues Demoted
 
@@ -25,10 +25,10 @@ Escalation runner cron job ran at 11:23 PT. The 11:08 UTC runner had already res
 ## Key Learning: Multi-Path Issue Discovery
 
 Found issues in 4 different `issues.jsonl` files:
-- `<hermes-home>/commons/journals/ocas-custodian/issues.jsonl`
-- `<hermes-home>/commons/data/custodian/issues.jsonl`
-- `<hermes-home>/commons/data/ocas-custodian/issues.jsonl`
-- `<hermes-home>/commons/ocas-custodian/issues.jsonl`
+- `<hermes-home>/profiles/indigo/commons/journals/ocas-custodian/issues.jsonl`
+- `<hermes-home>/profiles/indigo/commons/data/custodian/issues.jsonl`
+- `<hermes-home>/profiles/indigo/commons/data/ocas-custodian/issues.jsonl`
+- `<hermes-home>/profiles/indigo/commons/ocas-custodian/issues.jsonl`
 
 Same root cause appeared with different IDs across files. Must deduplicate by description.
 

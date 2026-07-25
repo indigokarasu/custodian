@@ -7,7 +7,7 @@ last_error is the bare 'Script exited with code 1' wrapper together with its
 `script` name, so each can be inspected individually (DE-AGGREGATION rule).
 
 Run from cron/scheduled context via terminal():
-    python3 <hermes-home>/skills/ocas-custodian/scripts/classify_error_jobs.py
+    python3 ~/.hermes/profiles/indigo/skills/ocas-custodian/scripts/classify_error_jobs.py
 
 Avoids pipe-to-interpreter: this is a standalone file, not `cat | python3`.
 """
@@ -17,9 +17,9 @@ from collections import Counter
 
 PROFILE = os.environ.get("HERMES_PROFILE", "indigo")
 CANDIDATES = [
-    f"<hermes-root>/profiles/{PROFILE}/cron/jobs.json",
-    "<hermes-home>/cron/jobs.json",
-    "<hermes-root>/cron/jobs.json",
+    f"~/.hermes/profiles/{PROFILE}/cron/jobs.json",
+    "~/.hermes/profiles/indigo/cron/jobs.json",
+    "~/.hermes/cron/jobs.json",
 ]
 
 
@@ -87,8 +87,8 @@ if __name__ == "__main__":
     args = ap.parse_args()
     PROFILE = args.profile
     CANDIDATES[:] = [
-        f"<hermes-root>/profiles/{PROFILE}/cron/jobs.json",
-        "<hermes-home>/cron/jobs.json",
-        "<hermes-root>/cron/jobs.json",
+        f"~/.hermes/profiles/{PROFILE}/cron/jobs.json",
+        "~/.hermes/profiles/indigo/cron/jobs.json",
+        "~/.hermes/cron/jobs.json",
     ]
     main()

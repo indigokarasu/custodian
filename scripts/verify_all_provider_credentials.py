@@ -10,7 +10,7 @@ Probing only the gateway default (tencent/hy3:free) gives a false green.
 
 Run:
   python3 verify_all_provider_credentials.py [profile_dir]
-profile_dir defaults to <hermes-home>
+profile_dir defaults to ~/.hermes/profiles/indigo
 """
 import json
 import os
@@ -24,7 +24,7 @@ try:
 except ImportError:
     yaml = None
 
-DEFAULT_PROFILE = "<hermes-home>"
+DEFAULT_PROFILE = "~/.hermes/profiles/indigo"
 
 
 def load_config(profile):

@@ -16,7 +16,7 @@ The job's `last_error` shows a command string (often compound `&&` chains or a d
 
 **dispatch:triage-morning** (fixed 2026-06-20, stale error confirmed 2026-06-25):
 - `script` field: `triage_morning.sh` (single file, exists, executable)
-- `last_error`: `Script not found: <hermes-home>/scripts/triage.py && python3 <hermes-root>/skills/ocas-dispatch/scripts/...`
+- `last_error`: `Script not found: <hermes-home>/profiles/indigo/scripts/triage.py && python3 <hermes-home>/skills/ocas-dispatch/scripts/...`
 - The error is from the pre-2026-06-20 configuration when the script field was a compound `&&` command. The fix (wrapper script `triage_morning.sh`) was applied on 2026-06-20, but the scheduler's `last_error` still shows the old failure.
 - `consecutive_failures=None` — the job has been running successfully since the fix; the error is residual.
 
@@ -30,8 +30,8 @@ The job's `last_error` shows a command string (often compound `&&` chains or a d
 When `no_agent: true` and the `script` field is a bare basename, the error may be "Script not found" at the profile path even though the script exists at the system path. After a symlink fix (profile path → system path), the error persists in jobs.json until the next successful run.
 
 **Confirmed 2026-06-27**: `brief:email-morning` and `brief:email-evening`
-- Error: `Script not found: <hermes-home>/scripts/email_morning_brief.py`
-- Fix: Symlink created at `<hermes-home>/scripts/email_morning_brief.py` → `<hermes-root>/scripts/email_morning_brief.py` (2026-06-27T05:33)
+- Error: `Script not found: <hermes-home>/profiles/indigo/scripts/email_morning_brief.py`
+- Fix: Symlink created at `<hermes-home>/profiles/indigo/scripts/email_morning_brief.py` → `<hermes-home>/scripts/email_morning_brief.py` (2026-06-27T05:33)
 - Error predates fix (from 2026-06-26T13:40 for morning, 2026-06-27T05:27 for evening)
 - `consecutive_failures=None` in both cases
 

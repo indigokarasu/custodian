@@ -34,7 +34,7 @@ A missing Python package in the hermes-agent venv is auto-fixed (Tier 2) because
 3. Check if the package exists elsewhere on the system:
    - `find /root -name "<module>" -type d 2>/dev/null` (other venvs)
    - `pip3 show <package>` (system/hermes-agent venv)
-   - Check other venvs: `<hermes-root>/profiles/*/commons/data/*/venv/lib/python*/site-packages/<module>`
+   - Check other venvs: `<hermes-home>/profiles/*/commons/data/*/venv/lib/python*/site-packages/<module>`
 4. Determine when the script last succeeded vs first failed:
    - Check cron output files: `{profile}/cron/output/{job_id}/{timestamp}.md`
    - Compare timestamps to gateway restart events (mem-watchdog RSS drops)
@@ -50,30 +50,30 @@ A missing Python package in the hermes-agent venv is auto-fixed (Tier 2) because
 # Common paths (verify which one is active):
 find /root -path "*/hermes-agent/.venv/bin/python3" 2>/dev/null
 # Or check the source checkout path:
-ls /root/projects/hermes-agent/.venv/bin/python3
+ls <projects-root>/hermes-agent/.venv/bin/python3
 ```
 
 **Step 2: Install the missing package:**
 ```bash
-/root/projects/hermes-agent/.venv/bin/pip install <package>
+<projects-root>/hermes-agent/.venv/bin/pip install <package>
 ```
 
 **Step 3: Verify the import works:**
 ```bash
-/root/projects/hermes-agent/.venv/bin/python3 -c "from <module> import <thing>; print('OK')"
+<projects-root>/hermes-agent/.venv/bin/python3 -c "from <module> import <thing>; print('OK')"
 ```
 
 **Step 4: Run the actual script with the venv Python to confirm end-to-end:**
 ```bash
-/root/projects/hermes-agent/.venv/bin/python3 <script_path> --dry-run
+<projects-root>/hermes-agent/.venv/bin/python3 <script_path> --dry-run
 ```
 
 ## Venv Path Discovery (2026-06-28)
 
 The Python that runs `no_agent: true` cron scripts is typically the hermes-agent venv. To definitively identify which Python:
-1. Check the shebang line of known working scripts: `head -1 <hermes-home>/scripts/*.py | grep python`
+1. Check the shebang line of known working scripts: `head -1 <hermes-home>/profiles/indigo/scripts/*.py | grep python`
 2. Check `sys.path` from a cron job: `python3 -c "import sys; print('\n'.join(sys.path))"`  
-3. Check pip install target: `/root/projects/hermes-agent/.venv/bin/pip --version`
+3. Check pip install target: `<projects-root>/hermes-agent/.venv/bin/pip --version`
 
 ## Examples
 
@@ -86,7 +86,7 @@ The Python that runs `no_agent: true` cron scripts is typically the hermes-agent
 - **Last success:** 2026-06-27 21:11
 - **First failure:** 2026-06-28 00:47
 - **Gateway restart:** ~00:36
-- **Fix applied:** `/root/projects/hermes-agent/.venv/bin/pip install google-api-python-client`
+- **Fix applied:** `<projects-root>/hermes-agent/.venv/bin/pip install google-api-python-client`
 - **Verification:** Import OK, script --help runs successfully
 
 ## Pitfall: Don't assume the package was never installed
@@ -99,7 +99,7 @@ The script may not directly import the missing module. It imports another local 
 
 ## Pitfall: Multiple scripts may share the same missing dependency
 
-If one no_agent script fails with a missing dependency, check other no_agent scripts that import the same local module. In the `email:check` case, any script importing `google_auth_mcp.py` would also fail. Scan for: `grep -l "google_auth_mcp" <hermes-home>/scripts/*.py <hermes-root>/scripts/*.py`
+If one no_agent script fails with a missing dependency, check other no_agent scripts that import the same local module. In the `email:check` case, any script importing `google_auth_mcp.py` would also fail. Scan for: `grep -l "google_auth_mcp" <hermes-home>/profiles/indigo/scripts/*.py <hermes-home>/scripts/*.py`
 
 ## Pitfall: Missing dependency fix may reveal token revocation
 

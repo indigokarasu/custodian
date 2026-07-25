@@ -5,7 +5,7 @@ When a light scan encounters a `no_agent: true` job with `status=error` and `con
 ## Confirmed Case: `dispatch:triage-evening` (2026-06-26)
 
 - `script`: `triage_evening.sh` (exists, executable, runs clean with exit 0)
-- `last_error`: `Script not found: <hermes-home>/scripts/triage.py && python3 <hermes-root>/skills/ocas-dispatch/scripts/journal.py`
+- `last_error`: `Script not found: <hermes-home>/profiles/indigo/scripts/triage.py && python3 <hermes-home>/skills/ocas-dispatch/scripts/journal.py`
 - `consecutive_failures`: None
 - `last_status`: error (stale — scheduler hasn't run the job since the fix)
 

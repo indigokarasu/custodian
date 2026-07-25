@@ -39,20 +39,20 @@ python3 -c "import main"  # Should fail with ModuleNotFoundError
 pip show workspace-mcp 2>/dev/null || echo "Not a pip package"
 
 # 4. Count occurrences in errors.log
-grep -c "No module named" <hermes-home>/logs/errors.log
+grep -c "No module named" <hermes-home>/profiles/indigo/logs/errors.log
 
 # 5. Check when it started (correlate with venv changes)
-grep "No module named" <hermes-home>/logs/errors.log | head -1
+grep "No module named" <hermes-home>/profiles/indigo/logs/errors.log | head -1
 ```
 
 ## Fix
 
 This is a **Tier 3 escalation** — the package source is unknown (not a pip package) and cannot be auto-reinstalled.
 
-**Investigation steps for owner:**
+**Investigation steps for <operator>:**
 1. Check if source exists in `/root/.workspace-mcp/` (data dir, not code)
 2. Look for git history: `find / -name "main.py" -path "*workspace*" 2>/dev/null`
-3. Check if there's a backup of the hermes-agent venv: `ls <hermes-install>/.venv.bak* 2>/dev/null`
+3. Check if there's a backup of the hermes-agent venv: `ls <hermes-venv>.bak* 2>/dev/null`
 4. The package may have been installed via `pip install -e /some/path` — check `pip list --editable`
 
 **Temporary workaround (if source can be located):**
@@ -80,7 +80,7 @@ pip install -e .
 **Confirmed:** The `oc_mcp_server_module_deleted` fingerprint can be a **false positive** when the error log contains stale entries from a transient venv state, but the module is actually present and functional.
 
 **What happened:** Light scan at 10:05 UTC June 29 flagged `workspace-mcp-fixed` with `oc_mcp_server_module_deleted` based on error log entries. However, during the escalation run verification:
-- `python3 -c "import main"` → succeeded (module present in `<hermes-install>/.venv/lib/python3.14/site-packages/workspace_mcp/`)
+- `python3 -c "import main"` → succeeded (module present in `<hermes-venv>/lib/python3.14/site-packages/workspace_mcp/`)
 - `/usr/local/bin/workspace-mcp --help` → ran successfully, showed usage
 - The `workspace_mcp-1.22.0.dist-info` package metadata existed in site-packages
 - The `top_level.txt` confirmed `main` is a valid top-level module
@@ -90,13 +90,13 @@ pip install -e .
 **Verification procedure before escalating `oc_mcp_server_module_deleted`:**
 ```bash
 # 1. Test the import directly
-<hermes-install>/.venv/bin/python3 -c "import main; print('OK')"
+<hermes-venv>/bin/python3 -c "import main; print('OK')"
 
 # 2. Run the wrapper binary
 /usr/local/bin/workspace-mcp --help 2>&1 | head -3
 
 # 3. Check if the package metadata exists
-ls <hermes-install>/.venv/lib/python3.14/site-packages/workspace_mcp-*.dist-info/top_level.txt
+ls <hermes-venv>/lib/python3.14/site-packages/workspace_mcp-*.dist-info/top_level.txt
 
 # 4. If ALL of the above succeed → the error is STALE, not active
 #    Classify as `oc_mcp_server_module_deleted_false_positive` (Tier 2, surface only)
@@ -113,5 +113,5 @@ ls <hermes-install>/.venv/lib/python3.14/site-packages/workspace_mcp-*.dist-info
 
 ## History
 
-- 2026-06-29: First detected. `workspace-mcp-fixed` wrapper at `/usr/local/bin/` exists and is executable. Underlying `main` module missing from `<hermes-install>/.venv`. 11+ failed connection attempts in `errors.log` since 22:50 UTC June 28. Recurring every ~15 minutes (each time the gateway tries to use the MCP tool). Not a pip package — was a manual/editable install that got cleaned. Distinct from the OAuth token revocation affecting `email:check` and `monitor:list`.
+- 2026-06-29: First detected. `workspace-mcp-fixed` wrapper at `/usr/local/bin/` exists and is executable. Underlying `main` module missing from `<hermes-venv>`. 11+ failed connection attempts in `errors.log` since 22:50 UTC June 28. Recurring every ~15 minutes (each time the gateway tries to use the MCP tool). Not a pip package — was a manual/editable install that got cleaned. Distinct from the OAuth token revocation affecting `email:check` and `monitor:list`.
 - 2026-06-29 (later): **False positive confirmed.** The module was actually present and functional. Light scan flagged stale error log entries. Verification showed `import main` succeeded and the binary ran correctly. Added false positive detection procedure above.

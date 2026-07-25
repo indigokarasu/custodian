@@ -8,7 +8,7 @@
 
 ## Root Cause
 
-A backup cron job (`<hermes-root>/scripts/backup_hermes_config.py` or similar) commits the entire Hermes config directory to a git repo, including live credential files:
+A backup cron job (`<hermes-home>/scripts/backup_hermes_config.py` or similar) commits the entire Hermes config directory to a git repo, including live credential files:
 
 | File | Credentials Exposed |
 |------|---------------------|
@@ -21,7 +21,7 @@ A backup cron job (`<hermes-root>/scripts/backup_hermes_config.py` or similar) c
 ## Detection
 
 - **GitGuardian** monitors the private repo and detects "Generic High Entropy Secret"
-- **Security monitor cron** (`<hermes-root>/scripts/security_monitor.py`) polls Gmail for GitGuardian alerts
+- **Security monitor cron** (`<hermes-home>/scripts/security_monitor.py`) polls Gmail for GitGuardian alerts
 - Classified as **LOW** by keyword-based severity (no "secret leak"/"exposed credential" in subject) but **actual severity: HIGH** — real production credentials in git history
 
 ## Fix Pattern
@@ -70,7 +70,7 @@ git log --oneline --grep="backup:" -20 --name-only | grep -E "\.env$|auth\.json$
 1. Add `config/.env`, `config/auth.json`, `credentials/auth/*.json` to backup repo's `.gitignore` and push immediately
 2. Analyze committed secrets for expiry: `access_token` may be expired (check `expires_at`), but `refresh_token` is likely still valid
 3. If commit is most recent AND secrets are rotated: `git reset --hard HEAD~1` and force-push
-4. If secrets span multiple commits OR tokens are still live: escalate to owner for provider-side rotation BEFORE history rewrite
+4. If secrets span multiple commits OR tokens are still live: escalate to <operator> for provider-side rotation BEFORE history rewrite
 
 ## Prevention
 

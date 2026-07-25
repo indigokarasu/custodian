@@ -9,10 +9,10 @@ resolve after the issue was written (same stale-premise guard class as
 `references/journal-escalation-stale-premise-guard-2026-07-14.md`).
 
 ## Symlink size-0 trap (applies to ANY hermes DB)
-`chronicle.db` / `state.db` are often symlinks (`<hermes-root>/state.db -> <hermes-root>/profiles/<profile>/state.db`).
+`chronicle.db` / `state.db` are often symlinks (`<hermes-home>/state.db -> <hermes-home>/profiles/<profile>/state.db`).
 `ls -la` reports size `0` for the link -> any ratio math is wrong.
 - Use `du -h <path>` (follows the link to the real file) for the true size.
-- Use `find <hermes-root> -name chronicle.db` to locate the REAL file (prefer the
+- Use `find <hermes-home> -name chronicle.db` to locate the REAL file (prefer the
   `profiles/<profile>/commons/db/chronicle/chronicle.db` path over a sibling profile's copy).
 Confirmed 2026-07-14: a 14GB live state.db showed `0` under `ls -la` but `14G` under `du -h`.
 
@@ -27,7 +27,7 @@ only N pages and returns fast; on a healthy DB it returns a single `('ok',)`.
 
 ```python
 import sqlite3, signal
-DB = "<hermes-home>/commons/db/chronicle/chronicle.db"
+DB = "<hermes-home>/profiles/indigo/commons/db/chronicle/chronicle.db"
 def _alarm(s, f):
     raise TimeoutError("integrity_check exceeded budget")
 signal.signal(signal.SIGALRM, _alarm)

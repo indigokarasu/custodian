@@ -4,26 +4,26 @@ During a light scan on 2026-06-30, the ocas-custodian skill identified two skill
 - ocas-haiku
 - ocas-scout
 
-Both skills were missing their `<hermes-root>/commons/data/<skill_name>/` directories and default config.json files.
+Both skills were missing their `<hermes-home>/commons/data/<skill_name>/` directories and default config.json files.
 
 ## Fix Applied
 
 For each affected skill:
 ```bash
-mkdir -p <hermes-root>/commons/data/ocas-haiku/
-echo '{}' > <hermes-root>/commons/data/ocas-haiku/config.json
+mkdir -p <hermes-home>/commons/data/ocas-haiku/
+echo '{}' > <hermes-home>/commons/data/ocas-haiku/config.json
 
-mkdir -p <hermes-root>/commons/data/ocas-scout/
-echo '{}' > <hermes-root>/commons/data/ocas-scout/config.json
+mkdir -p <hermes-home>/commons/data/ocas-scout/
+echo '{}' > <hermes-home>/commons/data/ocas-scout/config.json
 ```
 
 ## Verification
 
 After applying the fix, the following directories and files existed:
-- `<hermes-root>/commons/data/ocas-haiku/` (directory)
-- `<hermes-root>/commons/data/ocas-haiku/config.json` (file with `{}`)
-- `<hermes-root>/commons/data/ocas-scout/` (directory)
-- `<hermes-root>/commons/data/ocas-scout/config.json` (file with `{}`)
+- `<hermes-home>/commons/data/ocas-haiku/` (directory)
+- `<hermes-home>/commons/data/ocas-haiku/config.json` (file with `{}`)
+- `<hermes-home>/commons/data/ocas-scout/` (directory)
+- `<hermes-home>/commons/data/ocas-scout/config.json` (file with `{}`)
 
 This corresponds to the `oc_skill_data_dir_missing` and `oc_skill_uninitialized` patterns documented in the skill's known issues.
 

@@ -9,7 +9,7 @@ Positive-confirmation method (NOT a lone `hermes chat -q` probe or a
      are now live-OK with a today timestamp.
 
 Run:
-  python3 <hermes-home>/skills/ocas-custodian/scripts/confirm_provider_recovery.py
+  python3 ~/.hermes/profiles/indigo/skills/ocas-custodian/scripts/confirm_provider_recovery.py
 Override profile:
   HERMES_PROFILE_HOME=/path/to/profile python3 confirm_provider_recovery.py
 """
@@ -18,7 +18,7 @@ import os
 import datetime
 from collections import Counter
 
-PROFILE = os.environ.get("HERMES_PROFILE_HOME", "<hermes-home>")
+PROFILE = os.environ.get("HERMES_PROFILE_HOME", "~/.hermes/profiles/indigo")
 JOBS = os.path.join(PROFILE, "cron", "jobs.json")
 ISSUES = os.path.join(PROFILE, "commons", "data", "ocas-custodian", "issues.jsonl")
 
@@ -131,7 +131,7 @@ if __name__ == "__main__":
     )
     ap.add_argument("--profile", default=PROFILE, help="Profile HOME dir or name")
     args = ap.parse_args()
-    PROFILE = args.profile if os.path.sep in args.profile else f"<hermes-root>/profiles/{args.profile}"
+    PROFILE = args.profile if os.path.sep in args.profile else f"~/.hermes/profiles/{args.profile}"
     JOBS = os.path.join(PROFILE, "cron", "jobs.json")
     ISSUES = os.path.join(PROFILE, "commons", "data", "ocas-custodian", "issues.jsonl")
     main()

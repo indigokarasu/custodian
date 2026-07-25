@@ -32,7 +32,7 @@ it never calls the model API. Only the `hermes chat -q` probe is authoritative.
 
 ## Step 2 — Reconcile issues.jsonl (profile path is authoritative)
 
-`<hermes-root>/profiles/<profile>/commons/data/ocas-custodian/issues.jsonl` — newline-delimited
+`<hermes-home>/profiles/<profile>/commons/data/ocas-custodian/issues.jsonl` — newline-delimited
 (one JSON per line) in this deployment; use line-by-line `json.loads`, NOT brace-depth, for this file.
 
 For each open issue touched by the outage:
@@ -47,7 +47,7 @@ For each open issue touched by the outage:
   needs the user's action (re-auth / code edit). Do NOT mark resolved.
 
 Honesty rule: a resumed job is NOT a fixed root cause. Billing/credentials/skill-internal issues stay
-open until owner adds credits, rotates the key, re-auths, or edits skill code.
+open until <operator> adds credits, rotates the key, re-auths, or edits skill code.
 
 ## Step 3 — Add NEW issues only for genuinely new faults
 

@@ -6,10 +6,10 @@ When email_check.py fails with `google.auth.exceptions.RefreshError: invalid_gra
 
 email_check.py imports from `google_auth_mcp` which reads from:
 ```
-/root/.google_workspace_mcp/credentials/google-workspace-user.json
+<gworkspace-creds>/credentials/<user-google-email>.json
 ```
 
-**NOT** `<hermes-root>/google_token.json` — that's a different OAuth client.
+**NOT** `<hermes-home>/google_token.json` — that's a different OAuth client.
 
 ## Step 2: Test both stores independently
 
@@ -19,8 +19,8 @@ import json, urllib.request, urllib.parse
 from pathlib import Path
 
 stores = {
-    'MCP (owner)': '/root/.google_workspace_mcp/credentials/google-workspace-user.json',
-    'google_token.json': '<hermes-root>/google_token.json',
+    'MCP (owner)': '<gworkspace-creds>/credentials/<user-google-email>.json',
+    'google_token.json': '<hermes-home>/google_token.json',
 }
 
 for name, path in stores.items():
@@ -53,8 +53,8 @@ PYEOF
 ## Step 4: If re-auth needed
 
 ```bash
-# For owner's MCP client (112292610034...)
-python3 <hermes-root>/skills/infrastructure/google-workspace-auth/scripts/paste_back_oauth.py
+# For <operator>'s MCP client (112292610034...)
+python3 <hermes-home>/skills/infrastructure/google-workspace-auth/scripts/paste_back_oauth.py
 
 # Follow the re-auth flow in google-workspace-auth SKILL.md
 ```

@@ -14,7 +14,7 @@ When a cron job fails with `RuntimeError: Provider returned error`, this is a tr
 
 2. **Check for correlated failures:**
    ```bash
-   grep "Provider returned error" <hermes-root>/logs/errors.log | tail -10
+   grep "Provider returned error" <hermes-home>/logs/errors.log | tail -10
    ```
    If multiple jobs failed in the same time window, it's a provider-wide blip, not a job config issue.
 
@@ -131,7 +131,7 @@ As of 2026-06-04, these jobs use the manifest.build custom provider and fail wit
    ```
 3. **Check if the API key is configured** — look for the key in the job's config or `.env`:
    ```bash
-   grep -r "manifest" <hermes-home>/.env 2>/dev/null
+   grep -r "manifest" <hermes-home>/profiles/indigo/.env 2>/dev/null
    ```
 4. **Check if other jobs using the same custom provider are also failing** — if all manifest.build jobs fail, it's a provider-wide key issue, not job-specific
 

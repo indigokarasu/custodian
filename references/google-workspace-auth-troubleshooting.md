@@ -5,7 +5,7 @@
 The `workspace-mcp` server (v1.20.4) at `/usr/local/bin/workspace-mcp`:
 - Runs as a stdio subprocess spawned by the Hermes gateway
 - Uses OAuth 2.0 with PKCE flow
-- Stores credentials in `/root/.google_workspace_mcp/credentials/` as `<email>.json`
+- Stores credentials in `<gworkspace-creds>/credentials/` as `<email>.json`
 - Each credential file contains: `token`, `refresh_token`, `client_id`, `client_secret`, `scopes`, `expiry`
 - In `--single-user` mode, it picks the correct credential file based on the `user_google_email` parameter
 
@@ -13,16 +13,16 @@ The `workspace-mcp` server (v1.20.4) at `/usr/local/bin/workspace-mcp`:
 
 Each account uses its OWN OAuth client in its OWN Google Cloud project (both in Testing mode):
 
-- **Indigo**: client `550801240087-vmc47b1gflj2biblqdr6bkekl7qqm8ls`, creds at `/root/.google_workspace_mcp/credentials/mx.indigo.karasu@gmail.com.json`
-- **owner**: client `112292610034-1revbmnkves56ago2c2t5dul5mj9bc17`, creds at `/root/.google_workspace_mcp/credentials/google-workspace-user.json`
+- **the agent**: client `550801240087-vmc47b1gflj2biblqdr6bkekl7qqm8ls`, creds at `<gworkspace-creds>/credentials/<third-party-or-user-email>.json`
+- **<operator>**: client `112292610034-1revbmnkves56ago2c2t5dul5mj9bc17`, creds at `<gworkspace-creds>/credentials/<user-google-email>.json`
 
 Both files must have all 41 scopes pre-populated. The MCP checks stored scopes against required scopes — if any are missing, it triggers a re-auth loop.
 
 ## Re-Authorization Procedure (when refresh tokens die)
 
 1. Generate the auth URL using the correct client_id for the account:
-   - Indigo: `client_id=550801240087-vmc47b1gflj2biblqdr6bkekl7qqm8ls`
-   - owner: `client_id=112292610034-1revbmnkves56ago2c2t5dul5mj9bc17`
+   - the agent: `client_id=550801240087-vmc47b1gflj2biblqdr6bkekl7qqm8ls`
+   - <operator>: `client_id=112292610034-1revbmnkves56ago2c2t5dul5mj9bc17`
    - Redirect URI: `http://localhost:1` (Google blocks raw IPs)
    - All 41 scopes in the scope parameter
    - `access_type=offline`, `prompt=consent`
@@ -35,7 +35,7 @@ Both files must have all 41 scopes pre-populated. The MCP checks stored scopes a
 
 5. Exchange the code for tokens using the matching `code_verifier` from the state file
 
-6. Save to the correct credential file (`/root/.google_workspace_mcp/credentials/<email>.json`)
+6. Save to the correct credential file (`<gworkspace-creds>/credentials/<email>.json`)
 
 ## Critical Rules
 
@@ -50,7 +50,7 @@ Both files must have all 41 scopes pre-populated. The MCP checks stored scopes a
 
 ## Scripts
 
-The old reauth scripts (`google_reauth_url.py`, `google_oauth_finish.py`) have been removed from `<hermes-root>/scripts/`. They are no longer needed — the MCP server handles OAuth flows directly. Credentials are stored at `/root/.google_workspace_mcp/credentials/<email>.json`. To re-authorize, generate an auth URL using the correct client_id for each account (see Critical Rules above) and complete the OAuth flow in browser.
+The old reauth scripts (`google_reauth_url.py`, `google_oauth_finish.py`) have been removed from `<hermes-home>/scripts/`. They are no longer needed — the MCP server handles OAuth flows directly. Credentials are stored at `<gworkspace-creds>/credentials/<email>.json`. To re-authorize, generate an auth URL using the correct client_id for each account (see Critical Rules above) and complete the OAuth flow in browser.
 
 ## Common Errors
 

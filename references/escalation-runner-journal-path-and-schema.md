@@ -13,13 +13,13 @@ Getting either wrong means either doing a full scan unnecessarily, or failing th
 Custodian journals live in **date-based subdirectories**, not flat:
 
 ```
-<hermes-home>/commons/journals/ocas-custodian/2026-06-19/esc-run-20260619T183216Z.json
-<hermes-home>/commons/journals/ocas-custodian/2026-06-19/light-scan-2026-06-19T120000-0700.json
+<hermes-home>/profiles/indigo/commons/journals/ocas-custodian/2026-06-19/esc-run-20260619T183216Z.json
+<hermes-home>/profiles/indigo/commons/journals/ocas-custodian/2026-06-19/light-scan-2026-06-19T120000-0700.json
 ```
 
 **NOT flat:**
 ```
-<hermes-home>/commons/journals/ocas-custodian/esc-run-20260619T183216Z.json  ← does NOT exist
+<hermes-home>/profiles/indigo/commons/journals/ocas-custodian/esc-run-20260619T183216Z.json  ← does NOT exist
 ```
 
 ### Path Template
@@ -37,13 +37,13 @@ For the commons (non-profile) path:
 
 ```bash
 # Find the most recent esc-run journal across all paths
-find <hermes-root> -path "*/journals/ocas-custodian/*/esc-run-*.json" -mtime -1 2>/dev/null | sort | tail -1
+find <hermes-home> -path "*/journals/ocas-custodian/*/esc-run-*.json" -mtime -1 2>/dev/null | sort | tail -1
 ```
 
 Or for today's directory specifically:
 ```bash
 TODAY=$(date -u +%Y-%m-%d)
-ls <hermes-home>/commons/journals/ocas-custodian/$TODAY/esc-run-*.json 2>/dev/null | sort | tail -1
+ls <hermes-home>/profiles/indigo/commons/journals/ocas-custodian/$TODAY/esc-run-*.json 2>/dev/null | sort | tail -1
 ```
 
 **IMPORTANT:** Use `date -u` (UTC) for the directory name, not `date` (local). The `run_id` is UTC-based, so the directory must match.
@@ -114,7 +114,7 @@ journal = {
     "system_health": "nominal"
 }
 
-journal_dir = f"<hermes-home>/commons/journals/ocas-custodian/{date_dir}"
+journal_dir = f"<hermes-home>/profiles/indigo/commons/journals/ocas-custodian/{date_dir}"
 import os
 os.makedirs(journal_dir, exist_ok=True)
 
@@ -139,8 +139,8 @@ The escalation runner checks issues from two sources:
 
 | Path | Authority | Notes |
 |------|-----------|-------|
-| `<hermes-home>/commons/data/custodian/issues.jsonl` | **Primary** | Live source, updated by custodian plugin |
-| `<hermes-root>/commons/data/ocas-custodian/issues.jsonl` | **Secondary** | Lagging copy, may contain stale entries |
+| `<hermes-home>/profiles/indigo/commons/data/custodian/issues.jsonl` | **Primary** | Live source, updated by custodian plugin |
+| `<hermes-home>/commons/data/ocas-custodian/issues.jsonl` | **Secondary** | Lagging copy, may contain stale entries |
 
 **Always write to the profile path.** The commons path receives data via sync.
 
@@ -176,7 +176,7 @@ def parse_jsonl(path):
 
 ```
 1. Check latest esc-run journal → if all_clear & recent → [SILENT]
-2. find <hermes-root> -name "issues.jsonl" → discover all paths
+2. find <hermes-home> -name "issues.jsonl" → discover all paths
 3. Parse each with brace-depth parser
 4. Filter: status NOT IN (resolved, superseded)
 5. Cross-reference by description (dedup)

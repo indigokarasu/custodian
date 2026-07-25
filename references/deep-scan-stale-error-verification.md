@@ -15,7 +15,7 @@ For each error job with `last_error` containing "Script not found":
 
 ```
 1. Extract the script basename from the current `script` field
-2. Check if file exists at profile path: <hermes-root>/profiles/<profile>/scripts/<basename>
+2. Check if file exists at profile path: <hermes-home>/profiles/<profile>/scripts/<basename>
 3. If it exists AND is a symlink → check symlink target resolves
 4. Compare error timestamp (parsed from `last_run_at`) to fix timestamp
 5. If error predates fix → STALE, do not re-apply
@@ -27,7 +27,7 @@ For each error job with `last_error` containing "Script not found":
 | Field | Value |
 |-------|-------|
 | Job | `brief:email-morning` |
-| `last_error` | "Script not found: <hermes-home>/scripts/email_morning_brief.py" |
+| `last_error` | "Script not found: <hermes-home>/profiles/indigo/scripts/email_morning_brief.py" |
 | `last_run_at` | 2026-06-26T13:40:02 |
 | Symlink created | 2026-06-26 14:02 (by light scan at 21:04 UTC) |
 | Error predates fix? | YES → stale |
@@ -39,7 +39,7 @@ For each error job with `last_error` containing "Script not found":
 | Field | Value |
 |-------|-------|
 | Job | `brief:email-evening` |
-| `last_error` | "Script not found: <hermes-home>/scripts/email_evening_brief.py" |
+| `last_error` | "Script not found: <hermes-home>/profiles/indigo/scripts/email_evening_brief.py" |
 | `last_run_at` | 2026-06-26T03:39:17 |
 | Symlink created | 2026-06-26 05:02 |
 | Error predates fix? | YES → stale |
@@ -49,11 +49,11 @@ For each error job with `last_error` containing "Script not found":
 
 ```bash
 # Check symlink creation time
-stat <hermes-home>/scripts/email_morning_brief.py
+stat <hermes-home>/profiles/indigo/scripts/email_morning_brief.py
 # Look at "Modify" time — if it's AFTER the job's last_run_at, the error is stale
 
 # Or use ls -la with full timestamps
-ls -la --time-style=full-iso <hermes-home>/scripts/email_morning_brief.py
+ls -la --time-style=full-iso <hermes-home>/profiles/indigo/scripts/email_morning_brief.py
 ```
 
 ## Distinction from Other Stale Patterns

@@ -9,10 +9,10 @@ Cron jobs with `provider: null` and `model: null` are expected to use the defaul
 ## Root Cause
 
 Two separate config files exist:
-- `<hermes-root>/config.yaml` — main config (CLEAN, no broken providers)
-- `<hermes-home>/config.yaml` — profile config (HAS broken providers)
+- `<hermes-home>/config.yaml` — main config (CLEAN, no broken providers)
+- `<hermes-home>/profiles/indigo/config.yaml` — profile config (HAS broken providers)
 
-The gateway runs with `HERMES_HOME=<hermes-home>`, so it reads the **profile config**. The profile config still has:
+The gateway runs with `HERMES_HOME=<hermes-home>/profiles/indigo`, so it reads the **profile config**. The profile config still has:
 ```yaml
 providers:
   ovhcloud:
@@ -40,7 +40,7 @@ Empty `api_key` values pass config validation but fail at runtime with 403.
 ## Diagnosis Steps
 
 1. Check `last_error` on failing jobs for provider name / base URL
-2. **Check BOTH config files**: `<hermes-root>/config.yaml` AND `<hermes-root>/profiles/<profile>/config.yaml`
+2. **Check BOTH config files**: `<hermes-home>/config.yaml` AND `<hermes-home>/profiles/<profile>/config.yaml`
 3. The profile config is the authoritative one when `HERMES_HOME` points to a profile directory
 4. Identify which provider has the broken/empty credential
 5. Determine if the issue is the fallback list or the default routing
@@ -61,12 +61,12 @@ The `patch` tool refuses config.yaml edits ("Agent cannot modify security-sensit
 
 ```bash
 # Remove the fallback_providers entry containing ovhcloud
-sed -i '/- model: Qwen3-Coder-30B-A3B-Instruct/{N;/provider: ovhcloud/d}' <hermes-root>/profiles/<profile>/config.yaml
+sed -i '/- model: Qwen3-Coder-30B-A3B-Instruct/{N;/provider: ovhcloud/d}' <hermes-home>/profiles/<profile>/config.yaml
 ```
 
 **⚠ PITFALL:** The sed pattern above also deletes the `ovhcloud:` and `llm7:` provider definitions if they appear as indented entries matching the pattern. After running, verify with:
 ```bash
-grep -E "ovhcloud|llm7" <hermes-root>/profiles/<profile>/config.yaml
+grep -E "ovhcloud|llm7" <hermes-home>/profiles/<profile>/config.yaml
 ```
 If both are gone, that's correct for this fix (both were broken). If you only intended to remove the fallback entries, use a more targeted sed or edit the file directly.
 
@@ -75,17 +75,17 @@ If both are gone, that's correct for this fix (both were broken). If you only in
 - `providers:` section contains only `aion_labs`
 - No 403 errors since fix applied
 - 3 affected jobs (genie:update, soul:sync, dispatch-email-15min) now route correctly
-- owner confirmed fix direction at 07:45 via Telegram: "Remove the LLM7 connection. It's broken."
+- <operator> confirmed fix direction at 07:45 via Telegram: "Remove the LLM7 connection. It's broken."
 
 ## Required Fix (general pattern)
 
-Remove broken providers from **both** `providers` and `fallback_providers` in `<hermes-root>/profiles/<profile>/config.yaml`. Any provider with empty `api_key` cannot authenticate and must be removed.
+Remove broken providers from **both** `providers` and `fallback_providers` in `<hermes-home>/profiles/<profile>/config.yaml`. Any provider with empty `api_key` cannot authenticate and must be removed.
 
 Alternative: Renew the API keys and update the config.
 
 ## Required Fix (general pattern)
 
-Remove broken providers from **both** `providers` and `fallback_providers` in `<hermes-root>/profiles/<profile>/config.yaml`. Any provider with empty `api_key` cannot authenticate and must be removed.
+Remove broken providers from **both** `providers` and `fallback_providers` in `<hermes-home>/profiles/<profile>/config.yaml`. Any provider with empty `api_key` cannot authenticate and must be removed.
 
 Alternative: Renew the API keys and update the config.
 

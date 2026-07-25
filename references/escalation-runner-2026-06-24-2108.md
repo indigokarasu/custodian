@@ -18,13 +18,13 @@
 ```bash
 # After esc-run journal written, check for pending deep-scan escalations
 LAST_ESC_RUN=$(stat -c %Y /path/to/latest/esc-run-*.json 2>/dev/null)
-find <hermes-root> -name "deep-scan-*-escalation.json" -newer /path/to/latest/esc-run-*.json 2>/dev/null
+find <hermes-home> -name "deep-scan-*-escalation.json" -newer /path/to/latest/esc-run-*.json 2>/dev/null
 # If found, process them before returning silent
 ```
 
 ## YAML Null-Key Representation Ambiguity
 
-**Problem**: `grep -n ': null$' <hermes-root>/config.yaml` found 4 lines (literal `null` text). But the actual config had the literal `null` text removed — keys were just `key:` (empty after colon). PyYAML parses both as None, but the grep pattern only catches one form.
+**Problem**: `grep -n ': null$' <hermes-home>/config.yaml` found 4 lines (literal `null` text). But the actual config had the literal `null` text removed — keys were just `key:` (empty after colon). PyYAML parses both as None, but the grep pattern only catches one form.
 
 **Two equivalent YAML null representations**:
 ```yaml
@@ -40,15 +40,15 @@ Both parse as `None` in Python. The config was modified between the deep scan (1
 **Correct detection**: Use PyYAML to check, not grep:
 ```python
 import yaml
-with open('<hermes-root>/config.yaml') as f:
+with open('<hermes-home>/config.yaml') as f:
     config = yaml.safe_load(f)
 null_keys = [k for k, v in config.items() if v is None]
 ```
 
 **Or grep both forms**:
 ```bash
-grep -nE ': $|^[a-z_]+:$' <hermes-root>/config.yaml  # catches "key:" with nothing after
-grep -n ': null$' <hermes-root>/config.yaml           # catches "key: null"
+grep -nE ': $|^[a-z_]+:$' <hermes-home>/config.yaml  # catches "key:" with nothing after
+grep -n ': null$' <hermes-home>/config.yaml           # catches "key: null"
 ```
 
 **Lesson**: When checking for null config keys, use PyYAML or grep BOTH patterns. A key with nothing after the colon is still null-valued.
@@ -62,7 +62,7 @@ Per the fix-loop detection rule, the 5th occurrence of `oc_config_empty_section`
 4. Write esc-run journal + return `[SILENT]`
 
 The RCA record was successfully created at:
-`<hermes-home>/commons/data/osas-custodian/rca.jsonl`
+`<hermes-home>/profiles/indigo/commons/data/osas-custodian/rca.jsonl`
 
 ## Journal Sync Pattern: shutil.copy2
 

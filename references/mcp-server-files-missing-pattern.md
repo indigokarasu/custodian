@@ -12,10 +12,10 @@ MCP servers are `enabled: true` in config.yaml but their server script files don
 
 | Server | Command | Configured Path | Status |
 |--------|---------|----------------|--------|
-| instagram | python3 | `<hermes-root>/mcp-servers/instagram-mcp/src/instagram_mcp_server.py` | MISSING |
-| pdsx | python3 | `<hermes-root>/mcp/pdsx/src/server.py` | MISSING |
-| spotify | node | `<hermes-root>/node/lib/node_modules/@darrenjaws/spotify-mcp/build/bin.js` | MISSING |
-| threads | node | `<hermes-root>/mcp-servers/threads-mcp/src/index.ts` | MISSING |
+| instagram | python3 | `<hermes-home>/mcp-servers/instagram-mcp/src/instagram_mcp_server.py` | MISSING |
+| pdsx | python3 | `<hermes-home>/mcp/pdsx/src/server.py` | MISSING |
+| spotify | node | `<hermes-home>/node/lib/node_modules/@darrenjaws/spotify-mcp/build/bin.js` | MISSING |
+| threads | node | `<hermes-home>/mcp-servers/threads-mcp/src/index.ts` | MISSING |
 
 ## Detection
 
@@ -23,7 +23,7 @@ MCP servers are `enabled: true` in config.yaml but their server script files don
 # Check if MCP server files exist
 python3 -c "
 import yaml, os
-with open('<hermes-root>/config.yaml') as f:
+with open('<hermes-home>/config.yaml') as f:
     cfg = yaml.safe_load(f)
 for name, srv in cfg.get('mcp_servers', {}).items():
     if not srv.get('enabled', True): continue

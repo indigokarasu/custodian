@@ -16,7 +16,7 @@ Check its output for failures:
 # Check job last_run from jobs.json (NOT hermes cron list — broken in cron context)
 python3 -c "
 import json
-with open('<hermes-home>/cron/jobs.json') as f:
+with open('<hermes-home>/profiles/indigo/cron/jobs.json') as f:
     data = json.load(f)
 jobs = data.get('jobs', data) if isinstance(data, dict) else data
 for j in jobs:
@@ -25,7 +25,7 @@ for j in jobs:
 "
 
 # Check DecisionRecords for recent over_cap_after (last 24h)
-grep -v "^$" <hermes-home>/commons/data/ocas-finch/decisions.jsonl | python3 -c "
+grep -v "^$" <hermes-home>/profiles/indigo/commons/data/ocas-finch/decisions.jsonl | python3 -c "
 import sys, json
 from datetime import datetime, timezone, timedelta
 cutoff = datetime.now(timezone.utc) - timedelta(hours=24)
@@ -40,7 +40,7 @@ for line in sys.stdin:
 "
 
 # Check MEMORY.md current size (correct path: memories/ not profile root)
-wc -c <hermes-home>/memories/MEMORY.md
+wc -c <hermes-home>/profiles/indigo/memories/MEMORY.md
 ```
 
 ## Severity

@@ -29,7 +29,7 @@ This is the dominant recurring failure mode in this deployment. Expect periodic 
 
 1. Classify as `oc_provider_auth_token_expired`, user-gated, Tier 3 — NOT transient.
 2. **Do not pause** the affected recurring jobs. Leave them enabled so they retry and self-clear on re-auth.
-3. Do not report as "fixed" — re-auth is a user action (owner signs in / refreshes the provider token).
+3. Do not report as "fixed" — re-auth is a user action (<operator> signs in / refreshes the provider token).
 4. Ensure a matching open issue exists in `issues.jsonl` (`fingerprint: oc_provider_auth_token_expired`). If missing, write it (status `user_gated`, `escalation_needed: true`).
 5. In a light scan, if an existing `oc_provider_auth_token_expired` issue's jobs have ALL recovered (`last_status: ok`, `last_error` empty), resolve it (forward-stale reconciliation).
 

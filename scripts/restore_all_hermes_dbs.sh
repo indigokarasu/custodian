@@ -48,16 +48,16 @@ restore() {
 
 echo "[*] Restoring Hermes databases from $BACKUP_DIR..."
 
-restore "$BACKUP_DIR"/hermes_state_*.db <hermes-root>/state.db
+restore "$BACKUP_DIR"/hermes_state_*.db ~/.hermes/state.db
 
 if [ -d "$BACKUP_DIR"/hermes_state_snapshots_* ] 2>/dev/null; then
-    restore "$BACKUP_DIR"/hermes_state_snapshots_* <hermes-root>/state-snapshots/
+    restore "$BACKUP_DIR"/hermes_state_snapshots_* ~/.hermes/state-snapshots/
 fi
 
-restore "$BACKUP_DIR"/chronicle_lbug_* <hermes-root>/commons/db/ocas-elephas/chronicle.lbug
-restore "$BACKUP_DIR"/chronicle_lbug_backup_* <hermes-root>/prep_preservation/chronicle.lbug
+restore "$BACKUP_DIR"/chronicle_lbug_* ~/.hermes/commons/db/ocas-elephas/chronicle.lbug
+restore "$BACKUP_DIR"/chronicle_lbug_backup_* ~/.hermes/prep_preservation/chronicle.lbug
 restore "$BACKUP_DIR"/weave_lbug_* /root/indigo-repo/commons/db/ocas-weave/weave.lbug
-restore "$BACKUP_DIR"/weave_lbug_backup_* <hermes-root>/prep_preservation/chronicle.lbug
-restore "$BACKUP_DIR"/weave_lbug_data_* <hermes-root>/data/hermes-weave/weave.lbug
+restore "$BACKUP_DIR"/weave_lbug_backup_* ~/.hermes/prep_preservation/chronicle.lbug
+restore "$BACKUP_DIR"/weave_lbug_data_* ~/.hermes/data/hermes-weave/weave.lbug
 
 echo "[*] Done."

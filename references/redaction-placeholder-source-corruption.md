@@ -32,12 +32,12 @@ Restore the intended code (the symmetric `.get()`-style default). Do **NOT** "fi
 ## Verification (exact-env re-run — `py_compile` alone is insufficient)
 Replicate the wrapper the cron job invokes:
 ```bash
-export HERMES_HOME=<hermes-home>
-export AGENT_ROOT=<hermes-home>
+export HERMES_HOME=<hermes-home>/profiles/indigo
+export AGENT_ROOT=<hermes-home>/profiles/indigo
 if [ -f "$HERMES_HOME/.env" ]; then set -a; . "$HERMES_HOME/.env" 2>/dev/null || true; set +a; fi
-timeout 110 <hermes-install>/.venv/bin/python <hermes-home>/scripts/<wrapper.sh>
+timeout 110 <hermes-venv>/bin/python <hermes-home>/profiles/indigo/scripts/<wrapper.sh>
 # or the worker directly:
-<hermes-install>/.venv/bin/python <hermes-home>/skills/<skill>/scripts/<worker.py>
+<hermes-venv>/bin/python <hermes-home>/profiles/indigo/skills/<skill>/scripts/<worker.py>
 ```
 Expect `EXIT_CODE=0` with real output (e.g. the weave fix re-ran with 981 inbound upserted, 587 outbound pushed, 0 failures). If clean, mark `status: resolved`, clear any carried `user_gated: false`.
 
@@ -45,4 +45,4 @@ Expect `EXIT_CODE=0` with real output (e.g. the weave fix re-ran with 981 inboun
 Commit the source fix to the skill's git repo (`git -C <skill_dir> add -A && git -C <skill_dir> commit`) so a subsequent scrubber pass doesn't re-corrupt a stale copy. Write the issue to the **authoritative profile `issues.jsonl`** (`…/commons/data/ocas-custodian/issues.jsonl`, NOT the stale `…/commons/journals/…` copy) with `verified` evidence, then resolve.
 
 ## Distinction (do not misclassify)
-This is a **CODE defect**, never an auth failure. Do NOT confuse with `invalid_grant` / `token_expired` / `oc_google_oauth_token_revoked` (which need browser re-auth and stay user-gated). A `SyntaxError` in a skill source file is always source corruption — fixable here, not waiting on owner.
+This is a **CODE defect**, never an auth failure. Do NOT confuse with `invalid_grant` / `token_expired` / `oc_google_oauth_token_revoked` (which need browser re-auth and stay user-gated). A `SyntaxError` in a skill source file is always source corruption — fixable here, not waiting on <operator>.

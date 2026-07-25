@@ -18,10 +18,10 @@ Executed batched pruning of 408,037 messages (62% reduction) from `state.db` mes
 
 ```bash
 # Remove stale state-snapshots backup (14GB!)
-rm -rf <hermes-home>/state-snapshots/20260706-110009-pre-update
+rm -rf <hermes-home>/profiles/indigo/state-snapshots/20260706-110009-pre-update
 
 # Checkpoint WAL to reclaim space
-sqlite3 <hermes-home>/state.db "PRAGMA wal_checkpoint(TRUNCATE);"
+sqlite3 <hermes-home>/profiles/indigo/state.db "PRAGMA wal_checkpoint(TRUNCATE);"
 # WAL: 5.2GB → 78KB, disk usage: 89% → ~74%
 ```
 
@@ -34,7 +34,7 @@ sqlite3 <hermes-home>/state.db "PRAGMA wal_checkpoint(TRUNCATE);"
 ```python
 import sqlite3, time
 
-conn = sqlite3.connect('<hermes-home>/state.db', timeout=300)
+conn = sqlite3.connect('<hermes-home>/profiles/indigo/state.db', timeout=300)
 conn.execute('PRAGMA journal_mode=WAL')
 conn.execute('PRAGMA synchronous=NORMAL')
 conn.execute('PRAGMA busy_timeout=300000')
@@ -71,7 +71,7 @@ conn.close()
 ### 3. VACUUM
 
 ```bash
-sqlite3 <hermes-home>/state.db "VACUUM;"
+sqlite3 <hermes-home>/profiles/indigo/state.db "VACUUM;"
 # Took ~20 min (1187 seconds)
 # state.db: 15GB → 12GB
 ```
@@ -79,7 +79,7 @@ sqlite3 <hermes-home>/state.db "VACUUM;"
 ### 4. Final WAL Checkpoint
 
 ```bash
-sqlite3 <hermes-home>/state.db "PRAGMA wal_checkpoint(TRUNCATE);"
+sqlite3 <hermes-home>/profiles/indigo/state.db "PRAGMA wal_checkpoint(TRUNCATE);"
 # WAL: 78KB → 4KB
 ```
 

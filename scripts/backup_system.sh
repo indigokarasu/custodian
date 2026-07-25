@@ -48,20 +48,20 @@ do_backup() {
 }
 
 # Chronicle (Elephas)
-do_backup <hermes-root>/commons/db/ocas-elephas/chronicle.lbug "$LOCAL_BACKUP/chronicle.lbug"
+do_backup ~/.hermes/commons/db/ocas-elephas/chronicle.lbug "$LOCAL_BACKUP/chronicle.lbug"
 
 # Weave
-do_backup <hermes-root>/commons/db/ocas-weave/weave.lbug "$LOCAL_BACKUP/weave.lbug"
+do_backup ~/.hermes/commons/db/ocas-weave/weave.lbug "$LOCAL_BACKUP/weave.lbug"
 
 # Styx + Transactions
-do_backup <hermes-root>/data/styx.db "$LOCAL_BACKUP/styx.db"
-do_backup <hermes-root>/data/transactions.db "$LOCAL_BACKUP/transactions.db"
+do_backup ~/.hermes/data/styx.db "$LOCAL_BACKUP/styx.db"
+do_backup ~/.hermes/data/transactions.db "$LOCAL_BACKUP/transactions.db"
 
 # Hermes State
-do_backup <hermes-root>/state.db "$LOCAL_BACKUP/state.db"
+do_backup ~/.hermes/state.db "$LOCAL_BACKUP/state.db"
 
 # Sessions
-do_backup <hermes-root>/sessions "$LOCAL_BACKUP/sessions"
+do_backup ~/.hermes/sessions "$LOCAL_BACKUP/sessions"
 
 # MemPalace
 if [ -d /root/.mempalace ] && [ "$DRY_RUN" -eq 0 ]; then

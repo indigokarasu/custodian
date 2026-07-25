@@ -47,7 +47,7 @@ Mentor, and a future "all clean" delta silently drops it.
 ## Worked example (2026-07-13)
 
 - `weave:enrichability-recalc` (id `33063cc8b3b9`), `no_agent`, paused.
-  `last_error`: `Script exited with code 1 ... Database: <hermes-home>/home/.hermes/commons/db/ocas-weave/weave.sqlite ... ERROR: Database file does not exist.`
+  `last_error`: `Script exited with code 1 ... Database: <hermes-home>/profiles/indigo/home/.hermes/commons/db/ocas-weave/weave.sqlite ... ERROR: Database file does not exist.`
 - `weave:sync-contacts` (id `4d424eaf9185`), `no_agent`, paused.
   `last_error`: `FileNotFoundError: .../home/.hermes/commons/data/ocas-weave/config.json`.
 - Real cause: `ocas-weave` scripts build paths as `<profile>/home/.hermes/commons/...`

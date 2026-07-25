@@ -17,13 +17,13 @@ Usage:
   python3 race_safe_issue_patch.py --issue-id oc_state_db_oversized_20260714T0500 \
       --set status=resolved --set user_gated=false --set escalation_needed=false \
       [--require-status user_gated]   # only mutate if currently in this status
-      [--path <hermes-home>/commons/data/ocas-custodian/issues.jsonl]
+      [--path ~/.hermes/profiles/indigo/commons/data/ocas-custodian/issues.jsonl]
       [--retries 3] [--sleep 2.0]
 """
 import argparse, json, os, sys, time
 from datetime import datetime, timezone
 
-DEFAULT_PATH = "<hermes-home>/commons/data/ocas-custodian/issues.jsonl"
+DEFAULT_PATH = "~/.hermes/profiles/indigo/commons/data/ocas-custodian/issues.jsonl"
 
 
 def parse_line(line):

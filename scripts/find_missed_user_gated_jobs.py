@@ -20,13 +20,13 @@ the Nous message but absent from oc_nous_401_key_invalid_20260707's jobs_paused
 because they failed after the 21:04 esc pass. Run this probe AFTER
 verify_escalation_state.py in every escalation loop.
 
-Run: python3 <hermes-home>/skills/ocas-custodian/scripts/find_missed_user_gated_jobs.py
+Run: python3 ~/.hermes/profiles/indigo/skills/ocas-custodian/scripts/find_missed_user_gated_jobs.py
 """
 import json
 
-JOBS_PATH = "<hermes-home>/cron/jobs.json"
+JOBS_PATH = "~/.hermes/profiles/indigo/cron/jobs.json"
 ISSUES_PATHS = [
-    "<hermes-home>/commons/data/ocas-custodian/issues.jsonl",
+    "~/.hermes/profiles/indigo/commons/data/ocas-custodian/issues.jsonl",
 ]
 
 # (fingerprint, recommended_issue_id, match-substrings in last_error)
@@ -183,7 +183,7 @@ if __name__ == "__main__":
     )
     ap.add_argument("--profile", default="indigo", help="Profile name")
     args = ap.parse_args()
-    HOME = f"<hermes-root>/profiles/{args.profile}"
+    HOME = f"~/.hermes/profiles/{args.profile}"
     JOBS_PATH = f"{HOME}/cron/jobs.json"
     ISSUES_PATHS[:] = [f"{HOME}/commons/data/ocas-custodian/issues.jsonl"]
     main()

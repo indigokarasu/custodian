@@ -29,10 +29,10 @@ import json, os, argparse
 from datetime import datetime, timezone
 
 JOURNAL_DIRS = [
-    "<hermes-home>/commons/journals/ocas-custodian",
-    "<hermes-root>/commons/journals/ocas-custodian",
+    "~/.hermes/profiles/indigo/commons/journals/ocas-custodian",
+    "~/.hermes/commons/journals/ocas-custodian",
 ]
-PROFILE_ISSUES = "<hermes-home>/commons/data/ocas-custodian/issues.jsonl"
+PROFILE_ISSUES = "~/.hermes/profiles/indigo/commons/data/ocas-custodian/issues.jsonl"
 
 TRANSIENT_MARKERS = ("transient", "noop", "shutdown", "rate_limit",
                      "resource_exhausted", "provider_error", "interpreter")

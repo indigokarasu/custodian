@@ -15,7 +15,7 @@ if result.returncode != 0:
 ## De-aggregation recipe
 Run the WRAPPED script directly, not the wrapper:
 ```
-timeout 60 python3 <hermes-home>/skills/ocas-tasks/scripts/tasks_monitor.py --mode check
+timeout 60 python3 <hermes-home>/profiles/indigo/skills/ocas-tasks/scripts/tasks_monitor.py --mode check
 ```
 Live failure surfaced:
 ```

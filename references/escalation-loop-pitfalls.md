@@ -12,7 +12,7 @@ A 24h scan produced 9 "GAP" journals; on inspection every cited fingerprint (`oc
 ## 2. Stale last_error vs. live failure — verify by inspecting the fix, not the error
 A job may still carry `last_error` matching a "resolved" issue's fingerprint even though the root cause is gone (fix landed after the job's last run; job hasn't re-run).
 
-Pattern that caught a false reopen: `weave:sync-google` and `weave:enrichability-recalc` still errored with `home/.hermes` path failures, but their wrapper scripts (`rr_weave_sync.sh`) ALREADY set `AGENT_ROOT=<hermes-home>` and the canonical data (`config.json`, `weave.sqlite`) exists at the correct path. The errors were stale (last runs 01:09 / 04:00, before the wrapper fix).
+Pattern that caught a false reopen: `weave:sync-google` and `weave:enrichability-recalc` still errored with `home/.hermes` path failures, but their wrapper scripts (`rr_weave_sync.sh`) ALREADY set `AGENT_ROOT=<hermes-home>/profiles/indigo` and the canonical data (`config.json`, `weave.sqlite`) exists at the correct path. The errors were stale (last runs 01:09 / 04:00, before the wrapper fix).
 
 **Rule:** Before reopening a resolved issue, (a) read the actual wrapper/script the job runs and confirm whether the fix is present, (b) confirm canonical data/paths exist, (c) compare `last_run_at` against the fix timestamp. If the fix is in place and `last_run_at` predates it, the error is stale — leave the issue resolved; the next scheduled run clears it.
 

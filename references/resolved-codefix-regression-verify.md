@@ -32,7 +32,7 @@ For each `resolved` issue whose fingerprint is a code defect:
 
 3. **Re-run the script to separate stale from live.** When in doubt,
    execute the job's `script` directly in its real env
-   (`<hermes-install>/.venv/bin/python <script>` or `bash <wrapper>`)
+   (`<hermes-venv>/bin/python <script>` or `bash <wrapper>`)
    and inspect the exit code + stderr. Exit 0 with real output =
    fix holds (stale error). Traceback = fix incomplete (reopen).
    Confirmed 2026-07-13: `vibes:update` showed a stale git-auth
@@ -81,7 +81,7 @@ Leave both chronicle issues `resolved`.
 
 ## REVISION 2026-07-13 (late) — wrapper env-export pitfall: re-run VIA the wrapper, not bare python
 
-Step 8e item 3 says to "execute the job's `script` directly … (`<hermes-install>/.venv/bin/python <script>` or `bash <wrapper>`)". When the fix was applied to the **wrapper** (e.g. adding `export AGENT_ROOT=<hermes-home>` to a `rr_*.sh` so the skill stops falling back to `Path.home()`), running the script via bare `python3` **bypasses the fix** and reproduces the original error — a false-positive regression.
+Step 8e item 3 says to "execute the job's `script` directly … (`<hermes-venv>/bin/python <script>` or `bash <wrapper>`)". When the fix was applied to the **wrapper** (e.g. adding `export AGENT_ROOT=<hermes-home>/profiles/indigo` to a `rr_*.sh` so the skill stops falling back to `Path.home()`), running the script via bare `python3` **bypasses the fix** and reproduces the original error — a false-positive regression.
 
 Confirmed 2026-07-13: `oc_weave_skill_path_bug_20260713T1315` (weave:sync-google) was marked resolved after `AGENT_ROOT` was exported in `rr_weave_sync.sh`. Bare `python3 skills/ocas-weave/scripts/google_sync.py` in a clean env raised `FileNotFoundError: …/ocas-weave/config.json` (the old `Path.home()`-fallback path) → looked like a live failure. Re-running **through the wrapper** (`bash scripts/rr_weave_sync.sh`, which sets `AGENT_ROOT` then `exec`s the script) returned `EXIT=0` (587 contacts pushed) → resolution VALID. The bare-python test was simply running the unfixed code path.
 

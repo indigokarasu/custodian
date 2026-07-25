@@ -14,7 +14,7 @@ Safe: backs up jobs.json before editing. Use --dry-run to preview with zero writ
 import json, os, argparse
 from datetime import datetime, timezone
 
-PROFILE = "<hermes-home>"
+PROFILE = "~/.hermes/profiles/indigo"
 JOBS = os.path.join(PROFILE, "cron/jobs.json")
 ISSUES = os.path.join(PROFILE, "commons/data/ocas-custodian/issues.jsonl")
 

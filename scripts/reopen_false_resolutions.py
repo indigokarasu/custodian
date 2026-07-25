@@ -5,10 +5,10 @@ Reopens issues.jsonl entries marked `resolved` whose provider/auth/credit
 fingerprint still has >=1 live erroring job in jobs.json. Read-only by
 default; pass --write to persist reopens.
 
-Cron-safe: no pipe-to-interpreter, no execute_code, hardcoded <hermes-root>
+Cron-safe: no pipe-to-interpreter, no execute_code, hardcoded ~/.hermes
 paths (Path.home() breaks in cron). Run via:
-  python3 <hermes-home>/skills/ocas-custodian/scripts/reopen_false_resolutions.py
-  python3 <hermes-home>/skills/ocas-custodian/scripts/reopen_false_resolutions.py --write
+  python3 ~/.hermes/profiles/indigo/skills/ocas-custodian/scripts/reopen_false_resolutions.py
+  python3 ~/.hermes/profiles/indigo/skills/ocas-custodian/scripts/reopen_false_resolutions.py --write
 
 Usage:
   python3 reopen_false_resolutions.py          # dry-run
@@ -19,7 +19,7 @@ import os
 import datetime
 import argparse
 
-PROFILE = "<hermes-home>"
+PROFILE = "~/.hermes/profiles/indigo"
 JOBS = os.path.join(PROFILE, "cron", "jobs.json")
 ISSUES = os.path.join(PROFILE, "commons", "data", "ocas-custodian", "issues.jsonl")
 

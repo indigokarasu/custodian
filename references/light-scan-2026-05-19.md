@@ -14,7 +14,7 @@ The ocas-rally frontmatter only declares: `rally:research`, `rally:healthcheck-p
 
 The `bones:market-monitor` cron job (ID: `bbb15fb19401`) is a prompt-based job (`script: null`) whose prompt instructs the agent to run `python3 /usr/local/lib/hermes-agent/scripts/kalshi_portfolio.py`. That file does not exist at that path.
 
-**Actual location**: `<hermes-root>/skills/ocas-bones/scripts/kalshi_portfolio.py`
+**Actual location**: `<hermes-home>/skills/ocas-bones/scripts/kalshi_portfolio.py`
 
 **Error in logs**:
 ```

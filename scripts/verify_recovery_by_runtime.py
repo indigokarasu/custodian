@@ -38,8 +38,8 @@ import sys
 import argparse
 from datetime import datetime, timezone
 
-JOBS = "<hermes-home>/cron/jobs.json"
-ISSUES = "<hermes-home>/commons/data/ocas-custodian/issues.jsonl"
+JOBS = "~/.hermes/profiles/indigo/cron/jobs.json"
+ISSUES = "~/.hermes/profiles/indigo/commons/data/ocas-custodian/issues.jsonl"
 
 
 def parse_ts(s):

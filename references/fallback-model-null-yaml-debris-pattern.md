@@ -24,12 +24,12 @@ The Hermes `save_config()` function in `hermes_cli/config.py` writes the full co
 
 ```bash
 # Check for null fallback_model
-grep "^fallback_model:" <hermes-home>/config.yaml
+grep "^fallback_model:" <hermes-home>/profiles/indigo/config.yaml
 
 # Check all null root-level keys
 python3 -c "
 import yaml
-with open('<hermes-home>/config.yaml') as f:
+with open('<hermes-home>/profiles/indigo/config.yaml') as f:
     data = yaml.safe_load(f)
 nulls = [k for k, v in data.items() if v is None]
 print('Null keys:', nulls)
@@ -43,13 +43,13 @@ Use PyYAML to properly remove the key (not set it to None):
 ```python
 import yaml
 
-with open('<hermes-home>/config.yaml', 'r') as f:
+with open('<hermes-home>/profiles/indigo/config.yaml', 'r') as f:
     data = yaml.safe_load(f)
 
 if 'fallback_model' in data and data['fallback_model'] is None:
     del data['fallback_model']  # Remove the key entirely
 
-with open('<hermes-home>/config.yaml', 'w') as f:
+with open('<hermes-home>/profiles/indigo/config.yaml', 'w') as f:
     yaml.dump(data, f, default_flow_style=False, sort_keys=False)
 ```
 
@@ -60,12 +60,12 @@ with open('<hermes-home>/config.yaml', 'w') as f:
 After fix:
 ```bash
 # Should return nothing
-grep "fallback_model" <hermes-home>/config.yaml
+grep "fallback_model" <hermes-home>/profiles/indigo/config.yaml
 
 # Verify no null keys remain
 python3 -c "
 import yaml
-with open('<hermes-home>/config.yaml') as f:
+with open('<hermes-home>/profiles/indigo/config.yaml') as f:
     data = yaml.safe_load(f)
 nulls = [k for k, v in data.items() if v is None]
 print('Null keys:', nulls if nulls else 'NONE')

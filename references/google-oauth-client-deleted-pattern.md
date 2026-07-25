@@ -6,19 +6,19 @@ When a Google OAuth client is deleted from Google Cloud Console, token refresh a
 
 ## Diagnostic
 
-1. Check credential file: `python3 -c "import json; d=json.load(open('/root/.google_workspace_mcp/credentials/google-workspace-user.json')); print(d.get('expiry'))"`
+1. Check credential file: `python3 -c "import json; d=json.load(open('<gworkspace-creds>/credentials/<user-google-email>.json')); print(d.get('expiry'))"`
 2. Attempt token refresh — if error contains `deleted_client`, the OAuth client is gone
 3. Check if other Google jobs are failing with auth errors
 
 ## Why Auto-Fix Cannot Work
 
-The `oc_google_token_invalid` auto-fix (`cp <hermes-root>-indigo/google_token.json <hermes-root>/google_token.json`) restores a backup token, but if the OAuth client itself was deleted, no token will work. A new OAuth client must be created in Google Cloud Console.
+The `oc_google_token_invalid` auto-fix (`cp <hermes-home>-indigo/google_token.json <hermes-home>/google_token.json`) restores a backup token, but if the OAuth client itself was deleted, no token will work. A new OAuth client must be created in Google Cloud Console.
 
 ## Required User Action
 
 1. Create a new OAuth client in Google Cloud Console
 2. Update `config.yaml` with new `GOOGLE_OAUTH_CLIENT_ID` and `GOOGLE_OAUTH_CLIENT_SECRET`
-3. Re-authorize via `python3 <hermes-root>/skills/infrastructure/google-workspace-auth/scripts/google_oauth_init.py`
+3. Re-authorize via `python3 <hermes-home>/skills/infrastructure/google-workspace-auth/scripts/google_oauth_init.py`
 
 ## Affected Jobs
 
@@ -48,7 +48,7 @@ Before concluding an issue is user-gated, **verify the token is actually revoked
 import requests, json
 
 # Load the stored credentials
-with open('/root/.google_workspace_mcp/credentials/google-workspace-user.json') as f:
+with open('<gworkspace-creds>/credentials/<user-google-email>.json') as f:
     creds = json.load(f)
 
 # Client config from google_auth_mcp.py (_CLIENTS dict)
@@ -96,7 +96,7 @@ See `references/subprocess-cascade-oauth-masking.md` for full pattern and diagno
 
 ## History
 
-- 2026-06-04: First detected. Credential file at `/root/.google_workspace_mcp/credentials/google-workspace-user.json` exists (1686 bytes) with token, refresh_token, client_id, client_secret. Token expired 2026-06-04T21:33. OAuth client deleted from Google Cloud Console.
+- 2026-06-04: First detected. Credential file at `<gworkspace-creds>/credentials/<user-google-email>.json` exists (1686 bytes) with token, refresh_token, client_id, client_secret. Token expired 2026-06-04T21:33. OAuth client deleted from Google Cloud Console.
 - 2026-06-05: Still open. Awaiting user re-authorization.
 - 2026-06-29: Token revocation confirmed via live API test. `email:check` and `monitor:list` paused. Other Google-auth jobs (sands, taste, vesper) currently running OK — they use different auth flows or haven't hit token expiry yet.
 - 2026-07-06: Token revocation confirmed again (new instance). Client secret stored, auth URL generated. `monitor:list` subprocess masking pattern documented. Awaiting user auth code.

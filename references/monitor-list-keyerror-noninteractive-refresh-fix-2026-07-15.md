@@ -14,7 +14,7 @@ There are THREE distinct cases (the custodian SKILL.md OAuth section covers A = 
 race and B = genuinely revoked). This file is Case C, discovered + fixed 2026-07-15.
 
 ## Discriminator (check the KEY, not just any token)
-Inspect `/root/.google_workspace_mcp/credentials/google-workspace-user.json`:
+Inspect `<gworkspace-creds>/credentials/<user-google-email>.json`:
 - **Case A (transient race):** key `access_token` present + non-empty → re-runs succeed → resolve false-escalation.
 - **Case B (user-gated):** `refresh_token` absent/revoked or OAuth client deleted → interactive re-auth needed → leave `user_gated`.
 - **Case C (THIS FILE):** NO `access_token` key, but `refresh_token` present + valid AND a `token` key + a **future** `expiry`.
@@ -31,7 +31,7 @@ call is skipped, and line 88 throws `KeyError: 'access_token'`. Both the wrapper
 and a direct `tasks_monitor.py --mode check` re-run fail PERSISTENTLY (this is NOT
 a mid-write race — the token is simply never populated).
 
-## Fix (non-interactive — NO owner re-auth required)
+## Fix (non-interactive — NO <operator> re-auth required)
 Invoke the script's own `refresh_token()` directly. It POSTs the valid `refresh_token`
 to `https://oauth2.googleapis.com/token`, mints a fresh `access_token`, writes it to
 the creds file, and returns:
@@ -39,7 +39,7 @@ the creds file, and returns:
 ```python
 # /tmp/trigger_refresh.py
 import sys
-sys.path.insert(0, "<hermes-home>/skills/ocas-tasks/scripts")
+sys.path.insert(0, "<hermes-home>/profiles/indigo/skills/ocas-tasks/scripts")
 import tasks_monitor as tm
 creds = tm.load_creds()
 refreshed = tm.refresh_token(creds)   # uses valid refresh_token
@@ -48,8 +48,8 @@ print("access_token now present:", "access_token" in refreshed)
 Run: `python3 /tmp/trigger_refresh.py` → expect `REFRESH OK; access_token now present: True`.
 
 ## Verification (authoritative)
-1. `python3 <hermes-home>/skills/ocas-tasks/scripts/tasks_monitor.py --mode check` → exit **0** (was `KeyError`).
-2. `python3 <hermes-home>/scripts/monitor_list.py` → exit **0**.
+1. `python3 <hermes-home>/profiles/indigo/skills/ocas-tasks/scripts/tasks_monitor.py --mode check` → exit **0** (was `KeyError`).
+2. `python3 <hermes-home>/profiles/indigo/scripts/monitor_list.py` → exit **0**.
 3. `hermes cron run <job_id>` (e.g. `39b7edc44b35`) → **"succeeded"**.
 4. `jobs.json`: the job's `last_status` flips to `ok`, `last_error` → `None`.
 
@@ -69,7 +69,7 @@ guards the scalar fields against the concurrent-rewrite race). Set `verified: tr
 A prior scan (2026-07-14) saw this same `KeyError`, declared it a transient race,
 resolved it, then a later re-open labeled it `user_gated` (claiming the `refresh_token`
 was dead). Both were WRONG: the fault was real AND fixable non-interactively. Labeling
-it `user_gated` hides a self-fixing defect behind "needs owner" for 18h. When the
+it `user_gated` hides a self-fixing defect behind "needs <operator>" for 18h. When the
 creds file has a valid `refresh_token`, always try the direct `refresh_token()` call
 before concluding user-gated.
 

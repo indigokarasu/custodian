@@ -7,13 +7,13 @@ current schema. Those string values are not used. This caused a real risk of emi
 
 ## Actual status vocabulary (verified 2026-07-15)
 
-Parsed 37 entries in `<hermes-home>/commons/data/ocas-custodian/issues.jsonl`:
+Parsed 37 entries in `<hermes-home>/profiles/indigo/commons/data/ocas-custodian/issues.jsonl`:
 
 - `resolved` — closed (incl. stale-premise resolutions). NOT open.
 - `duplicate` — a MERGE of another issue (e.g. `oc_openrouter_402_credits_exhausted_20260712T040120`
   merged into the 20260706 entry). Looks "open" at a glance but is NOT actionable — it was
   folded into another issue. Treat as closed.
-- `user_gated` — genuinely OPEN and unresolvable in cron (needs owner: OAuth, billing,
+- `user_gated` — genuinely OPEN and unresolvable in cron (needs <operator>: OAuth, billing,
   interactive credential flow). tier-3 typically carries `escalation_needed: true`.
 
 There is NO `escalated` or `fix_attempted_failed` status in the live file.

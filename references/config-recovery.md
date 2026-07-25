@@ -38,7 +38,7 @@ import yaml, shutil
 from datetime import datetime
 
 base = 'CORRECT_BACKUP_PATH'
-current = '<hermes-root>/config.yaml'
+current = '<hermes-home>/config.yaml'
 
 with open(base) as f:
     config = yaml.safe_load(f)
@@ -51,7 +51,7 @@ for name in cur.get('mcp_servers', {}):
         # Only add if user confirms it should exist
         config['mcp_servers'][name] = cur['mcp_servers'][name]
 
-shutil.copy2(current, f'<hermes-root>/config.yaml.broken.{datetime.now().strftime("%Y%m%d_%H%M%S")}')
+shutil.copy2(current, f'<hermes-home>/config.yaml.broken.{datetime.now().strftime("%Y%m%d_%H%M%S")}')
 with open(current, 'w') as f:
     yaml.dump(config, f, default_flow_style=False, allow_unicode=True)
 ```
@@ -59,7 +59,7 @@ with open(current, 'w') as f:
 ### 4. Verify
 ```python
 import yaml
-with open('<hermes-root>/config.yaml') as f:
+with open('<hermes-home>/config.yaml') as f:
     c = yaml.safe_load(f)
 assert c['model']['default'] == 'openrouter/owl-alpha'
 assert c['_config_version'] == 23

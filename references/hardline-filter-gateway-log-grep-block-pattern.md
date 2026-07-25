@@ -24,7 +24,7 @@ Use `python3` with file I/O instead of `grep`/`awk`:
 ```python
 python3 << 'PYEOF'
 import re
-with open('<hermes-home>/logs/gateway.log', 'r') as f:
+with open('<hermes-home>/profiles/indigo/logs/gateway.log', 'r') as f:
     for line in f:
         if '2026-06-26' in line and re.search(r'error|fail|sigterm|restart', line, re.I):
             print(line.strip())
@@ -34,7 +34,7 @@ PYEOF
 Or use `awk` (usually not blocked):
 
 ```bash
-awk '/2026-06-26/ && /error|fail|sigterm/' <hermes-home>/logs/gateway.log
+awk '/2026-06-26/ && /error|fail|sigterm/' <hermes-home>/profiles/indigo/logs/gateway.log
 ```
 
 ## Diagnostic

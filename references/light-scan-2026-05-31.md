@@ -21,9 +21,9 @@ All transient, self-resolving. Tier 2. The recurrence pattern across multiple jo
 
 ### `email:check` — Auth Failure (Tier 3, NEW)
 - `last_status=error` at 22:59
-- Script: `<hermes-root>/scripts/email_check.py`
+- Script: `<hermes-home>/scripts/email_check.py`
 - Error: `google.auth.exceptions.RefreshError: invalid_grant: Token has been expired or revoked`
-- Root cause: Script imports `from google_auth_mcp import get_gmail_service` — this module doesn't exist as a standalone Python module. The credentials directory at `/root/.google_workspace_mcp/credentials/` has valid files (google-workspace-user.json, 2868 bytes, updated 18:04).
+- Root cause: Script imports `from google_auth_mcp import get_gmail_service` — this module doesn't exist as a standalone Python module. The credentials directory at `<gworkspace-creds>/credentials/` has valid files (<user-google-email>.json, 2868 bytes, updated 18:04).
 - The script's auth path is broken — it can't authenticate via either the old token file path or the MCP credentials.
 - **This is NOT a transient error** — it will recur every run until the import path is fixed.
 - Created issue: `oc_email_check_auth_failure_20260531`
@@ -45,4 +45,4 @@ All transient, self-resolving. Tier 2. The recurrence pattern across multiple jo
 - `rally:research` shows `last_status=error` from May 28 — NOT today's issue, stale
 - `look:update` is DISABLED — 429 error from 09:24 is stale, no action needed
 - `elephas:ingest` last_status=ok at 22:12 — running normally
-- `finch:work` and `finch:scan` both ok — the finch:work task-list.json path issue from 2026-05-30 appears resolved (it uses `<hermes-root>/commons/data/ocas-finch/task-list.json` which exists)
+- `finch:work` and `finch:scan` both ok — the finch:work task-list.json path issue from 2026-05-30 appears resolved (it uses `<hermes-home>/commons/data/ocas-finch/task-list.json` which exists)

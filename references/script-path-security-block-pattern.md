@@ -9,15 +9,15 @@ When a cron job's `script` field points to a path outside the allowed scripts di
 **The fix direction depends on which `HERMES_HOME` is active.**
 
 1. Check `HERMES_HOME`: `echo $HERMES_HOME` or check the gateway systemd service
-2. If `HERMES_HOME=<hermes-root>/profiles/<profile>`:
-   - Update job `script` field to `<hermes-root>/profiles/<profile>/scripts/<basename>`
+2. If `HERMES_HOME=<hermes-home>/profiles/<profile>`:
+   - Update job `script` field to `<hermes-home>/profiles/<profile>/scripts/<basename>`
    - Verify script exists at that path
-3. If `HERMES_HOME=<hermes-root>` (default):
-   - Update job `script` field to `<hermes-root>/scripts/<basename>`
+3. If `HERMES_HOME=<hermes-home>` (default):
+   - Update job `script` field to `<hermes-home>/scripts/<basename>`
    - Verify script exists at that path
 4. Test: `HERMES_HOME=<value> python3 -c "from cron.scheduler import _run_job_script; print(_run_job_script('<path>'))"`
 
-**IMPORTANT**: Do NOT blindly change to `<hermes-root>/scripts/` — that's wrong when running under a profile. For indigo profile, `<hermes-root>/scripts/` is OUTSIDE the allowed directory.
+**IMPORTANT**: Do NOT blindly change to `<hermes-home>/scripts/` — that's wrong when running under a profile. For indigo profile, `<hermes-home>/scripts/` is OUTSIDE the allowed directory.
 
 ## Diagnostic
 
@@ -30,13 +30,13 @@ Match `<BLOCKED_PATH>` against `<ALLOWED_DIR>` — the path must start with `<AL
 
 ## Symlink Fix Does NOT Work For This Pattern
 
-A **symlink** satisfies `oc_cron_dead_script_ref` (script-not-found — see the "Symlink Fix for Dead Script Refs" section below) but does **NOT** satisfy `oc_cron_script_path_security_block`. The security validator resolves the script's **realpath** and rejects anything whose realpath lands outside the allowed scripts directory. A symlink whose target lives in the system `<hermes-root>/scripts/` (e.g., profile symlink `deploy-site.sh -> <hermes-root>/scripts/deploy-site.sh`) realpaths to `<hermes-root>/scripts/...` → **still blocked**, even though the symlink file itself sits inside the profile dir.
+A **symlink** satisfies `oc_cron_dead_script_ref` (script-not-found — see the "Symlink Fix for Dead Script Refs" section below) but does **NOT** satisfy `oc_cron_script_path_security_block`. The security validator resolves the script's **realpath** and rejects anything whose realpath lands outside the allowed scripts directory. A symlink whose target lives in the system `<hermes-home>/scripts/` (e.g., profile symlink `deploy-site.sh -> <hermes-home>/scripts/deploy-site.sh`) realpaths to `<hermes-home>/scripts/...` → **still blocked**, even though the symlink file itself sits inside the profile dir.
 
 **Correct fix (Tier 1):**
 1. Copy a **real file** into the allowed dir — do NOT symlink:
-   `cp -p <hermes-root>/scripts/<basename> <hermes-root>/profiles/<profile>/scripts/<basename> && chmod +x <hermes-root>/profiles/<profile>/scripts/<basename>`
+   `cp -p <hermes-home>/scripts/<basename> <hermes-home>/profiles/<profile>/scripts/<basename> && chmod +x <hermes-home>/profiles/<profile>/scripts/<basename>`
 2. Set the job `script` field to the **absolute path inside the allowed dir**:
-   `<hermes-root>/profiles/<profile>/scripts/<basename>`
+   `<hermes-home>/profiles/<profile>/scripts/<basename>`
 3. Prefer the absolute path over a bare basename so the validator checks the exact allowed path.
 
 ## Verification
@@ -45,8 +45,8 @@ Do NOT trust a prior scan's "FIXED via symlink" claim — re-verify against the 
 
 ```python
 import os
-script = "<hermes-root>/profiles/<profile>/scripts/<basename>"
-allowed = "<hermes-root>/profiles/<profile>/scripts"
+script = "<hermes-home>/profiles/<profile>/scripts/<basename>"
+allowed = "<hermes-home>/profiles/<profile>/scripts"
 print("is_symlink:", os.path.islink(script))            # MUST be False
 print("realpath_inside:", os.path.realpath(script).startswith(allowed))  # MUST be True
 ```
@@ -70,20 +70,20 @@ Fix direction depends on `HERMES_HOME` env var.
 When a cron job's **prompt** (not `script` field) references a script at a path that doesn't exist, but the script DOES exist under the profile directory, create a symlink rather than rewriting the prompt:
 
 ```bash
-ln -sf <hermes-root>/profiles/<profile>/scripts/<basename> <hermes-root>/scripts/<basename>
+ln -sf <hermes-home>/profiles/<profile>/scripts/<basename> <hermes-home>/scripts/<basename>
 ```
 
-**When to use:** The job has `script=None` (prompt-only job) and the agent's prompt hardcodes a script path like `python3 <hermes-root>/scripts/foo.py`. The script exists at `<hermes-home>/scripts/foo.py` but not at the `<hermes-root>/scripts/` path.
+**When to use:** The job has `script=None` (prompt-only job) and the agent's prompt hardcodes a script path like `python3 <hermes-home>/scripts/foo.py`. The script exists at `<hermes-home>/profiles/indigo/scripts/foo.py` but not at the `<hermes-home>/scripts/` path.
 
-**Verified example (2026-06-13):** `security:monitor` job (9bd613cd812a) prompts `python3 <hermes-root>/scripts/security_monitor.py`. Script exists at profile path. Symlink created. Job continues to work without prompt modification.
+**Verified example (2026-06-13):** `security:monitor` job (9bd613cd812a) prompts `python3 <hermes-home>/scripts/security_monitor.py`. Script exists at profile path. Symlink created. Job continues to work without prompt modification.
 
-**Reversibility:** `rm <hermes-root>/scripts/<basename>` (only if no other job references it).
+**Reversibility:** `rm <hermes-home>/scripts/<basename>` (only if no other job references it).
 
 ## Examples
 
 | Job | Wrong Path | Correct Path | HERMES_HOME |
 |-----|-----------|-------------|-------------|
-| vesper:deliver-morning | `<hermes-root>/scripts/vesper_deliver.py` | `<hermes-home>/scripts/vesper_deliver.py` | `<hermes-home>` |
+| vesper:deliver-morning | `<hermes-home>/scripts/vesper_deliver.py` | `<hermes-home>/profiles/indigo/scripts/vesper_deliver.py` | `<hermes-home>/profiles/indigo` |
 
 ## Match Patterns
 

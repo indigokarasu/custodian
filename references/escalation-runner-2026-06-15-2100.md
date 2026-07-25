@@ -6,7 +6,7 @@ Escalation runner cron job ran at 21:00 UTC (14:00 PT). The 20:41 UTC esc-run ha
 
 ## Issues Closed
 
-- `oc_email_check_auth_failure_20260531` — email:check job now shows `last_status=ok` (2026-06-15T14:23Z). Token file at `/root/.google_workspace_mcp/credentials/google-workspace-user.json` is valid (3614 bytes) with refresh_token. The `invalid_grant` resolved via OAuth auto-refresh.
+- `oc_email_check_auth_failure_20260531` — email:check job now shows `last_status=ok` (2026-06-15T14:23Z). Token file at `<gworkspace-creds>/credentials/<user-google-email>.json` is valid (3614 bytes) with refresh_token. The `invalid_grant` resolved via OAuth auto-refresh.
 
 ## Stale Proposal Cleared
 

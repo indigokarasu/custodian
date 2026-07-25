@@ -4,7 +4,7 @@
 `monitor:list` (no_agent, job `39b7edc44b35`, script `monitor_list.py` → wraps `ocas-tasks/scripts/tasks_monitor.py --mode check`) fails masked as `Script exited with code 1`. Live `tasks_monitor.py --mode check` → `KeyError: 'access_token'` at `get_access_token()` (tasks_monitor.py:88).
 
 ## Discriminator (PRESENT vs ABSENT access_token) — critical
-Inspect the creds file `/root/.google_workspace_mcp/credentials/google-workspace-user.json`:
+Inspect the creds file `<gworkspace-creds>/credentials/<user-google-email>.json`:
 - **`access_token` PRESENT (non-empty):** transient credential-refresh RACE (file was mid-rewrite when probed). Re-run worker 1–2×; if it exits 0, resolve any `user_gated` issue for this fingerprint as a FALSE ESCALATION. Do NOT persist. (See `monitor-list-keyerror-transient-creds-race-2026-07-14.md`.)
 - **`access_token` ABSENT (only `token` + valid `refresh_token` + future `expiry`):** PERSISTENT code defect, NOT a race. Proceed to fix below.
 
@@ -12,10 +12,10 @@ Inspect the creds file `/root/.google_workspace_mcp/credentials/google-workspace
 The upstream Google Workspace MCP credential store periodically REWRITES the creds file with only the key `token` (no `access_token`) and a *future* string `expiry`. `tasks_monitor.get_access_token()` trusted the future `expiry` and never checked whether `access_token` actually existed — so it crashed on the missing key instead of refreshing. A one-off non-interactive refresh held only ~5.5h before the store stripped `access_token` again.
 
 ## Fix (two parts)
-1. **Immediate (non-interactive, no owner re-auth):** `refresh_token()` in tasks_monitor.py POSTs to `https://oauth2.googleapis.com/token` using the valid `refresh_token` + `client_secret`. It mints a fresh `access_token` and writes it back. Reuse the module's own function:
+1. **Immediate (non-interactive, no <operator> re-auth):** `refresh_token()` in tasks_monitor.py POSTs to `https://oauth2.googleapis.com/token` using the valid `refresh_token` + `client_secret`. It mints a fresh `access_token` and writes it back. Reuse the module's own function:
    ```python
    import importlib.util
-   spec = importlib.util.spec_from_file_location("tm", "<hermes-home>/skills/ocas-tasks/scripts/tasks_monitor.py")
+   spec = importlib.util.spec_from_file_location("tm", "<hermes-home>/profiles/indigo/skills/ocas-tasks/scripts/tasks_monitor.py")
    mod = importlib.util.module_from_spec(spec); spec.loader.exec_module(mod)
    mod.refresh_token(mod.load_creds())
    ```

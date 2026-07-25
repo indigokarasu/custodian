@@ -12,7 +12,7 @@ Three jobs showed `last_status: error`:
 - `praxis:review` — last error May 19, no corresponding error in today's logs. Transient.
 
 ### voyage:update Script Path Note
-The job's `script` field is `update_voyage.sh` (just filename, no directory). The file was not found at `<hermes-root>/skills/ocas-voyage/scripts/update_voyage.sh` or any obvious path. Despite this, the job's `last_run_at` shows it executed today. Either the agent resolves the path at runtime, or the job is prompt-based and the script field is vestigial. This is NOT a new issue — the error is stale from April.
+The job's `script` field is `update_voyage.sh` (just filename, no directory). The file was not found at `<hermes-home>/skills/ocas-voyage/scripts/update_voyage.sh` or any obvious path. Despite this, the job's `last_run_at` shows it executed today. Either the agent resolves the path at runtime, or the job is prompt-based and the script field is vestigial. This is NOT a new issue — the error is stale from April.
 
 ### Diagnostic Steps
 1. Check `last_run_at` — if from a previous day/week, the error is likely stale

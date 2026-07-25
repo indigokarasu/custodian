@@ -39,20 +39,20 @@ Inside, the `MAPPING` dict maps package names to actual filesystem paths.
 
 | Location | Path | Active? | Notes |
 |----------|------|---------|-------|
-| Editable (pip -e) | `<hermes-home>/home/.hermes/plugins/custodian/hermes_custodian_plugin/__init__.py` | **YES** | This is what Python actually loads |
-| Plugin directory | `<hermes-root>/plugins/custodian/hermes_custodian_plugin/__init__.py` | No | Belongs to default profile |
-| Profile plugin dir | `<hermes-home>/plugins/custodian/` | No | Old version |
+| Editable (pip -e) | `<hermes-home>/profiles/indigo/home/.hermes/plugins/custodian/hermes_custodian_plugin/__init__.py` | **YES** | This is what Python actually loads |
+| Plugin directory | `<hermes-home>/plugins/custodian/hermes_custodian_plugin/__init__.py` | No | Belongs to default profile |
+| Profile plugin dir | `<hermes-home>/profiles/indigo/plugins/custodian/` | No | Old version |
 
 The editable finder's MAPPING had:
 ```python
 MAPPING = {
-    'hermes_custodian_plugin': '<hermes-home>/home/.hermes/plugins/custodian/hermes_custodian_plugin'
+    'hermes_custodian_plugin': '<hermes-home>/profiles/indigo/home/.hermes/plugins/custodian/hermes_custodian_plugin'
 }
 ```
 
 ## Cross-Profile Write Guard
 
-The file at `<hermes-root>/plugins/<plugin>/` belongs to the **default** profile. If running under profile `indigo`, `patch()` will refuse with:
+The file at `<hermes-home>/plugins/<plugin>/` belongs to the **default** profile. If running under profile `indigo`, `patch()` will refuse with:
 
 ```
 Cross-profile write blocked by soft guard
