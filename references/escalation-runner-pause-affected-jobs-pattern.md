@@ -30,7 +30,11 @@ Since `hermes cron pause` doesn't work from cron (it reads the wrong path), edit
 import json
 from datetime import datetime, timezone
 
+<<<<<<< Updated upstream
 with open('<hermes-home>/profiles/<profile>/cron/jobs.json') as f:
+=======
+with open('~/.hermes/profiles/<profile>/cron/jobs.json') as f:
+>>>>>>> Stashed changes
     data = json.load(f)
 
 for j in data.get('jobs', []):
@@ -40,7 +44,11 @@ for j in data.get('jobs', []):
         j['paused_at'] = datetime.now(timezone.utc).isoformat()
         j['paused_reason'] = '<root cause>. Will resume after <user action>.'
 
+<<<<<<< Updated upstream
 with open('<hermes-home>/profiles/<profile>/cron/jobs.json', 'w') as f:
+=======
+with open('~/.hermes/profiles/<profile>/cron/jobs.json', 'w') as f:
+>>>>>>> Stashed changes
     json.dump(data, f, indent=2, default=str)
 ```
 
@@ -81,7 +89,11 @@ Not all Google-auth jobs necessarily fail simultaneously when one token is revok
 3. **Beware subprocess wrapper masking** — jobs that wrap subprocesses (like `monitor:list` → `tasks_monitor.py`) show only `"Script exited with code 1"` in `last_error`. The actual OAuth error is masked. Run the subprocess directly to diagnose. See `references/subprocess-cascade-oauth-masking.md`.
 4. **Only pause confirmed-failing jobs** — pausing a working job wastes functionality.
 
+<<<<<<< Updated upstream
 **Confirmed instance (2026-06-29)**: <user-google-email> token revoked. `email:check` (uses `google_auth_mcp.py` with owner's account) and `monitor:list` (wraps `tasks_monitor.py` with `CREDS_FILE = ".../<user-google-email>.json"`) both failed. But `sands:*`, `taste:*`, `vesper:*` all showed `last_status=ok` — they use different auth paths (the agent's account, different scopes, or agent-mode auth that pulls from a different credential store). Only the two confirmed-failing jobs were paused.
+=======
+**Confirmed instance (2026-06-29)**: <user-google-email> token revoked. `email:check` (uses `google_auth_mcp.py` with owner's account) and `monitor:list` (wraps `tasks_monitor.py` with `CREDS_FILE = ".../<user-google-email>.json"`) both failed. But `sands:*`, `taste:*`, `vesper:*` all showed `last_status=ok` — they use different auth paths (the agent's account, different scopes, or agent-mode auth that pulls from a different credential store). Only the two confirmed-failing jobs were paused.
+>>>>>>> Stashed changes
 
 ## Distinguishing From Stale Errors
 

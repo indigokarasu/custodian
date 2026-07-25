@@ -13,7 +13,11 @@ Executed `custodian.escalation-runner` manually (not via cron) to resolve 3 esca
 
 ```bash
 # Check BOTH profile and commons issues.jsonl
+<<<<<<< Updated upstream
 find <hermes-home> -name "issues.jsonl" -exec cat {} \;
+=======
+find ~/.hermes -name "issues.jsonl" -exec cat {} \;
+>>>>>>> Stashed changes
 ```
 
 ### 2. Classify Each Issue (Four-Bucket Model)
@@ -45,7 +49,11 @@ find <hermes-home> -name "issues.jsonl" -exec cat {} \;
 **For Already-resolved (journal gap):**
 ```bash
 # Verify custodian journals exist for today
+<<<<<<< Updated upstream
 ls <hermes-home>/profiles/indigo/commons/journals/ocas-custodian/2026-07-06/
+=======
+ls ~/.hermes/profiles/indigo/commons/journals/ocas-custodian/2026-07-06/
+>>>>>>> Stashed changes
 ```
 
 ### 4. Update Issues (Both Locations)

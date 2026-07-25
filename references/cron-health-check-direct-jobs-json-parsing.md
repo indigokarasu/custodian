@@ -10,7 +10,11 @@ When the `custodian_cron_health` MCP tool is unavailable (not registered, or Com
 
 ## jobs.json Structure
 
+<<<<<<< Updated upstream
 Located at `<hermes-home>/profiles/<profile>/cron/jobs.json`.
+=======
+Located at `~/.hermes/profiles/<profile>/cron/jobs.json`.
+>>>>>>> Stashed changes
 
 ```json
 {
@@ -46,7 +50,11 @@ Jobs can also be nested inside group entries (`j.get("jobs", [])`), though most 
 import json
 from datetime import datetime, timezone, timedelta
 
+<<<<<<< Updated upstream
 with open('<hermes-home>/profiles/indigo/cron/jobs.json') as f:
+=======
+with open('~/.hermes/profiles/indigo/cron/jobs.json') as f:
+>>>>>>> Stashed changes
     data = json.load(f)
 
 jobs = data.get('jobs', [])
@@ -100,7 +108,11 @@ import json, os
 from datetime import datetime, timezone, timedelta
 
 # 1. Parse jobs.json
+<<<<<<< Updated upstream
 with open('<hermes-home>/profiles/indigo/cron/jobs.json') as f:
+=======
+with open('~/.hermes/profiles/indigo/cron/jobs.json') as f:
+>>>>>>> Stashed changes
     data = json.load(f)
 
 jobs = data.get('jobs', [])
@@ -115,7 +127,11 @@ for j in jobs:
         failures.append(j.get('name', j.get('id','')))
 
 # 2. Memory guard
+<<<<<<< Updated upstream
 mem_path = '<hermes-home>/profiles/indigo/memories/MEMORY.md'
+=======
+mem_path = '~/.hermes/profiles/indigo/memories/MEMORY.md'
+>>>>>>> Stashed changes
 mem_size = os.path.getsize(mem_path) if os.path.exists(mem_path) else 0
 
 # 3. Finch job recency
@@ -133,7 +149,11 @@ if finch_run:
 
 # 4. over_cap_after check
 over_cap = False
+<<<<<<< Updated upstream
 decisions_path = '<hermes-home>/profiles/indigo/commons/data/ocas-finch/decisions.jsonl'
+=======
+decisions_path = '~/.hermes/profiles/indigo/commons/data/ocas-finch/decisions.jsonl'
+>>>>>>> Stashed changes
 if os.path.exists(decisions_path):
     with open(decisions_path) as f:
         for line in f:
@@ -171,19 +191,34 @@ When `jobs.json` shows a job with `last_status=error` but `last_error` is trunca
 
 ```bash
 # Find the latest output for a job
+<<<<<<< Updated upstream
 latest=$(ls -t <hermes-home>/cron/output/{job_id}/ | head -1)
 cat <hermes-home>/cron/output/{job_id}/$latest
 ```
 
 Output files are at `<hermes-home>/cron/output/{job_id}/{YYYY-MM-DD_HH-MM-SS}.md` and contain the full prompt, response, and any error tracebacks. This is more reliable than `last_error` in `jobs.json`, which is truncated to ~300 chars.
+=======
+latest=$(ls -t ~/.hermes/cron/output/{job_id}/ | head -1)
+cat ~/.hermes/cron/output/{job_id}/$latest
+```
+
+Output files are at `~/.hermes/cron/output/{job_id}/{YYYY-MM-DD_HH-MM-SS}.md` and contain the full prompt, response, and any error tracebacks. This is more reliable than `last_error` in `jobs.json`, which is truncated to ~300 chars.
+>>>>>>> Stashed changes
 
 **Batch error scan** — check all recent job outputs for error markers:
 
 ```bash
+<<<<<<< Updated upstream
 for dir in $(ls -t <hermes-home>/cron/output/ | head -20); do
     latest=$(ls -t <hermes-home>/cron/output/$dir/ 2>/dev/null | head -1)
     if [ -n "$latest" ] && [ -f "<hermes-home>/cron/output/$dir/$latest" ]; then
         errors=$(grep -ci -E '(error|failed|exception|traceback|CRITICAL)' "<hermes-home>/cron/output/$dir/$latest" 2>/dev/null || echo 0)
+=======
+for dir in $(ls -t ~/.hermes/cron/output/ | head -20); do
+    latest=$(ls -t ~/.hermes/cron/output/$dir/ 2>/dev/null | head -1)
+    if [ -n "$latest" ] && [ -f "~/.hermes/cron/output/$dir/$latest" ]; then
+        errors=$(grep -ci -E '(error|failed|exception|traceback|CRITICAL)' "~/.hermes/cron/output/$dir/$latest" 2>/dev/null || echo 0)
+>>>>>>> Stashed changes
         if [ "$errors" -gt 0 ]; then
             echo "ERRORS ($errors): $dir ($latest)"
         fi
@@ -210,6 +245,10 @@ A job can show `consecutive_failures=1` (or more) while `last_status=ok` and `la
 When a disabled cron job is confirmed redundant (e.g., replaced by another pipeline, scripts never worked, or paused indefinitely):
 
 1. **Delete the job**: `hermes cron delete <id>` — removes from jobs.json and the scheduler
+<<<<<<< Updated upstream
 2. **Remove orphaned scripts**: Check `<hermes-home>/profiles/<profile>/scripts/` AND `<hermes-home>/scripts/` for script files referenced by the deleted job. Delete if no other job references them (grep `jobs.json` for the script filename first).
+=======
+2. **Remove orphaned scripts**: Check `~/.hermes/profiles/<profile>/scripts/` AND `~/.hermes/scripts/` for script files referenced by the deleted job. Delete if no other job references them (grep `jobs.json` for the script filename first).
+>>>>>>> Stashed changes
 3. **Remove stale reference docs**: If a custodian reference file was created to document the now-resolved error (e.g., `light-scan-YYYY-MM-DD-*.md` about the disabled job), delete it — the issue no longer exists and the reference is misleading.
 4. **Update task list**: Mark the corresponding finch task as `done` with a resolution note listing what was deleted.

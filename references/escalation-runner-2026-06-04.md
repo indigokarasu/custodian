@@ -50,7 +50,11 @@ The 401 is transient/job-specific, not a bad API key. **This issue should be clo
 
 ### 3. MCP credential file location
 
+<<<<<<< Updated upstream
 The `google_auth_mcp.py` module reads from `<gworkspace-creds>/credentials/<email>.json`, NOT from `<hermes-home>/google_token.json`. When diagnosing email:check auth errors, check the MCP credentials file, not the hermes token file. The MCP credentials file can be refreshed independently and may have a valid token even when the hermes token file is stale.
+=======
+The `google_auth_mcp.py` module reads from `<gworkspace-creds>/credentials/<email>.json`, NOT from `~/.hermes/google_token.json`. When diagnosing email:check auth errors, check the MCP credentials file, not the hermes token file. The MCP credentials file can be refreshed independently and may have a valid token even when the hermes token file is stale.
+>>>>>>> Stashed changes
 
 ### 4. Stale Error Resolution Threshold (NEW)
 

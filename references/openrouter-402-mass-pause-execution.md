@@ -8,7 +8,11 @@ Paused **71 jobs** failing with OpenRouter HTTP 402 (credits exhausted) + **7 jo
 
 ```python
 # Scan all jobs for 402 errors
+<<<<<<< Updated upstream
 with open('<hermes-home>/profiles/indigo/cron/jobs.json') as f:
+=======
+with open('~/.hermes/profiles/indigo/cron/jobs.json') as f:
+>>>>>>> Stashed changes
     jobs = json.load(f).get('jobs', [])
 
 for job in jobs:
@@ -89,7 +93,11 @@ for job in jobs:
 ```python
 import json
 
+<<<<<<< Updated upstream
 with open('<hermes-home>/profiles/indigo/cron/jobs.json') as f:
+=======
+with open('~/.hermes/profiles/indigo/cron/jobs.json') as f:
+>>>>>>> Stashed changes
     data = json.load(f)
 
 paused_402 = 0
@@ -107,7 +115,11 @@ for job in data.get('jobs', []):
             job['state'] = 'paused'
             paused_model_not_found += 1
 
+<<<<<<< Updated upstream
 with open('<hermes-home>/profiles/indigo/cron/jobs.json', 'w') as f:
+=======
+with open('~/.hermes/profiles/indigo/cron/jobs.json', 'w') as f:
+>>>>>>> Stashed changes
     json.dump(data, f, indent=2)
 
 print(f"Paused {paused_402} for 402, {paused_model_not_found} for model not found")

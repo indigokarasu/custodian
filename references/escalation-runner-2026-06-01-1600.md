@@ -8,7 +8,11 @@ Reviewed open issues. Applied 1 config fix (stealth-browser MCP python path). 4 
 ### stealth-browser MCP: ModuleNotFoundError nodriver
 - **Root cause**: Config `command: python3` resolved to hermes-agent venv (Python 3.11) which lacks `nodriver`. The MCP server's dependencies are in a dedicated venv at `/opt/stealth-browser-mcp/venv/`.
 - **Fix**: Changed `mcp_servers.stealth-browser.command` from `python3` to `/opt/stealth-browser-mcp/venv/bin/python3`
+<<<<<<< Updated upstream
 - **Config file**: `<hermes-home>/config.yaml`
+=======
+- **Config file**: `~/.hermes/config.yaml`
+>>>>>>> Stashed changes
 - **Verification**: Import test passed. Server starts correctly.
 - **Pending**: Gateway restart required. Two active TUI sessions prevented restart during business hours.
 - **Pattern**: This is the same class of issue as the mempalace python path fix from esc-run-20260601-2010. See `util-hermes-ops/references/mcp-python-path-mismatch.md`.

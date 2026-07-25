@@ -30,13 +30,22 @@ This is especially dangerous because:
 
 ```bash
 # Count occurrences in recent errors.log
+<<<<<<< Updated upstream
 grep -c "SOUL.md TRUNCATED" <hermes-home>/profiles/indigo/logs/errors.log
+=======
+grep -c "SOUL.md TRUNCATED" ~/.hermes/profiles/indigo/logs/errors.log
+>>>>>>> Stashed changes
 ```
 
 **Secondary signal**: Check actual size vs config:
 ```bash
+<<<<<<< Updated upstream
 wc -c <hermes-home>/profiles/indigo/SOUL.md
 grep "context_file_max_chars" <hermes-home>/profiles/indigo/config.yaml
+=======
+wc -c ~/.hermes/profiles/indigo/SOUL.md
+grep "context_file_max_chars" ~/.hermes/profiles/indigo/config.yaml
+>>>>>>> Stashed changes
 ```
 
 If `wc -c` exceeds the config value, truncation is active.
@@ -48,7 +57,11 @@ This is a **Tier 1 auto-fix** — apply immediately during the repair pass.
 **Fix option A (preferred): Increase `context_file_max_chars`**
 ```python
 import yaml
+<<<<<<< Updated upstream
 path = '<hermes-home>/profiles/indigo/config.yaml'
+=======
+path = '~/.hermes/profiles/indigo/config.yaml'
+>>>>>>> Stashed changes
 with open(path) as f:
     cfg = yaml.safe_load(f)
 cfg['context_file_max_chars'] = <new_value>  # e.g. 12000 for ~10% headroom
@@ -66,11 +79,19 @@ If the user prefers to keep the current limit, trim SOUL.md to 90% of the limit.
 After fix:
 ```bash
 # 1. Verify config value
+<<<<<<< Updated upstream
 grep context_file_max_chars <hermes-home>/profiles/indigo/config.yaml
 
 # 2. Verify no new truncation warnings in errors.log
 # (wait for next cron job to run, then check)
 tail -5 <hermes-home>/profiles/indigo/logs/errors.log
+=======
+grep context_file_max_chars ~/.hermes/profiles/indigo/config.yaml
+
+# 2. Verify no new truncation warnings in errors.log
+# (wait for next cron job to run, then check)
+tail -5 ~/.hermes/profiles/indigo/logs/errors.log
+>>>>>>> Stashed changes
 ```
 
 ### Pitfall: SOUL.md grows over time

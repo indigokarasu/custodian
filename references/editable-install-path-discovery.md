@@ -39,20 +39,34 @@ Inside, the `MAPPING` dict maps package names to actual filesystem paths.
 
 | Location | Path | Active? | Notes |
 |----------|------|---------|-------|
+<<<<<<< Updated upstream
 | Editable (pip -e) | `<hermes-home>/profiles/indigo/home/.hermes/plugins/custodian/hermes_custodian_plugin/__init__.py` | **YES** | This is what Python actually loads |
 | Plugin directory | `<hermes-home>/plugins/custodian/hermes_custodian_plugin/__init__.py` | No | Belongs to default profile |
 | Profile plugin dir | `<hermes-home>/profiles/indigo/plugins/custodian/` | No | Old version |
+=======
+| Editable (pip -e) | `~/.hermes/profiles/indigo/home/.hermes/plugins/custodian/hermes_custodian_plugin/__init__.py` | **YES** | This is what Python actually loads |
+| Plugin directory | `~/.hermes/plugins/custodian/hermes_custodian_plugin/__init__.py` | No | Belongs to default profile |
+| Profile plugin dir | `~/.hermes/profiles/indigo/plugins/custodian/` | No | Old version |
+>>>>>>> Stashed changes
 
 The editable finder's MAPPING had:
 ```python
 MAPPING = {
+<<<<<<< Updated upstream
     'hermes_custodian_plugin': '<hermes-home>/profiles/indigo/home/.hermes/plugins/custodian/hermes_custodian_plugin'
+=======
+    'hermes_custodian_plugin': '~/.hermes/profiles/indigo/home/.hermes/plugins/custodian/hermes_custodian_plugin'
+>>>>>>> Stashed changes
 }
 ```
 
 ## Cross-Profile Write Guard
 
+<<<<<<< Updated upstream
 The file at `<hermes-home>/plugins/<plugin>/` belongs to the **default** profile. If running under profile `indigo`, `patch()` will refuse with:
+=======
+The file at `~/.hermes/plugins/<plugin>/` belongs to the **default** profile. If running under profile `indigo`, `patch()` will refuse with:
+>>>>>>> Stashed changes
 
 ```
 Cross-profile write blocked by soft guard

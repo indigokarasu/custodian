@@ -23,7 +23,11 @@ A cron job that uses browser tools enters a retry loop where the CDP (Chrome Dev
 ## Diagnostic Checklist
 
 1. Check `last_status` of the affected job — if `ok`, the browser failures were non-fatal
+<<<<<<< Updated upstream
 2. Count 502 errors: `grep -c "CDP supervisor.*502" <hermes-home>/logs/errors.log`
+=======
+2. Count 502 errors: `grep -c "CDP supervisor.*502" ~/.hermes/logs/errors.log`
+>>>>>>> Stashed changes
 3. Check if the job has `browser` in its prompt or name
 4. Verify gateway health: `curl -s http://localhost:8080/health` — if `ok`, the issue is browser-specific
 

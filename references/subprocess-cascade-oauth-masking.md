@@ -41,7 +41,11 @@ When a `no_agent` cron job shows `"Script exited with code 1"` and uses a subpro
 1. **Identify the wrapped script** — check the wrapper's `subprocess.run()` call
 2. **Run the subprocess directly**:
    ```bash
+<<<<<<< Updated upstream
    python3 <hermes-home>/profiles/indigo/scripts/tasks_monitor.py --mode check
+=======
+   python3 ~/.hermes/profiles/indigo/scripts/tasks_monitor.py --mode check
+>>>>>>> Stashed changes
    ```
 3. **Observe the actual stderr** — this time (not masked by wrapper)
 4. **Cross-reference** with other jobs using the same credentials

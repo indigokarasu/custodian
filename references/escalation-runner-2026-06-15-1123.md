@@ -25,10 +25,17 @@ Escalation runner cron job ran at 11:23 PT. The 11:08 UTC runner had already res
 ## Key Learning: Multi-Path Issue Discovery
 
 Found issues in 4 different `issues.jsonl` files:
+<<<<<<< Updated upstream
 - `<hermes-home>/profiles/indigo/commons/journals/ocas-custodian/issues.jsonl`
 - `<hermes-home>/profiles/indigo/commons/data/custodian/issues.jsonl`
 - `<hermes-home>/profiles/indigo/commons/data/ocas-custodian/issues.jsonl`
 - `<hermes-home>/profiles/indigo/commons/ocas-custodian/issues.jsonl`
+=======
+- `~/.hermes/profiles/indigo/commons/journals/ocas-custodian/issues.jsonl`
+- `~/.hermes/profiles/indigo/commons/data/custodian/issues.jsonl`
+- `~/.hermes/profiles/indigo/commons/data/ocas-custodian/issues.jsonl`
+- `~/.hermes/profiles/indigo/commons/ocas-custodian/issues.jsonl`
+>>>>>>> Stashed changes
 
 Same root cause appeared with different IDs across files. Must deduplicate by description.
 

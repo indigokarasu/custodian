@@ -36,7 +36,11 @@ When an OAuth/token fingerprint is flagged, the naive conclusion is "requires <o
 - Issue: `taste:sync-spotify` (job `e0a126b6c9f7`, `no_agent`, `enabled:false`) fails — `spotify_history_puller.py` raises `Missing Spotify credentials: SPOTIFY_REFRESH_TOKEN (present: SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET)`.
 - Mechanism: `spotify_history_puller.py` reads ONLY `SPOTIFY_REFRESH_TOKEN` from the env (`.env`). There is a SEPARATE interactive helper, `spotify_auth_helper.py`, that performs the browser OAuth flow and writes tokens to `commons/data/ocas-taste/music/spotify_token.json` and `~/.cache-spotify-taste` — but the cron wrapper `rr_taste_sync_spotify.sh` does NOT read those files. So even after <operator> runs the helper once, the cron job still won't have the env token unless `.env` is updated.
 - Verification performed (live):
+<<<<<<< Updated upstream
   - `SPOTIFY_REFRESH_TOKEN` ABSENT from `<hermes-home>/profiles/indigo/.env` (only CLIENT_ID / CLIENT_SECRET / REDIRECT_URI present).
+=======
+  - `SPOTIFY_REFRESH_TOKEN` ABSENT from `~/.hermes/profiles/indigo/.env` (only CLIENT_ID / CLIENT_SECRET / REDIRECT_URI present).
+>>>>>>> Stashed changes
   - `spotify_token.json` ABSENT; `~/.cache-spotify-taste` ABSENT.
   - No `SPOTIFY_REFRESH_TOKEN` anywhere under the profile.
 - Conclusion: **truly user-gated.** No stored credential to refresh non-interactively. Requires <operator> to complete the interactive Spotify OAuth flow and populate `SPOTIFY_REFRESH_TOKEN` in `.env`. The job is already disabled. Per the honesty rule, do NOT mark the issue `resolved` — it stays `user_gated` + `escalation_needed:true` until <operator> acts.

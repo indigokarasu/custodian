@@ -9,7 +9,11 @@ email_check.py imports from `google_auth_mcp` which reads from:
 <gworkspace-creds>/credentials/<user-google-email>.json
 ```
 
+<<<<<<< Updated upstream
 **NOT** `<hermes-home>/google_token.json` — that's a different OAuth client.
+=======
+**NOT** `~/.hermes/google_token.json` — that's a different OAuth client.
+>>>>>>> Stashed changes
 
 ## Step 2: Test both stores independently
 
@@ -20,7 +24,11 @@ from pathlib import Path
 
 stores = {
     'MCP (owner)': '<gworkspace-creds>/credentials/<user-google-email>.json',
+<<<<<<< Updated upstream
     'google_token.json': '<hermes-home>/google_token.json',
+=======
+    'google_token.json': '~/.hermes/google_token.json',
+>>>>>>> Stashed changes
 }
 
 for name, path in stores.items():
@@ -53,8 +61,13 @@ PYEOF
 ## Step 4: If re-auth needed
 
 ```bash
+<<<<<<< Updated upstream
 # For <operator>'s MCP client (112292610034...)
 python3 <hermes-home>/skills/infrastructure/google-workspace-auth/scripts/paste_back_oauth.py
+=======
+# For <operator>'s MCP client (112292610034...)
+python3 ~/.hermes/skills/infrastructure/google-workspace-auth/scripts/paste_back_oauth.py
+>>>>>>> Stashed changes
 
 # Follow the re-auth flow in google-workspace-auth SKILL.md
 ```

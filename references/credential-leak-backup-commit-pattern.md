@@ -3,12 +3,16 @@
 ## Incident: 2026-06-14
 
 **Commit:** `ed1271e1b70fffde921b22508a42092942afd16a` — "backup: 4 files — 2026-06-14 13:00 UTC"
-**Repo:** `indigokarasu/indigo` (private, monitored by GitGuardian)
+**Repo:** `<agent-handle>/indigo` (private, monitored by GitGuardian)
 **Trigger:** GitGuardian alert "4 internal incidents detected — Generic High Entropy Secret"
 
 ## Root Cause
 
+<<<<<<< Updated upstream
 A backup cron job (`<hermes-home>/scripts/backup_hermes_config.py` or similar) commits the entire Hermes config directory to a git repo, including live credential files:
+=======
+A backup cron job (`~/.hermes/scripts/backup_hermes_config.py` or similar) commits the entire Hermes config directory to a git repo, including live credential files:
+>>>>>>> Stashed changes
 
 | File | Credentials Exposed |
 |------|---------------------|
@@ -21,7 +25,11 @@ A backup cron job (`<hermes-home>/scripts/backup_hermes_config.py` or similar) c
 ## Detection
 
 - **GitGuardian** monitors the private repo and detects "Generic High Entropy Secret"
+<<<<<<< Updated upstream
 - **Security monitor cron** (`<hermes-home>/scripts/security_monitor.py`) polls Gmail for GitGuardian alerts
+=======
+- **Security monitor cron** (`~/.hermes/scripts/security_monitor.py`) polls Gmail for GitGuardian alerts
+>>>>>>> Stashed changes
 - Classified as **LOW** by keyword-based severity (no "secret leak"/"exposed credential" in subject) but **actual severity: HIGH** — real production credentials in git history
 
 ## Fix Pattern
@@ -46,7 +54,7 @@ A backup cron job (`<hermes-home>/scripts/backup_hermes_config.py` or similar) c
    **Last resort for most recent commit only**: `git reset --hard HEAD~1` then force-push (loses one commit of non-secret changes too).
 5. **Check remote URL for embedded credentials** — `git remote -v` may show PAT in URL (`https://user:***@github.com/...`). Rotate and update url:
    ```bash
-   git remote set-url origin https://github.com/indigokarasu/indigo.git  # remove embedded token
+   git remote set-url origin https://github.com/<agent-handle>/indigo.git  # remove embedded token
    ```
 6. **Verify GitGuardian incidents resolve** after rotation + history rewrite
 7. **Update backup script** to never `cp` secret files into the repo

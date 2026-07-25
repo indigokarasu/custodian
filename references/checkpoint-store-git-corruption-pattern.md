@@ -18,7 +18,11 @@ The `.git` directory may still contain: `HEAD`, `config`, `description`, `hooks/
 ## Fix
 
 ```bash
+<<<<<<< Updated upstream
 STORE_DIR="<hermes-home>/profiles/indigo/checkpoints/store"
+=======
+STORE_DIR="~/.hermes/profiles/indigo/checkpoints/store"
+>>>>>>> Stashed changes
 GIT_DIR="$STORE_DIR/.git"
 
 # 1. Back up corrupted .git

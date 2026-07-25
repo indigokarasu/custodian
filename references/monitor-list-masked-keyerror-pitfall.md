@@ -31,7 +31,11 @@ same job family (Google Tasks auth for that account).
 1. Read the job's `script` field (e.g. `monitor_list.py`).
 2. Read the wrapper source; locate `subprocess.run([..., "--mode", "check"])` → the real script (e.g. `tasks_monitor.py`).
 3. Run the wrapped script **directly, bypassing the wrapper**, to surface the real error:
+<<<<<<< Updated upstream
    `python3 <hermes-home>/profiles/indigo/skills/ocas-tasks/scripts/tasks_monitor.py --mode check`
+=======
+   `python3 ~/.hermes/profiles/indigo/skills/ocas-tasks/scripts/tasks_monitor.py --mode check`
+>>>>>>> Stashed changes
 4. Classify the real error:
    - `KeyError: 'access_token'` → local credential store missing key (repair token file / re-run OAuth flow).
    - `400/403/invalid_grant` on `oauth2.googleapis.com/token` → OAuth API failure.

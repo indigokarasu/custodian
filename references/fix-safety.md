@@ -9,7 +9,7 @@ Every autonomous fix must satisfy all four:
 
 Hard constraints: never modify skill package files, never delete files, never modify another skill's data dir, never restart gateway, never change user settings without acknowledgment.
 
-**Exception for code-level fixes:** Known code bugs (Tier 4 → resolved) may be patched in gateway source files (`gateway/*.py`) during escalation runs. These are logged as `outcome: code_fix_applied_pending_restart` and require user to restart the gateway. The patch must be minimal, reversible, and documented in the fix record.
+**Exception for code-level fixes:** Known code bugs (Tier 4 → resolved) may be patched in gateway source files (`gateway/*.py`) during escalation runs. These are logged as `outcome: code_fix_applied_pending_restart` and require user to restart the gateway. The patch must be minimal, reversible, and documented in the fix record. **Scope boundary:** this exception covers `gateway/*.py` SOURCE only. Plugin code (e.g. `plugins/chronicle/engine/store.py` — the live memory engine behind `state.db`) is NOT a gateway-source file; it is OUTSIDE the autonomous envelope. Do NOT autonomously patch plugin memory-engine files, and never restart the gateway to load such a patch (hard constraint). For these, annotate the issue `user_gated=true` with `user_gated_reason`, embed the proposed minimal patch in the issue/journal for the user to apply + `hermes gateway restart`, and surface it in the report. See `references/escalation-loop-tier4-code-defect-verify.md`.
 
 # Tier Classification
 
@@ -53,7 +53,11 @@ All Tier 1 fixes defined in `references/known_issues.json`. Read at start of eve
 | `oc_http_429_concurrent` | Stagger cron schedules: offset each job's start minute so they fire sequentially instead of simultaneously. See Cron Schedule Staggering procedure in Escalation Runner section. |
 | `oc_vision_model_incompatible` | Set `auxiliary.vision.provider` from `auto` to the explicit provider that hosts the vision model (e.g., `openrouter`) |
 | `oc_http_401_nous_api_key` | Set `auxiliary.{task}.provider: openrouter` in config.yaml (bypass expired Nous credential) |
+<<<<<<< Updated upstream
 | `oc_google_oauth_refresh_400` | Google OAuth tokens are managed by the MCP server and the central `google_auth.py` helper. If tokens fail, re-authorize via `python3 <hermes-home>/skills/infrastructure/google-workspace-auth/scripts/google_oauth_init.py` — do NOT look for a `refresh_google_tokens.py` script (it does not exist). |
+=======
+| `oc_google_oauth_refresh_400` | Google OAuth tokens are managed by the MCP server and the central `google_auth.py` helper. If tokens fail, re-authorize via `python3 ~/.hermes/skills/infrastructure/google-workspace-auth/scripts/google_oauth_init.py` — do NOT look for a `refresh_google_tokens.py` script (it does not exist). |
+>>>>>>> Stashed changes
 | `oc_cron_next_run_at_none` | Pause and resume the job via `hermes cron pause <id>` then `hermes cron resume <id>` to force scheduler recalculation |
 | `oc_cron_stale_empty_error` | Pause and resume the job via `hermes cron pause <id>` then `hermes cron resume <id>`. Triggered when `status=error` but `last_error` is empty/null and `consecutive_failures=0` — indicates a stale error state from a previous transient failure. |
 | `oc_kanban_dispatcher_stuck` | Kanban dispatcher reports "ready queue non-empty for N consecutive ticks but 0 workers spawned". Correlated with gateway mass-restarts. Tier 2 — monitor, investigate if >=15 ticks. See `references/kanban-dispatcher-stuck-pattern.md`. |

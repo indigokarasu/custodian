@@ -24,7 +24,11 @@ RuntimeError: Could not determine home directory
 
 ## Fix Applied (2026-06-17)
 
+<<<<<<< Updated upstream
 **One-line patch** to `<hermes-agent>/agent/subdirectory_hints.py` line 147:
+=======
+**One-line patch** to `<fs-root>/hermes-agent/agent/subdirectory_hints.py` line 147:
+>>>>>>> Stashed changes
 
 ```diff
 -        except (OSError, ValueError):
@@ -38,9 +42,15 @@ The `expanduser()` call on line 130 is already inside a `try` block, but the exc
 
 ## Installed Copy vs Editable Source (2026-06-17 Lesson)
 
+<<<<<<< Updated upstream
 When hermes-agent is installed in editable mode (`pip install -e`), Python imports resolve to the **source checkout** at `<hermes-agent>/agent/`, NOT the installed copy at `/usr/local/lib/hermes-agent/agent/`. However, **both copies exist** and both may be loaded depending on the import path:
 
 - **Editable source** (loaded by the agent at runtime): `<hermes-agent>/agent/subdirectory_hints.py`
+=======
+When hermes-agent is installed in editable mode (`pip install -e`), Python imports resolve to the **source checkout** at `<fs-root>/hermes-agent/agent/`, NOT the installed copy at `/usr/local/lib/hermes-agent/agent/`. However, **both copies exist** and both may be loaded depending on the import path:
+
+- **Editable source** (loaded by the agent at runtime): `<fs-root>/hermes-agent/agent/subdirectory_hints.py`
+>>>>>>> Stashed changes
 - **Installed copy** (may be loaded by other processes): `/usr/local/lib/hermes-agent/agent/subdirectory_hints.py`
 
 **Both must be patched.** The editable source had the fix (RuntimeError in except) but the installed copy did not. Errors continued until both were patched and the stale `.pyc` at `/usr/local/lib/hermes-agent/agent/__pycache__/` was cleared.
@@ -53,7 +63,11 @@ python3 -c "import importlib.util; spec = importlib.util.find_spec('agent.subdir
 **Fix both locations**:
 ```bash
 # Editable source (if not already fixed)
+<<<<<<< Updated upstream
 grep -n "except.*OSError.*ValueError" <hermes-agent>/agent/subdirectory_hints.py
+=======
+grep -n "except.*OSError.*ValueError" <fs-root>/hermes-agent/agent/subdirectory_hints.py
+>>>>>>> Stashed changes
 
 # Installed copy (often missed)
 grep -n "except.*OSError.*ValueError" /usr/local/lib/hermes-agent/agent/subdirectory_hints.py

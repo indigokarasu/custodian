@@ -41,7 +41,11 @@ journal = {
     ...
 }
 import os
+<<<<<<< Updated upstream
 dir_path = '<hermes-home>/commons/journals/ocas-custodian/' + now.strftime('%Y-%m-%d')
+=======
+dir_path = '~/.hermes/commons/journals/ocas-custodian/' + now.strftime('%Y-%m-%d')
+>>>>>>> Stashed changes
 os.makedirs(dir_path, exist_ok=True)
 file_path = os.path.join(dir_path, f'{run_id}.json')
 with open(file_path, 'w') as f:
@@ -69,7 +73,11 @@ from datetime import datetime, timezone
 
 now = datetime.now(timezone.utc)
 run_id = f'light-scan-{now.strftime("%Y%m%dT%H%M%SZ")}'
+<<<<<<< Updated upstream
 journal_dir = f'<hermes-home>/profiles/indigo/commons/journals/ocas-custodian/{now.strftime("%Y-%m-%d")}'
+=======
+journal_dir = f'~/.hermes/profiles/indigo/commons/journals/ocas-custodian/{now.strftime("%Y-%m-%d")}'
+>>>>>>> Stashed changes
 os.makedirs(journal_dir, exist_ok=True)
 
 journal = {
