@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import os
 """
 verify_recovery_by_runtime.py — Decisive recovery check for provider-token /
 API-key / credits issues.
@@ -38,8 +39,8 @@ import sys
 import argparse
 from datetime import datetime, timezone
 
-JOBS = "~/.hermes/profiles/indigo/cron/jobs.json"
-ISSUES = "~/.hermes/profiles/indigo/commons/data/ocas-custodian/issues.jsonl"
+JOBS = os.path.expanduser("~/.hermes/profiles/indigo/cron/jobs.json")
+ISSUES = os.path.expanduser("~/.hermes/profiles/indigo/commons/data/ocas-custodian/issues.jsonl")
 
 
 def parse_ts(s):

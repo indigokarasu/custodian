@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import os
 """
 scan_escalation_journal_gaps.py — escalation-loop journal-to-issues gap probe.
 
@@ -29,10 +30,10 @@ import json, os, argparse
 from datetime import datetime, timezone
 
 JOURNAL_DIRS = [
-    "~/.hermes/profiles/indigo/commons/journals/ocas-custodian",
-    "~/.hermes/commons/journals/ocas-custodian",
+    os.path.expanduser("~/.hermes/profiles/indigo/commons/journals/ocas-custodian"),
+    os.path.expanduser("~/.hermes/commons/journals/ocas-custodian"),
 ]
-PROFILE_ISSUES = "~/.hermes/profiles/indigo/commons/data/ocas-custodian/issues.jsonl"
+PROFILE_ISSUES = os.path.expanduser("~/.hermes/profiles/indigo/commons/data/ocas-custodian/issues.jsonl")
 
 TRANSIENT_MARKERS = ("transient", "noop", "shutdown", "rate_limit",
                      "resource_exhausted", "provider_error", "interpreter")

@@ -49,7 +49,7 @@ stale-premise (do not leave it user_gated).
 `oc_state_db_oversized` threshold is `db > 1GB AND disk > 80%`. Re-derive live disk%:
 ```python
 import shutil
-u = shutil.disk_usage('/root')
+u = shutil.disk_usage('<fs-root>')
 print("used%%=%.1f free=%dGB" % (100*u.used/u.total, u.free // 1e9))
 ```
 Confirmed 2026-07-15: `oc_chronicle_db_malformed_20260714T1805Z` (claimed disk 93%, malformed)

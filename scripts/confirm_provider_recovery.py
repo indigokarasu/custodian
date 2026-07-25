@@ -18,7 +18,7 @@ import os
 import datetime
 from collections import Counter
 
-PROFILE = os.environ.get("HERMES_PROFILE_HOME", "~/.hermes/profiles/indigo")
+PROFILE = os.environ.get("HERMES_PROFILE_HOME", os.path.expanduser("~/.hermes/profiles/indigo"))
 JOBS = os.path.join(PROFILE, "cron", "jobs.json")
 ISSUES = os.path.join(PROFILE, "commons", "data", "ocas-custodian", "issues.jsonl")
 
@@ -131,7 +131,7 @@ if __name__ == "__main__":
     )
     ap.add_argument("--profile", default=PROFILE, help="Profile HOME dir or name")
     args = ap.parse_args()
-    PROFILE = args.profile if os.path.sep in args.profile else f"~/.hermes/profiles/{args.profile}"
+    PROFILE = args.profile if os.path.sep in args.profile else fos.path.expanduser("~/.hermes/profiles/{args.profile}")
     JOBS = os.path.join(PROFILE, "cron", "jobs.json")
     ISSUES = os.path.join(PROFILE, "commons", "data", "ocas-custodian", "issues.jsonl")
     main()

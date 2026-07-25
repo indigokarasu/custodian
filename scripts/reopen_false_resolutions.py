@@ -19,7 +19,7 @@ import os
 import datetime
 import argparse
 
-PROFILE = "~/.hermes/profiles/indigo"
+PROFILE = os.path.expanduser("~/.hermes/profiles/indigo")
 JOBS = os.path.join(PROFILE, "cron", "jobs.json")
 ISSUES = os.path.join(PROFILE, "commons", "data", "ocas-custodian", "issues.jsonl")
 

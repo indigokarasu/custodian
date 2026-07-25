@@ -32,7 +32,7 @@ A missing Python package in the hermes-agent venv is auto-fixed (Tier 2) because
 1. Confirm the script is `no_agent: true` — the error comes from the script's own imports, not the agent
 2. Identify the missing module from `ModuleNotFoundError: No module named 'X'`
 3. Check if the package exists elsewhere on the system:
-   - `find /root -name "<module>" -type d 2>/dev/null` (other venvs)
+   - `find <fs-root> -name "<module>" -type d 2>/dev/null` (other venvs)
    - `pip3 show <package>` (system/hermes-agent venv)
    - Check other venvs: `<hermes-home>/profiles/*/commons/data/*/venv/lib/python*/site-packages/<module>`
 4. Determine when the script last succeeded vs first failed:
@@ -48,7 +48,7 @@ A missing Python package in the hermes-agent venv is auto-fixed (Tier 2) because
 **Step 1: Locate the hermes-agent venv Python.** The editable install path may differ from the plugin directory:
 ```bash
 # Common paths (verify which one is active):
-find /root -path "*/hermes-agent/.venv/bin/python3" 2>/dev/null
+find <fs-root> -path "*/hermes-agent/.venv/bin/python3" 2>/dev/null
 # Or check the source checkout path:
 ls <projects-root>/hermes-agent/.venv/bin/python3
 ```
