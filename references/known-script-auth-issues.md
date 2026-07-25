@@ -16,7 +16,7 @@ Traceback path: <hermes-home>/scripts/email_check.py     ← OLD
 jobs.json script field: <hermes-home>/profiles/indigo/scripts/email_check.py  ← NEW
 ```
 
-**Diagnostic**: Extract paths from traceback with `re.findall(r'File "(/root/\.hermes[^"]+)"', last_error)` and compare against `jobs.json` `script` field. If they differ, the error predates the path fix.
+**Diagnostic**: Extract paths from traceback with `re.findall(r'File "(<fs-root>/\.hermes[^"]+)"', last_error)` and compare against `jobs.json` `script` field. If they differ, the error predates the path fix.
 
 **Caveat**: `consecutive_failures > 0` may still be real even if the traceback path is stale — the counter accumulates across runs. Check `last_run_at` age to determine if failures are ongoing or historical.
 

@@ -39,7 +39,7 @@ A missing Python package in the hermes-agent venv is auto-fixed (Tier 2) because
    - Check cron output files: `{profile}/cron/output/{job_id}/{timestamp}.md`
    - Compare timestamps to gateway restart events (mem-watchdog RSS drops)
 5. Check if the package was ever in the hermes-agent venv:
-   - `grep -r "<package>"<hermes-install>/pyproject.toml <hermes-install>/setup.py 2>/dev/null`
+   - `grep -r "<package>"<hermes-agent>/pyproject.toml <hermes-agent>/setup.py 2>/dev/null`
    - Check if it's a transitive dependency of another package
 6. Verify the script's import chain — the missing module may be imported transitively (e.g., script imports `google_auth_mcp` which imports `googleapiclient`)
 

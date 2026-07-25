@@ -21,7 +21,7 @@ import os
 import re
 import sys
 
-# Indigo is the default profile — this owns the cron fleet
+# the agent is the default profile — this owns the cron fleet
 PROFILE = "indigo"
 JOBS_PATH_CANDIDATES = [
     f"~/.hermes/profiles/{PROFILE}/cron/jobs.json",
@@ -76,7 +76,7 @@ _WRITE_CREATIVE = [
 
 # Persona framing — agent is playing a specific role
 _PERSONA_FRAMING = [
-    r"You are Indigo",
+    r"You are the agent",
     r"You are (a|an|the) (Engineering Manager|Koda Dispatcher|KODA|finch)",
     r"Pure LLM — no",
 ]
@@ -371,10 +371,10 @@ def run_unit_tests():
 
         # ── llm_needed: generation verbs ──
         ("haiku:content-post",
-         "You are composing a Bluesky post for Indigo. YOU write it, fresh and in the loop",
+         "You are composing a Bluesky post for the agent. YOU write it, fresh and in the loop",
          None, False, "llm_needed"),
         ("haiku:haiku-post",
-         "You are composing an original haiku for Indigo Karasu's Bluesky practice.",
+         "You are composing an original haiku for the agent's Bluesky practice.",
          None, False, "llm_needed"),
         ("sands:evening-brief",
          "Generate evening schedule briefing using ocas-sands skill",
@@ -382,7 +382,7 @@ def run_unit_tests():
 
         # ── llm_needed: persona framing ──
         ("Koda Dispatcher — BOOK",
-         "You are the Koda Dispatcher for BOOK (owner/BOOK). Repo at /root/projects/github-staging/BOOK.",
+         "You are the Koda Dispatcher for BOOK (owner/BOOK). Repo at <projects-root>/github-staging/BOOK.",
          None, False, "llm_needed"),
         ("Engineering Manager — BOOK Escalation Handler",
          "You are the Engineering Manager. Load the engineering-manager skill.",

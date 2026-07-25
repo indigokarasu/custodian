@@ -50,7 +50,7 @@ grep "No module named" <hermes-home>/profiles/indigo/logs/errors.log | head -1
 This is a **Tier 3 escalation** — the package source is unknown (not a pip package) and cannot be auto-reinstalled.
 
 **Investigation steps for <operator>:**
-1. Check if source exists in `/root/.workspace-mcp/` (data dir, not code)
+1. Check if source exists in `<fs-root>/.workspace-mcp/` (data dir, not code)
 2. Look for git history: `find / -name "main.py" -path "*workspace*" 2>/dev/null`
 3. Check if there's a backup of the hermes-agent venv: `ls <hermes-venv>.bak* 2>/dev/null`
 4. The package may have been installed via `pip install -e /some/path` — check `pip list --editable`

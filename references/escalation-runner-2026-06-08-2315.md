@@ -31,6 +31,6 @@ This was wrong. The space was dead rows in the sessions table (old system_prompt
   - Session pruning requires user confirmation (don't auto-prune)
 
 ## Tool quirks observed
-- CWD was non-standard (`/root/hermes-telegram-artifacts`) — use absolute paths for all terminal calls
+- CWD was non-standard (`<fs-root>/hermes-telegram-artifacts`) — use absolute paths for all terminal calls
 - `read_file` returned "File not found" for files that `ls` confirmed existed; use `terminal(command="cat /path")` as fallback
 - Empty scan journals (0 bytes) should be skipped when scanning for recent files

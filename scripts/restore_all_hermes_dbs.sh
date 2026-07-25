@@ -5,14 +5,14 @@
 #   restore_all_hermes_dbs.sh [--backup-dir <dir>] [--dry-run]
 #
 # Defaults:
-#   BACKUP_DIR="/root/indigo/backup"
+#   BACKUP_DIR="<home-dir>/backup"
 #
 # Restores: state.db, state-snapshots, Chronicle (Elephas), Weave (social graph)
 # Exit codes: 0=success, 1=backup dir missing, 2=copy failure
 
 set -euo pipefail
 
-BACKUP_DIR="/root/indigo/backup"
+BACKUP_DIR="<home-dir>/backup"
 DRY_RUN=0
 
 while [[ $# -gt 0 ]]; do
@@ -56,7 +56,7 @@ fi
 
 restore "$BACKUP_DIR"/chronicle_lbug_* ~/.hermes/commons/db/ocas-elephas/chronicle.lbug
 restore "$BACKUP_DIR"/chronicle_lbug_backup_* ~/.hermes/prep_preservation/chronicle.lbug
-restore "$BACKUP_DIR"/weave_lbug_* /root/indigo-repo/commons/db/ocas-weave/weave.lbug
+restore "$BACKUP_DIR"/weave_lbug_* <repo-root>/commons/db/ocas-weave/weave.lbug
 restore "$BACKUP_DIR"/weave_lbug_backup_* ~/.hermes/prep_preservation/chronicle.lbug
 restore "$BACKUP_DIR"/weave_lbug_data_* ~/.hermes/data/hermes-weave/weave.lbug
 

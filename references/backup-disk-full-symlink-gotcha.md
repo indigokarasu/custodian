@@ -1,7 +1,7 @@
 # Backup disk-full + symlink-size gotcha
 
 ## Symptom
-`backup_all_hermes_data.sh` (canonical: `/root/indigo-repo/scripts/backup_all_hermes_data.sh`)
+`backup_all_hermes_data.sh` (canonical: `<repo-root>/scripts/backup_all_hermes_data.sh`)
 aborts with `cp: error copying '.../state.db' ...: No space left on device` and **never
 reaches the GitHub LFS push** — the actual deliverable.
 
@@ -10,7 +10,7 @@ reaches the GitHub LFS push** — the actual deliverable.
    ~12G. The backup script copies it **locally only** (never to LFS), but the system disk
    (96G) has no room for a 12G local copy. With `set -euo pipefail`, the failed `cp` aborts
    the whole script before the LFS commit/push step runs.
-2. A failed run leaves a **partial `state.db` copy** in `/root/backup/<ts>/` that consumes
+2. A failed run leaves a **partial `state.db` copy** in `<fs-root>/backup/<ts>/` that consumes
    the very space you just tried to free — so a naive retry re-fills the disk.
 
 ## THE SHARP GOTCHA: `stat -c%s` on a symlink
@@ -36,7 +36,7 @@ path (GNU stat follows the link for `-L`).
 
 ## Fix pattern that worked
 1. **Remove the partial backup dir first** (reclaim the space the failed run ate):
-   `rm -rf /root/backup/<failed-ts>`.
+   `rm -rf <fs-root>/backup/<failed-ts>`.
 2. **Make the local-only oversized copy space-aware** (the patch above) so one 12G local
    copy can never brick the entire backup (incl. the LFS push).
 3. Re-run. The LFS-pushed files are all small (chronicle 24M, chroma 253M, mempalace tar
@@ -45,7 +45,7 @@ path (GNU stat follows the link for `-L`).
 ## Verification
 After push, confirm objects actually landed on the remote:
 ```bash
-cd /root/indigo-repo && git lfs push --dry-run origin main   # empty output = all on remote
+cd <fs-root>/indigo-repo && git lfs push --dry-run origin main   # empty output = all on remote
 git lfs ls-files | grep -E 'chronicle|chroma|mempalace|transactions|styx'
 df -h /root   # should not be at 100%
 ```

@@ -26,8 +26,8 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-LOCAL_BACKUP="/root/backups"
-GITHUB_REPO="/root/indigo"
+LOCAL_BACKUP="<fs-root>/backups"
+GITHUB_REPO="<fs-root>/indigo"
 DATE=$(date +'%Y%m%d_%H%M%S')
 
 mkdir -p "$LOCAL_BACKUP"
@@ -64,10 +64,10 @@ do_backup ~/.hermes/state.db "$LOCAL_BACKUP/state.db"
 do_backup ~/.hermes/sessions "$LOCAL_BACKUP/sessions"
 
 # MemPalace
-if [ -d /root/.mempalace ] && [ "$DRY_RUN" -eq 0 ]; then
-    tar -czf "$LOCAL_BACKUP/mempalace.tar.gz" -C /root/.mempalace .
+if [ -d <mempalace> ] && [ "$DRY_RUN" -eq 0 ]; then
+    tar -czf "$LOCAL_BACKUP/mempalace.tar.gz" -C <mempalace> .
 elif [ "$DRY_RUN" -eq 1 ]; then
-    echo "DRY-RUN: would tar /root/.mempalace"
+    echo "DRY-RUN: would tar <mempalace>"
 fi
 
 echo "[*] Local backup complete. Pushing to GitHub LFS..."

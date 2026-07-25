@@ -30,10 +30,10 @@ npm cache clean --force
 rm -rf ~/.cache/huggingface
 
 # Browsers
-rm -rf ~/.cache/ms-playwright /root/.cache/camoufox
+rm -rf ~/.cache/ms-playwright <fs-root>/.cache/camoufox
 
 # Other caches (safe)
-rm -rf /root/.cache/{uv,pnpm,chroma,typescript,mesa_shader_cache,pipx,mozilla,starship}
+rm -rf <fs-root>/.cache/{uv,pnpm,chroma,typescript,mesa_shader_cache,pipx,mozilla,starship}
 ```
 
 ## Rules
