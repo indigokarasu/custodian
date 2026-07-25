@@ -1,6 +1,10 @@
 # spec-ocas-recovery.md — Recovery Contract (Custodian Perspective)
 
+<<<<<<< Updated upstream
 **Full spec**: `<hermes-home>/commons/specs/spec-ocas-recovery-draft.md`
+=======
+**Full spec**: `~/.hermes/commons/specs/spec-ocas-recovery-draft.md`
+>>>>>>> Stashed changes
 
 Custodian enforces this recovery contract across all OCAS skills. Key sections:
 

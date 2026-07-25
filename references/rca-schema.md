@@ -20,7 +20,11 @@ RCA records are stored in `{agent_root}/commons/data/ocas-custodian/rca.jsonl`. 
     {
       "timestamp": "2026-06-03T08:00:00Z",
       "job_id": "finch-scan-abc123",
+<<<<<<< Updated upstream
       "error_detail": "FileNotFoundError: update_rally.sh not found at <hermes-home>/scripts/",
+=======
+      "error_detail": "FileNotFoundError: update_rally.sh not found at ~/.hermes/scripts/",
+>>>>>>> Stashed changes
       "fix_applied": "oc_cron_dead_script_ref:auto_fix",
       "fix_outcome": "fix_applied",
       "schedule_adjusted_stickiness": 0.5
@@ -28,7 +32,11 @@ RCA records are stored in `{agent_root}/commons/data/ocas-custodian/rca.jsonl`. 
     {
       "timestamp": "2026-06-04T08:00:00Z",
       "job_id": "finch-scan-abc123",
+<<<<<<< Updated upstream
       "error_detail": "FileNotFoundError: update_rally.sh not found at <hermes-home>/scripts/",
+=======
+      "error_detail": "FileNotFoundError: update_rally.sh not found at ~/.hermes/scripts/",
+>>>>>>> Stashed changes
       "fix_applied": "oc_cron_dead_script_ref:auto_fix",
       "fix_outcome": "fix_applied",
       "schedule_adjusted_stickiness": 0.25
@@ -36,18 +44,31 @@ RCA records are stored in `{agent_root}/commons/data/ocas-custodian/rca.jsonl`. 
     {
       "timestamp": "2026-06-05T08:00:00Z",
       "job_id": "finch-scan-abc123",
+<<<<<<< Updated upstream
       "error_detail": "FileNotFoundError: update_rally.sh not found at <hermes-home>/scripts/",
+=======
+      "error_detail": "FileNotFoundError: update_rally.sh not found at ~/.hermes/scripts/",
+>>>>>>> Stashed changes
       "fix_applied": null,
       "fix_outcome": null,
       "schedule_adjusted_stickiness": null
     }
   ],
+<<<<<<< Updated upstream
   "root_cause_hypothesis": "HERMES_HOME resolves to <hermes-home>/profiles/indigo in cron context. The script path <hermes-home>/scripts/ is outside HERMES_HOME and gets blocked by the cron security model. Path needs to be <hermes-home>/profiles/indigo/scripts/.",
   "variable_identified": "path_resolution",
   "variable_detail": "Script field uses <hermes-home>/scripts/ which is outside cron's HERMES_HOME=<hermes-home>/profiles/indigo. Cron security model rejects paths outside HERMES_HOME.",
   "proposed_root_cause_fix": {
     "type": "path_canonicalization",
     "description": "Update job's script field from <hermes-home>/scripts/update_rally.sh to <hermes-home>/profiles/indigo/scripts/update_rally.sh",
+=======
+  "root_cause_hypothesis": "HERMES_HOME resolves to ~/.hermes/profiles/indigo in cron context. The script path ~/.hermes/scripts/ is outside HERMES_HOME and gets blocked by the cron security model. Path needs to be ~/.hermes/profiles/indigo/scripts/.",
+  "variable_identified": "path_resolution",
+  "variable_detail": "Script field uses ~/.hermes/scripts/ which is outside cron's HERMES_HOME=~/.hermes/profiles/indigo. Cron security model rejects paths outside HERMES_HOME.",
+  "proposed_root_cause_fix": {
+    "type": "path_canonicalization",
+    "description": "Update job's script field from ~/.hermes/scripts/update_rally.sh to ~/.hermes/profiles/indigo/scripts/update_rally.sh",
+>>>>>>> Stashed changes
     "tier": 1,
     "blocking": false,
     "block_reason": null

@@ -1,7 +1,11 @@
 # chronicle:daily-embed 600s Timeout — `oc_script_timeout_chronicle_embed`
 
 **Confirmed:** 2026-07-13 deep scan. `chronicle:daily-embed` (script `chronicle_daily_embed.py`)
+<<<<<<< Updated upstream
 `last_error`: `"Script timed out after 600s: <hermes-home>/profiles/indigo/scripts/chronicle_daily_embed.py"`.
+=======
+`last_error`: `"Script timed out after 600s: ~/.hermes/profiles/indigo/scripts/chronicle_daily_embed.py"`.
+>>>>>>> Stashed changes
 `consecutive_failures: null`. NOT user-gated — requires code/config tuning, not a credential.
 
 ## Symptom
@@ -10,7 +14,11 @@ script sets `SOFT_TIMEOUT_SECS=540` but still blows past it on the daily documen
 
 ## Diagnosis recipe (reusable for ANY cron timeout)
 1. **Re-run the actual script live** to confirm it's still hanging, not a stale error:
+<<<<<<< Updated upstream
    `python3 <hermes-home>/profiles/indigo/scripts/chronicle_daily_embed.py` — if it runs >60s and
+=======
+   `python3 ~/.hermes/profiles/indigo/scripts/chronicle_daily_embed.py` — if it runs >60s and
+>>>>>>> Stashed changes
    doesn't return, the timeout is active.
 2. **Isolate volume vs embedding-API failure by checking a sibling script.** `enrich_embeddings.py`
    in the same skills dir performs a similar embedding pass but succeeded with `EXIT=0` (rebuilds

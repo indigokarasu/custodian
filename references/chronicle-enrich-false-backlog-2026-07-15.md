@@ -20,7 +20,11 @@ embeddable from un-embeddable missing rows.
 
 ## Verification recipe (deterministic)
 1. Live re-run the ACTUAL script under a hard cap:
+<<<<<<< Updated upstream
    `cd <hermes-home>/profiles/indigo && timeout 100 <hermes-venv>/bin/python scripts/enrich_embeddings.py`
+=======
+   `cd ~/.hermes/profiles/indigo && timeout 100 <hermes-venv>/bin/python scripts/enrich_embeddings.py`
+>>>>>>> Stashed changes
    If it prints `New embeddings: N (42.5s)` with **exit 0** (not killed at 600s), the stored timeout
    is STALE — `enrich_embeddings.py` is healthy.
 2. Confirm the "backlog" is phantom: instrument a 3-row probe of `events` missing from

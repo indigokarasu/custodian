@@ -8,7 +8,11 @@ A timeout/throughput code-defect issue must be verified against the **actual pro
 ## Detection recipe
 1. Read the job's progress/state file (`commons/db/chronicle/embed_state.json` → `last_run`). If `last_run` is within seconds of the claimed fix/resolution time, the verification run executed on a cleared queue — inconclusive.
 2. Inspect real volume:
+<<<<<<< Updated upstream
    `python3 -c "import sqlite3;c=sqlite3.connect('<hermes-home>/profiles/indigo/commons/db/chronicle/chronicle.db');print(c.execute('SELECT COUNT(*) FROM facts').fetchone())"`
+=======
+   `python3 -c "import sqlite3;c=sqlite3.connect('~/.hermes/profiles/indigo/commons/db/chronicle/chronicle.db');print(c.execute('SELECT COUNT(*) FROM facts').fetchone())"`
+>>>>>>> Stashed changes
    (facts table held 35,486 rows in the failing run.)
 3. Re-run the actual script against that full volume with a hard cap. The foreground terminal cap is 60s — insufficient for a script that may run 590s. Use:
    `terminal(background=true, notify_on_complete=true)` running `timeout 590 python3 scripts/<script>.py > /tmp/<script>_test.log 2>&1`, then `process(wait/poll)`. For a steady-state run it must complete (exit 0, under 600s) with the full backlog present.

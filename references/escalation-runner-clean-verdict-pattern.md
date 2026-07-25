@@ -49,10 +49,17 @@ For each open issue found during escalation runner, classify into exactly one bu
     "method": "yaml.safe_load + recursive null-key detection"
   },
   "paths_checked": [
+<<<<<<< Updated upstream
     "<hermes-home>/commons/data/ocas-custodian/issues.jsonl",
     "<hermes-home>/profiles/indigo/commons/data/ocas-custodian/issues.jsonl",
     "<hermes-home>/profiles/indigo/commons/journals/ocas-custodian/issues.jsonl",
     "<hermes-home>/commons/journals/ocas-custodian/{date}/"
+=======
+    "~/.hermes/commons/data/ocas-custodian/issues.jsonl",
+    "~/.hermes/profiles/indigo/commons/data/ocas-custodian/issues.jsonl",
+    "~/.hermes/profiles/indigo/commons/journals/ocas-custodian/issues.jsonl",
+    "~/.hermes/commons/journals/ocas-custodian/{date}/"
+>>>>>>> Stashed changes
   ]
 }
 ```
@@ -67,8 +74,13 @@ To determine if a profile is inactive (Bucket C):
 
 ## Confirmed 2026-06-25
 
+<<<<<<< Updated upstream
 - Main config (`<hermes-home>/config.yaml`): CLEAN (0 null keys)
 - the agent profile config: CLEAN (0 null keys)
+=======
+- Main config (`~/.hermes/config.yaml`): CLEAN (0 null keys)
+- the agent profile config: CLEAN (0 null keys)
+>>>>>>> Stashed changes
 - Braun profile config: 3 null keys (legacy, inactive — no cron jobs, no action needed)
 - All issues.jsonl files: 0 open escalated issues
 - Remaining open: `skill_library_stubs` (user-gated), `skill_hygiene_followup_20260601` (user-gated), `oc_cron_no_agent_exit1_noop_20260622` (Tier 2 monitoring-only)

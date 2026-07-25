@@ -11,8 +11,13 @@ These are the most commonly-hit traps. Check this section before starting any sc
 2. **`hermes cron list` crashes on string schedules / jobs.json is a dict:** Read `{agent_root}/profiles/{profile}/cron/jobs.json` directly via `terminal` with `python3 -c` (not `execute_code` in cron). The top-level structure is `{"jobs": [...], "updated_at": "..."}`, NOT a raw list. Access jobs via `data.get('jobs', [])` or `data['jobs']`. Parsing it as a list directly will crash with `AttributeError: 'str' object has no attribute 'get'`.
 
    **jobs.json locations (both exist):**
+<<<<<<< Updated upstream
    - `<hermes-home>/cron/jobs.json` — default profile jobs
    - `<hermes-home>/profiles/indigo/cron/jobs.json` — indigo profile jobs (authoritative for indigo sessions)
+=======
+   - `~/.hermes/cron/jobs.json` — default profile jobs
+   - `~/.hermes/profiles/indigo/cron/jobs.json` — indigo profile jobs (authoritative for indigo sessions)
+>>>>>>> Stashed changes
    
    Always use the profile-specific path when running under a profile.
 3. **jobs.json control chars:** Always clean with chr-based builder before parsing: `[chr(i) for i in list(range(0,9))+[11,12]+list(range(14,32))+[127]]`. **NOTE: When running this via `terminal()` in cron mode, the `\x` escapes will crash** (`re.error: incomplete escape \x`). Use the CHR-based builder instead.
@@ -55,7 +60,11 @@ These are the most commonly-hit traps. Check this section before starting any sc
 
    **⚠️ Pitfall — oc_google_token_invalid auto-fix assumes backup exists:** Before running the fix, verify the backup file exists and is non-empty. If BOTH tokens are missing, classify as `oc_google_token_missing` (Tier 3).
 
+<<<<<<< Updated upstream
 7. **⚠️ Pitfall — finch:work task-list.json path mismatch:** The correct path is `<hermes-home>/commons/data/ocas-finch/task-list.json`.
+=======
+7. **⚠️ Pitfall — finch:work task-list.json path mismatch:** The correct path is `~/.hermes/commons/data/ocas-finch/task-list.json`.
+>>>>>>> Stashed changes
 
 8. **⚠️ Pitfall — Stale git lock files in checkpoints/:** Check for stale lock files with mtime >1 day and size 0 bytes. Safe to `rm -f`.
 
@@ -75,7 +84,11 @@ These are the most commonly-hit traps. Check this section before starting any sc
 
 9l. **⚠️ Pitfall — Stale issues in issues.jsonl vs live cron state:** Before closing any issue in `issues.jsonl`, verify the affected job's live status with `hermes cron list`. Issues can have `last_run_at: null` or old error data even though the job has since run successfully and is healthy. This happens when issues are created from a previous scan's stale data. Cross-checking against `hermes cron list` (which queries the live scheduler state) prevents falsely keeping stale issues open OR prematurely closing real ones. See `references/escalation-runner-2026-06-08.md` for 8 examples of verified-stale issues.
 
+<<<<<<< Updated upstream
 9q. **⚠️ Pitfall — CWD may not be /root:** The session CWD can be a project directory (e.g., `<fs-root>/hermes-telegram-artifacts`) rather than `/root`. Relative paths in `terminal()` calls will fail. Always use absolute paths: prefix with `<hermes-home>/...` not `~/.hermes/...` (tilde expansion can also be unreliable in terminal()). Run `pwd` at the start of a session if path-related failures occur.
+=======
+9q. **⚠️ Pitfall — CWD may not be /root:** The session CWD can be a project directory (e.g., `<fs-root>/hermes-telegram-artifacts`) rather than `/root`. Relative paths in `terminal()` calls will fail. Always use absolute paths: prefix with `~/.hermes/...` not `~/.hermes/...` (tilde expansion can also be unreliable in terminal()). Run `pwd` at the start of a session if path-related failures occur.
+>>>>>>> Stashed changes
 
 9r. **⚠️ Pitfall — read_file can return "File not found" for files that exist on disk:** If `read_file` reports "File not found" but `ls` confirms the file exists, use `terminal(command="/path/to/file")` as the fallback. This has been observed on JSON journal files specifically. Always verify with `ls` before concluding a file doesn't exist.
 
@@ -99,7 +112,11 @@ These are the most commonly-hit traps. Check this section before starting any sc
 
 9s. **⚠️ Pitfall — Gateway "Another instance" errors are noise, not failures:**
 
+<<<<<<< Updated upstream
  **⚠️ Pitfall — Duplicate systemd service as root cause of collision noise:** When "Another gateway instance" errors exceed ~100/day, check for a duplicate systemd service: `systemctl --user list-units --type=service | grep hermes-gateway`. If both `hermes-gateway.service` (default profile) and `hermes-gateway-indigo.service` (indigo profile) exist and the default one shows `activating (auto-restart)`, the default service is in a crash loop. The fix is `systemctl --user stop hermes-gateway.service && systemctl --user disable hermes-gateway.service`. This requires user confirmation (Tier 2). The two services can be distinguished by their `HERMES_HOME` environment variable: default uses `<hermes-home>`, indigo uses `<hermes-home>/profiles/indigo`.
+=======
+ **⚠️ Pitfall — Duplicate systemd service as root cause of collision noise:** When "Another gateway instance" errors exceed ~100/day, check for a duplicate systemd service: `systemctl --user list-units --type=service | grep hermes-gateway`. If both `hermes-gateway.service` (default profile) and `hermes-gateway-indigo.service` (indigo profile) exist and the default one shows `activating (auto-restart)`, the default service is in a crash loop. The fix is `systemctl --user stop hermes-gateway.service && systemctl --user disable hermes-gateway.service`. This requires user confirmation (Tier 2). The two services can be distinguished by their `HERMES_HOME` environment variable: default uses `~/.hermes`, indigo uses `~/.hermes/profiles/indigo`.
+>>>>>>> Stashed changes
 
    **⚠️ Pitfall — Health endpoint down but system operational (2026-06-05):**
 ```python
@@ -117,7 +134,11 @@ Also remove non-issue entries (scan_complete, esc-run log entries) during dedup.
 9n. **⚠️ Pitfall — Large state.db batch DELETE with timeout:** Deleting rows from a 14GB+ SQLite DB with FTS trigram indexes will exceed the 60s terminal timeout. Use batched DELETE with LIMIT in a loop:
 ```bash
 for i in $(seq 1 20); do
+<<<<<<< Updated upstream
     RESULT=$(sqlite3 <hermes-home>/state.db "DELETE FROM sessions WHERE id IN (SELECT id FROM sessions WHERE source='cron' AND started_at < (strftime('%s', 'now') - 30*86400) LIMIT 500); SELECT changes();")
+=======
+    RESULT=$(sqlite3 ~/.hermes/state.db "DELETE FROM sessions WHERE id IN (SELECT id FROM sessions WHERE source='cron' AND started_at < (strftime('%s', 'now') - 30*86400) LIMIT 500); SELECT changes();")
+>>>>>>> Stashed changes
     if [ -z "$RESULT" ] || [ "$RESULT" = "0" ]; then break; fi
 done
 ```
@@ -125,7 +146,11 @@ Each batch of 500 takes ~5-10s. Total wall time for 3000 rows ≈ 30-60s. The se
 
 9o. **⚠️ Pitfall — state.db VACUUM requires auto_vacuum=incremental at creation time:** `PRAGMA incremental_vacuum(N)` has no effect if the DB wasn't created with `PRAGMA auto_vacuum = incremental`. The only way to reclaim freelist pages is a full `VACUUM`, which requires ~2x the DB size in temporary disk space. On a 14GB DB with 24GB free disk, VACUUM is not feasible. Alternative: use `VACUUM INTO '/tmp/state.db.new'` (copy to a filesystem with more space), then swap. If no such filesystem exists, the freelist pages remain allocated until disk space is freed by other means (e.g., removing backups).
 
+<<<<<<< Updated upstream
 9p. **⚠️ Pitfall — spot:update git stash fix:** When `ocas-spot` skill directories accumulate local uncommitted changes that block `git pull` in the update script, run `git stash save "custodian-escalation-runner: auto-stash before update"` in BOTH `<hermes-home>/skills/ocas-spot` AND `<hermes-home>/profiles/indigo/skills/ocas-spot`. The update script (`update_spot.sh`) calls `update_skill.sh` which does a `git pull` — uncommitted changes cause merge conflicts. After stashing, the update script can pull cleanly. This is a Tier 1 auto-fix.
+=======
+9p. **⚠️ Pitfall — spot:update git stash fix:** When `ocas-spot` skill directories accumulate local uncommitted changes that block `git pull` in the update script, run `git stash save "custodian-escalation-runner: auto-stash before update"` in BOTH `~/.hermes/skills/ocas-spot` AND `~/.hermes/profiles/indigo/skills/ocas-spot`. The update script (`update_spot.sh`) calls `update_skill.sh` which does a `git pull` — uncommitted changes cause merge conflicts. After stashing, the update script can pull cleanly. This is a Tier 1 auto-fix.
+>>>>>>> Stashed changes
 
 9f. **⚠️ Pitfall — HTTP 429 with `consecutive_failures: None` is truly transient:** The scheduler does not consider it a persistent failure. Do NOT escalate.
 
@@ -133,7 +158,11 @@ Each batch of 500 takes ~5-10s. Total wall time for 3000 rows ≈ 30-60s. The se
 
 9g. **⚠️ Pitfall — VACUUM timeout on large state.db with FTS trigram indexes:** VACUUM on a state.db >10GB can exceed the 600s terminal timeout. FTS trigram indexes retain size even after VACUUM — accept as operational cost.
 
+<<<<<<< Updated upstream
 9h. **⚠️ Pitfall — `hermes cron edit` requires relative script paths:** The `hermes cron edit <id> --script <path>` command requires paths relative to `~/.hermes/scripts/`, NOT absolute paths. Passing an absolute path like `<hermes-home>/profiles/indigo/scripts/foo.py` fails with "Script path must be relative to ~/.hermes/scripts/". Use just the filename (e.g., `foo.py`) if the script exists at `~/.hermes/scripts/foo.py`. If the script only exists under the profile directory, create a symlink or copy to `~/.hermes/scripts/` first.
+=======
+9h. **⚠️ Pitfall — `hermes cron edit` requires relative script paths:** The `hermes cron edit <id> --script <path>` command requires paths relative to `~/.hermes/scripts/`, NOT absolute paths. Passing an absolute path like `~/.hermes/profiles/indigo/scripts/foo.py` fails with "Script path must be relative to ~/.hermes/scripts/". Use just the filename (e.g., `foo.py`) if the script exists at `~/.hermes/scripts/foo.py`. If the script only exists under the profile directory, create a symlink or copy to `~/.hermes/scripts/` first.
+>>>>>>> Stashed changes
 
 9i. **⚠️ Pitfall — Stale `last_status` after pause/resume is expected:** After applying the pause/resume fix to reset stale scheduler state, `jobs.json` will still show `status=error` for the affected jobs until they complete their next actual run. The scheduler's in-memory state is reset (verified by checking `next_run_at` is recalculated), but `last_status` in the on-disk file is not updated until the next run completes. Do NOT re-apply the fix — this is normal behavior. The fix is confirmed successful if `next_run_at` is recalculated to a future time.
 

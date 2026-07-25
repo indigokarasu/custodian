@@ -16,7 +16,11 @@ Check its output for failures:
 # Check job last_run from jobs.json (NOT hermes cron list — broken in cron context)
 python3 -c "
 import json
+<<<<<<< Updated upstream
 with open('<hermes-home>/profiles/indigo/cron/jobs.json') as f:
+=======
+with open('~/.hermes/profiles/indigo/cron/jobs.json') as f:
+>>>>>>> Stashed changes
     data = json.load(f)
 jobs = data.get('jobs', data) if isinstance(data, dict) else data
 for j in jobs:
@@ -25,7 +29,11 @@ for j in jobs:
 "
 
 # Check DecisionRecords for recent over_cap_after (last 24h)
+<<<<<<< Updated upstream
 grep -v "^$" <hermes-home>/profiles/indigo/commons/data/ocas-finch/decisions.jsonl | python3 -c "
+=======
+grep -v "^$" ~/.hermes/profiles/indigo/commons/data/ocas-finch/decisions.jsonl | python3 -c "
+>>>>>>> Stashed changes
 import sys, json
 from datetime import datetime, timezone, timedelta
 cutoff = datetime.now(timezone.utc) - timedelta(hours=24)
@@ -40,7 +48,11 @@ for line in sys.stdin:
 "
 
 # Check MEMORY.md current size (correct path: memories/ not profile root)
+<<<<<<< Updated upstream
 wc -c <hermes-home>/profiles/indigo/memories/MEMORY.md
+=======
+wc -c ~/.hermes/profiles/indigo/memories/MEMORY.md
+>>>>>>> Stashed changes
 ```
 
 ## Severity

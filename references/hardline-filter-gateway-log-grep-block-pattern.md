@@ -24,7 +24,11 @@ Use `python3` with file I/O instead of `grep`/`awk`:
 ```python
 python3 << 'PYEOF'
 import re
+<<<<<<< Updated upstream
 with open('<hermes-home>/profiles/indigo/logs/gateway.log', 'r') as f:
+=======
+with open('~/.hermes/profiles/indigo/logs/gateway.log', 'r') as f:
+>>>>>>> Stashed changes
     for line in f:
         if '2026-06-26' in line and re.search(r'error|fail|sigterm|restart', line, re.I):
             print(line.strip())
@@ -34,7 +38,11 @@ PYEOF
 Or use `awk` (usually not blocked):
 
 ```bash
+<<<<<<< Updated upstream
 awk '/2026-06-26/ && /error|fail|sigterm/' <hermes-home>/profiles/indigo/logs/gateway.log
+=======
+awk '/2026-06-26/ && /error|fail|sigterm/' ~/.hermes/profiles/indigo/logs/gateway.log
+>>>>>>> Stashed changes
 ```
 
 ## Diagnostic
