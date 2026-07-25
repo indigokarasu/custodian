@@ -41,7 +41,7 @@ journal = {
     ...
 }
 import os
-dir_path = '<hermes-root>/commons/journals/ocas-custodian/' + now.strftime('%Y-%m-%d')
+dir_path = '<hermes-home>/commons/journals/ocas-custodian/' + now.strftime('%Y-%m-%d')
 os.makedirs(dir_path, exist_ok=True)
 file_path = os.path.join(dir_path, f'{run_id}.json')
 with open(file_path, 'w') as f:
@@ -69,7 +69,7 @@ from datetime import datetime, timezone
 
 now = datetime.now(timezone.utc)
 run_id = f'light-scan-{now.strftime("%Y%m%dT%H%M%SZ")}'
-journal_dir = f'<hermes-home>/commons/journals/ocas-custodian/{now.strftime("%Y-%m-%d")}'
+journal_dir = f'<hermes-home>/profiles/indigo/commons/journals/ocas-custodian/{now.strftime("%Y-%m-%d")}'
 os.makedirs(journal_dir, exist_ok=True)
 
 journal = {

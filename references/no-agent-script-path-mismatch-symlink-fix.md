@@ -4,16 +4,16 @@
 
 ## Diagnosis
 
-When `no_agent: true`, the `script` field is treated as a literal file path. The Hermes security model resolves relative paths against `$HERMES_HOME/scripts/`. Under a profile, `HERMES_HOME=<hermes-root>/profiles/<profile>`, so the job looks for the script at:
+When `no_agent: true`, the `script` field is treated as a literal file path. The Hermes security model resolves relative paths against `$HERMES_HOME/scripts/`. Under a profile, `HERMES_HOME=<hermes-home>/profiles/<profile>`, so the job looks for the script at:
 
 ```
-<hermes-root>/profiles/<profile>/scripts/<basename>
+<hermes-home>/profiles/<profile>/scripts/<basename>
 ```
 
 But many scripts are installed to the shared scripts directory:
 
 ```
-<hermes-root>/scripts/<basename>
+<hermes-home>/scripts/<basename>
 ```
 
 This produces "Script not found" even though the script exists and is executable at the system path.
@@ -24,13 +24,13 @@ This produces "Script not found" even though the script exists and is executable
 |---------|-------------|----------------------|-----|
 | `oc_cron_script_not_found_transient` | "Script not found: /path/script.py" | Points to the exact path that exists | Transient (race), no fix needed |
 | `oc_cron_no_agent_script_args` | "Script not found: /path/foo.py --flag" | Contains embedded arguments | Wrapper script |
-| **`oc_no_agent_script_path_mismatch`** | "Script not found: /profile/scripts/name.py" | Basename only, exists at `<hermes-root>/scripts/name.py` | **Symlink or copy** |
+| **`oc_no_agent_script_path_mismatch`** | "Script not found: /profile/scripts/name.py" | Basename only, exists at `<hermes-home>/scripts/name.py` | **Symlink or copy** |
 
 ## Detection
 
 ```bash
 # Find no_agent jobs with "Script not found" where the script exists elsewhere
-cat <hermes-root>/profiles/<profile>/cron/jobs.json | python3 -c "
+cat <hermes-home>/profiles/<profile>/cron/jobs.json | python3 -c "
 import json, sys, os
 data = json.load(sys.stdin)
 jobs = data.get('jobs', []) if isinstance(data, dict) else data
@@ -52,8 +52,8 @@ for j in jobs:
     print(f\"  Error path: {err_path}\")
     print(f\"  Script field: {script}\")
     # Check if script exists at system path
-    sys_path = f'<hermes-root>/scripts/{script}'
-    prof_path = f'<hermes-root>/profiles/<profile>/scripts/{script}'
+    sys_path = f'<hermes-home>/scripts/{script}'
+    prof_path = f'<hermes-home>/profiles/<profile>/scripts/{script}'
     print(f\"  Exists at system path: {os.path.exists(sys_path)}\")
     print(f\"  Exists at profile path: {os.path.exists(prof_path)}\")
 "
@@ -64,13 +64,13 @@ for j in jobs:
 Create a symlink from the profile scripts dir to the system scripts dir:
 
 ```bash
-mkdir -p <hermes-root>/profiles/<profile>/scripts/
-ln -sf <hermes-root>/scripts/<basename> <hermes-root>/profiles/<profile>/scripts/<basename>
+mkdir -p <hermes-home>/profiles/<profile>/scripts/
+ln -sf <hermes-home>/scripts/<basename> <hermes-home>/profiles/<profile>/scripts/<basename>
 ```
 
 Verify:
 ```bash
-test -f <hermes-root>/profiles/<profile>/scripts/<basename> && echo "OK" || echo "BROKEN"
+test -f <hermes-home>/profiles/<profile>/scripts/<basename> && echo "OK" || echo "BROKEN"
 ```
 
 ## Post-Fix Verification (Required)
@@ -79,17 +79,17 @@ After creating the symlink, verify the script actually resolves and runs:
 
 ```bash
 # 1. Confirm symlink resolves to a real file
-test -f <hermes-root>/profiles/<profile>/scripts/<basename> && echo "OK" || echo "BROKEN"
+test -f <hermes-home>/profiles/<profile>/scripts/<basename> && echo "OK" || echo "BROKEN"
 
 # 2. Run the script directly to confirm exit code 0
-python3 <hermes-root>/profiles/<profile>/scripts/<basename> 2>&1 | tail -5
+python3 <hermes-home>/profiles/<profile>/scripts/<basename> 2>&1 | tail -5
 echo "EXIT: $?"
 ```
 
 If the script fails (e.g., import errors):
 ```bash
 # Run directly with python3 and check stderr
-python3 <hermes-root>/profiles/<profile>/scripts/<basename>
+python3 <hermes-home>/profiles/<profile>/scripts/<basename>
 ```
 
 ### Stale Error After Fix

@@ -12,7 +12,7 @@ custodian:light last_error: RuntimeError: Error code: 402 - {'error': {'message'
 
 ## Root Cause
 
-Profile config (`<hermes-home>/config.yaml`) contained:
+Profile config (`<hermes-home>/profiles/indigo/config.yaml`) contained:
 ```yaml
 fallback_model:
   api_key: 'sk-or-v1-...'  # expired/exhausted
@@ -46,7 +46,7 @@ When `custodian:light` runs with `provider: null`, it uses the default model cha
 
 ```bash
 # Remove broken fallback_model from profile config
-# Edit <hermes-home>/config.yaml
+# Edit <hermes-home>/profiles/indigo/config.yaml
 # Remove the fallback_model: section entirely
 # Gateway restart required for config change to take effect
 ```

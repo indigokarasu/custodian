@@ -23,7 +23,7 @@ When closing issues from `issues.jsonl`, always verify against live `hermes cron
 
 ## Disk Cleanup — Backup Zip Removal
 
-Removed 3 pre-update backup zips from `<hermes-root>/backups/`:
+Removed 3 pre-update backup zips from `<hermes-home>/backups/`:
 - `pre-update-2026-06-07-204043.zip` (3.9GB)
 - `pre-update-2026-06-07-204059.zip` (3.9GB)
 - `pre-update-2026-06-08-040002.zip` (5.8GB)

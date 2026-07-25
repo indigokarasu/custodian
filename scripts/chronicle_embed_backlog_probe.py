@@ -18,7 +18,7 @@ if set(sys.argv[1:]) & _HELP_ARGS:
     sys.exit(0)
 
 
-DB = "<hermes-home>/commons/db/chronicle/chronicle.db"
+DB = "~/.hermes/profiles/indigo/commons/db/chronicle/chronicle.db"
 
 KINDS = [
     ("facts",

@@ -6,7 +6,7 @@ aborts with `cp: error copying '.../state.db' ...: No space left on device` and 
 reaches the GitHub LFS push** — the actual deliverable.
 
 ## Root cause
-1. `state.db` is a **symlink** (`<hermes-root>/state.db` → `profiles/indigo/state.db`) and
+1. `state.db` is a **symlink** (`<hermes-home>/state.db` → `profiles/indigo/state.db`) and
    ~12G. The backup script copies it **locally only** (never to LFS), but the system disk
    (96G) has no room for a 12G local copy. With `set -euo pipefail`, the failed `cp` aborts
    the whole script before the LFS commit/push step runs.
@@ -21,7 +21,7 @@ logic.
 
 **Fix the size check — dereference first:**
 ```bash
-STATE_SRC="<hermes-root>/state.db"
+STATE_SRC="<hermes-home>/state.db"
 STATE_REAL=$(readlink -f "$STATE_SRC" 2>/dev/null || echo "$STATE_SRC")
 STATE_SIZE=$(stat -L -c%s "$STATE_REAL" 2>/dev/null || echo 0)   # -L follows symlink
 AVAIL=$(df --output=avail -B1 /root 2>/dev/null | tail -1 | tr -d ' ')
@@ -60,8 +60,8 @@ Disk was at 100% → 91% after the space-aware skip + partial cleanup.
 ```bash
 # Force the trap: a guard using bare stat on the symlink
 AVAIL=$(df --output=avail -B1 /root | tail -1 | tr -d ' ')
-S_BAD=$(stat -c%s <hermes-root>/state.db)        # -> 38 (symlink length), NOT 12G
+S_BAD=$(stat -c%s <hermes-home>/state.db)        # -> 38 (symlink length), NOT 12G
 [ "$S_BAD" -gt 0 ] && [ "$AVAIL" -gt $((S_BAD*11/10)) ] && echo "WOULD COPY (WRONG)"
 # Correct:
-S_OK=$(stat -L -c%s "$(readlink -f <hermes-root>/state.db)")   # -> 12247752704
+S_OK=$(stat -L -c%s "$(readlink -f <hermes-home>/state.db)")   # -> 12247752704
 ```

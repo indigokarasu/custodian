@@ -12,8 +12,8 @@ Heuristic derived from the 2026-07-12 manual operator audit of all 144 jobs
 50 genuine).
 
 Run from cron context via terminal():
-    python3 <hermes-root>/skills/ocas-custodian/scripts/classify_llm_necessity.py
-    python3 <hermes-root>/skills/ocas-custodian/scripts/classify_llm_necessity.py --profile indigo
+    python3 ~/.hermes/skills/ocas-custodian/scripts/classify_llm_necessity.py
+    python3 ~/.hermes/skills/ocas-custodian/scripts/classify_llm_necessity.py --profile indigo
 """
 
 import json
@@ -24,8 +24,8 @@ import sys
 # Indigo is the default profile — this owns the cron fleet
 PROFILE = "indigo"
 JOBS_PATH_CANDIDATES = [
-    f"<hermes-root>/profiles/{PROFILE}/cron/jobs.json",
-    "<hermes-root>/cron/jobs.json",
+    f"~/.hermes/profiles/{PROFILE}/cron/jobs.json",
+    "~/.hermes/cron/jobs.json",
 ]
 
 # ── Strong positive signals (candidate llm_unnecessary) ─────────────────────
@@ -283,7 +283,7 @@ def main():
     # Handle profile override
     profile = args.profile
     if profile != "indigo":
-        JOBS_PATH_CANDIDATES[0] = f"<hermes-root>/profiles/{profile}/cron/jobs.json"
+        JOBS_PATH_CANDIDATES[0] = f"~/.hermes/profiles/{profile}/cron/jobs.json"
 
     jobs = load_jobs()
 
@@ -355,7 +355,7 @@ def run_unit_tests():
         # ── llm_unnecessary: script_field_set ──
         ("Backup Hermes Sessions to GitHub",
          "Run the Hermes session backup script to GitHub LFS.",
-         "<hermes-home>/scripts/backup_system.sh",
+         "~/.hermes/profiles/indigo/scripts/backup_system.sh",
          False, "llm_unnecessary"),
         ("rally:update",
          "Run rally.update self-update from GitHub source",
@@ -363,7 +363,7 @@ def run_unit_tests():
 
         # ── llm_unnecessary: script_wrapper ──
         ("genie:disk-cleanup",
-         "Run Genie: python3 <hermes-home>/scripts/genie.py. Report results.",
+         "Run Genie: python3 ~/.hermes/profiles/indigo/scripts/genie.py. Report results.",
          None, False, "llm_unnecessary"),
         ("soul:sync",
          "Run the soul sync script and report results.",
@@ -417,7 +417,7 @@ def run_unit_tests():
 
         # ── already_no_agent ──
         ("Gateway Memory Watchdog",
-         "Run: python3 <hermes-root>/scripts/gateway_memory_watchdog.py",
+         "Run: python3 ~/.hermes/scripts/gateway_memory_watchdog.py",
          "gateway_memory_watchdog.py", True, "already_no_agent"),
         ("dispatch:triage-morning",
          "Run dispatch morning triage. Execute the triage script and journal script.",

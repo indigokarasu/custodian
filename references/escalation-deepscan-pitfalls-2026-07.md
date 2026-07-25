@@ -19,10 +19,10 @@ provider/auth/credit/endpoint outages must NOT pause recurring jobs.
 
 ## 2. `parse_issues_jsonl.py` reads the SYNC COPY, not the authoritative `issues.jsonl`
 - `parse_issues_jsonl.py` reads
-  `<hermes-root>/profiles/<profile>/commons/journals/ocas-custodian/issues.jsonl` (a lagging sync
+  `<hermes-home>/profiles/<profile>/commons/journals/ocas-custodian/issues.jsonl` (a lagging sync
   target).
 - `verify_escalation_state.py` reads
-  `<hermes-root>/profiles/<profile>/commons/data/ocas-custodian/issues.jsonl` (authoritative).
+  `<hermes-home>/profiles/<profile>/commons/data/ocas-custodian/issues.jsonl` (authoritative).
 - Counts differ (e.g. 22 vs 6 open). For reconciliation AND writes, ALWAYS use the `commons/data/`
   path. Never treat the journals-copy count as ground truth.
 
@@ -32,9 +32,9 @@ When many jobs 401/402/404, settle live-vs-stale with:
    you're producing output, the token/route is not globally dead (caveat: a fallback route may
    differ — corroborate with #2).
 2. **Scan the live gateway log for successful completions in the last hour:**
-   `grep -nE "response ready|Sending response" <hermes-root>/profiles/<profile>/logs/gateway.log | tail`
-   (NOT `<hermes-root>/logs/gateway.log` — stale/rotated; find the live one with
-   `find <hermes-root>/profiles/<profile>/logs -name "*.log" -mmin -90`).
+   `grep -nE "response ready|Sending response" <hermes-home>/profiles/<profile>/logs/gateway.log | tail`
+   (NOT `<hermes-home>/logs/gateway.log` — stale/rotated; find the live one with
+   `find <hermes-home>/profiles/<profile>/logs -name "*.log" -mmin -90`).
    If real completions landed recently, the route works.
 3. **Error age from `last_run_at`** (parse with `datetime.fromisoformat(s).astimezone(timezone.utc)`;
    never compare the raw offset string to a UTC `now` — see

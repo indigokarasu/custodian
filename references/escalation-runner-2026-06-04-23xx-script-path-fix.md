@@ -10,17 +10,17 @@ profile-specific scripts directory.
 
 `cron/scheduler.py` line 943:
 ```python
-scripts_dir = _get_hermes_home() / "scripts"  # → <hermes-root>/scripts/
+scripts_dir = _get_hermes_home() / "scripts"  # → <hermes-home>/scripts/
 ```
 
 The `path.relative_to()` check at line 956 rejects paths in
-`<hermes-home>/scripts/` even though the error message
+`<hermes-home>/profiles/indigo/scripts/` even though the error message
 paradoxically names that directory.
 
 ## Fix Applied
 
-Updated 8 job `script` fields in `<hermes-home>/cron/jobs.json`:
-- Changed `<hermes-home>/scripts/<name>` → `<hermes-root>/scripts/<name>`
+Updated 8 job `script` fields in `<hermes-home>/profiles/indigo/cron/jobs.json`:
+- Changed `<hermes-home>/profiles/indigo/scripts/<name>` → `<hermes-home>/scripts/<name>`
 - Verified target files exist and are identical (via `cmp`)
 - Verified path validation passes (via `path.relative_to()` test)
 
@@ -36,7 +36,7 @@ of this pattern, detection, fix, and verification procedure.
 
 ## Key Insight
 
-The previous "fix" (2026-06-03) moved scripts from `<hermes-root>/scripts/` to
-`<hermes-home>/scripts/` to avoid a security block. But the
+The previous "fix" (2026-06-03) moved scripts from `<hermes-home>/scripts/` to
+`<hermes-home>/profiles/indigo/scripts/` to avoid a security block. But the
 security model actually expects `HERMES_HOME/scripts/`. The move made things worse.
 Scripts existed in both locations — the fix was to point back to the main directory.

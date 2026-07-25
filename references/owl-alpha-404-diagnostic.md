@@ -13,7 +13,7 @@ When 10+ null-model, null-provider cron jobs simultaneously show `"No endpoints 
 ### Step 1: Check config.yaml for owl-alpha references
 
 ```bash
-grep -n 'owl-alpha\|auxiliary.*compression' <hermes-home>/config.yaml
+grep -n 'owl-alpha\|auxiliary.*compression' <hermes-home>/profiles/indigo/config.yaml
 ```
 
 The main `model.default` is typically a different model (e.g., `deepseek/deepseek-v4-flash`) and works fine. The `auxiliary.compression` section overrides the compression model independently:
@@ -37,7 +37,7 @@ If this returns nothing, the model has been fully removed from OpenRouter.
 
 ```python
 import json
-with open("<hermes-home>/cron/jobs.json") as f:
+with open("<hermes-home>/profiles/indigo/cron/jobs.json") as f:
     data = json.load(f)
 jobs = data.get("jobs", [])
 affected = [j for j in jobs if "openrouter/owl-alpha" in (j.get("last_error") or "")]
@@ -49,7 +49,7 @@ print(f"{len(affected)} jobs affected")
 The `model.default` in config.yaml typically references a working model (e.g., `deepseek/deepseek-v4-flash`). Verify:
 
 ```bash
-grep '^model:' -A 3 <hermes-home>/config.yaml | head -6
+grep '^model:' -A 3 <hermes-home>/profiles/indigo/config.yaml | head -6
 # Should show model.default with a different model
 ```
 

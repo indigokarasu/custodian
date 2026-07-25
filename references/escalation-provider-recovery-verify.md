@@ -81,7 +81,7 @@ not carry `GH_TOKEN`/`GITHUB_TOKEN` into `gh`/`git`. The token in
 
 This is a Tier-1 auto-fix (credential provisioning, no interactive OAuth
 required). Distinct from `oc_taste_spotify_token_missing`, which DOES require
-owner's interactive OAuth and is genuinely user-gated.
+<operator>'s interactive OAuth and is genuinely user-gated.
 
 ---
 

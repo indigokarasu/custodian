@@ -18,8 +18,8 @@ Confirmed working procedure (2026-07-07 escalation loop run):
      don't just re-pause. Both directions are real; never trust the issue flag alone.
 
 2. **Load issues from the PROFILE `issues.jsonl`** —
-   `<hermes-root>/profiles/<profile>/commons/data/ocas-custodian/issues.jsonl`. It is
-   authoritative. The commons copy (`<hermes-root>/commons/data/ocas-custodian/issues.jsonl`)
+   `<hermes-home>/profiles/<profile>/commons/data/ocas-custodian/issues.jsonl`. It is
+   authoritative. The commons copy (`<hermes-home>/commons/data/ocas-custodian/issues.jsonl`)
    is a lagging sync target — **write only to the profile path**. Entries may be concatenated on
    a single line; use a brace-depth parser (see `scripts/parse_issues_jsonl.py` or the template
    below).
@@ -31,7 +31,7 @@ Confirmed working procedure (2026-07-07 escalation loop run):
    - Actionable → apply the Tier 1 fix (within the fix-safety envelope).
    - User-gated → **pause still-enabled failing jobs** by editing `jobs.json` directly
      (`enabled: false`, `state: 'paused'`). Pausing IS the action — it stops resource burn.
-     Do NOT mark the issue resolved (the root cause still needs owner).
+     Do NOT mark the issue resolved (the root cause still needs <operator>).
 
 5. **Reconcile `issues.jsonl` in ONE pass** (safe edit pattern below):
    - Resolve issues whose underlying jobs actually recovered (set `status: resolved`,
@@ -207,7 +207,7 @@ On 2026-07-08 a single `--write` added 12 spurious records in one batch (timesta
 ## Honesty rule
 
 Do NOT report user-gated billing / API-key / skill-internal issues as "fixed". Pausing is
-mitigation, not resolution. They stay `user_gated` + `escalation_needed: true` until owner adds
+mitigation, not resolution. They stay `user_gated` + `escalation_needed: true` until <operator> adds
 credits, rotates the key, or edits skill code (Custodian must not edit skill-internal files).
 
 ## FALSE-RESOLUTION via weak probe — the decisive check is TIME-BASED (2026-07-13)
@@ -219,7 +219,7 @@ A prior escalation loop resolved `oc_provider_auth_token_expired_20260712T040120
 
 - Probing the **free default model** only proves the *free* model works. It does NOT validate
   the **session token** the agent-mode jobs use. The `token_expired` fingerprint is documented
-  (`oc_provider_auth_token_expired`) as **non-self-healing** — it recurs until owner re-auths.
+  (`oc_provider_auth_token_expired`) as **non-self-healing** — it recurs until <operator> re-auths.
 - Probing the OpenRouter `/models` endpoint (HTTP 200) only proves the *endpoint* is up. It
   does NOT validate the OpenRouter **API key / credits** the failing jobs present.
 - The loop saw *other* jobs (using the free model) report `status=ok` and inferred "provider
@@ -287,7 +287,7 @@ last error is a provider outage — 402 credits, 401 invalid/out-of-funds key, o
 `token_expired`, 429 — stay ENABLED and tracked, never paused.** Pausing them stops retry and
 is pure mitigation that also freezes legitimate future runs. The issue stays
 `user_gated` + `escalation_needed: true` with `jobs_paused: []`; the jobs keep running so they
-self-clear when owner adds credits / rotates the key / re-auths.
+self-clear when <operator> adds credits / rotates the key / re-auths.
 
 **Worked example (2026-07-14 loop):** the probe reported 5 MISSED jobs
 (`haiku:content-review`, `Job Search Feedback Monitor`, `weave:overnight-enrichment`,
@@ -320,7 +320,7 @@ manually)`. Do NOT default UNKNOWN to transient — inspect each one. For `no_ag
 `Script exited with code 1` and no captured stderr:
 
 1. Pull the job's `script` field from `jobs.json` (literal path / bare basename).
-2. Locate it: `find <hermes-root> -name "<script>.py"`.
+2. Locate it: `find <hermes-home> -name "<script>.py"`.
 3. **If the `script` is a `.sh` wrapper** (auto-generated no-agent wrapper), run the WRAPPER
    itself, not just the inner python — `timeout 120 bash <path-to-wrapper.sh>`. Confirmed
    2026-07-14: `rally:daily-activity-check` stored `"Script exited with code 1"` but running
@@ -356,7 +356,7 @@ no pipe-to-interpreter).
 import json, os
 from datetime import datetime, timezone
 
-P = "<hermes-home>/commons/data/ocas-custodian/issues.jsonl"
+P = "<hermes-home>/profiles/indigo/commons/data/ocas-custodian/issues.jsonl"
 NOW = datetime.now(timezone.utc).isoformat()
 
 def parse_line(line):

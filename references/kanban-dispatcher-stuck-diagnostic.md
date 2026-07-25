@@ -46,7 +46,7 @@ hermes kanban show <task_id> 2>/dev/null | grep -E "consecutive_failures|most_re
 hermes kanban list --status in_progress | wc -l
 
 # Check gateway log for crash counts
-grep "kanban dispatcher.*crashed" <hermes-home>/logs/gateway.log | tail -3
+grep "kanban dispatcher.*crashed" <hermes-home>/profiles/indigo/logs/gateway.log | tail -3
 ```
 
 ## Pitfall — Don't Confuse Stuck With Broken
@@ -100,10 +100,10 @@ See `kanban-orchestration` skill for full details on both fixes.
 Since 2026-06-22, the kanban dispatcher has shown "stuck" warnings recurring night after night (typically 6-26 consecutive ticks). Investigation on 2026-06-24 confirmed:
 
 - Workers are crashing (`crashed=1` in dispatcher logs) but not because of a venv/PATH issue
-- owner is actively working on the kanban board during these periods (e.g., ocas-reach migration)
+- <operator> is actively working on the kanban board during these periods (e.g., ocas-reach migration)
 - The crushed workers are part of **interactive task processing**, not cron job failures
 - New tasks continue to be spawned and processed (promoted=1, auto_blocked=1 show the system is working)
 
 **Classification**: During active sessions, recurring "stuck" warnings are Tier 2 monitor-only. The dispatcher is healthy — workers crash because of task-specific code issues during development, and the dispatcher correctly waits. Do NOT escalate as `oc_kanban_dispatcher_failure`.
 
-**Rule of thumb**: If owner has sent a Telegram message about kanban work in the last 2 hours, the stuck warnings are explained. Verify by checking `gateway.log` for recent inbound messages from the user.
+**Rule of thumb**: If <operator> has sent a Telegram message about kanban work in the last 2 hours, the stuck warnings are explained. Verify by checking `gateway.log` for recent inbound messages from the user.

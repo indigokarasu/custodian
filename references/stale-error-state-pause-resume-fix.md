@@ -11,7 +11,7 @@ The Hermes scheduler doesn't always update `consecutive_failures` or `last_statu
 ## Diagnosis Steps
 
 1. **Check `last_error` content**: Look for provider references (e.g., `kepler.ai.cloud.ovh.net`, specific provider names)
-2. **Verify current config.yaml**: `grep -i <provider> <hermes-root>/profiles/<profile>/config.yaml` — if the provider is no longer listed, the error is stale
+2. **Verify current config.yaml**: `grep -i <provider> <hermes-home>/profiles/<profile>/config.yaml` — if the provider is no longer listed, the error is stale
 3. **Check `next_run_at`**: If the job is still being scheduled (next_run_at is future), the scheduler is running it but stuck on the old error state
 4. **Check `consecutive_failures`**: `None` (null) means the scheduler never updated the counter; `0` with `status=error` means it reset but didn't clear the status
 

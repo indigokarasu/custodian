@@ -7,17 +7,17 @@ Open issues with `escalation_needed: true` accumulate in **multiple** `issues.js
 ## All Known Paths (check every one)
 
 ```
-<hermes-root>/commons/journals/ocas-custodian/issues.jsonl
 <hermes-home>/commons/journals/ocas-custodian/issues.jsonl
-<hermes-home>/commons/data/custodian/issues.jsonl
-<hermes-home>/commons/data/ocas-custodian/issues.jsonl
-<hermes-home>/commons/ocas-custodian/issues.jsonl
+<hermes-home>/profiles/indigo/commons/journals/ocas-custodian/issues.jsonl
+<hermes-home>/profiles/indigo/commons/data/custodian/issues.jsonl
+<hermes-home>/profiles/indigo/commons/data/ocas-custodian/issues.jsonl
+<hermes-home>/profiles/indigo/commons/ocas-custodian/issues.jsonl
 ```
 
 ## Discovery Pattern
 
 ```bash
-find <hermes-root> -name "issues.jsonl" 2>/dev/null | while read f; do
+find <hermes-home> -name "issues.jsonl" 2>/dev/null | while read f; do
     grep '"escalation_needed": true' "$f" | grep -v '"status": "resolved"'
 done
 ```
@@ -30,7 +30,7 @@ Same root cause often appears in multiple files with **different issue_id values
 
 | Root Cause | ID in journals/file | ID in data/file |
 |------------|---------------------|-----------------|
-| Google OAuth token | `oc_google_auth_owner_operator` | `esc-20260530-001`, `iss-20260531-001` |
+| Google OAuth token | `oc_google_auth_<account-identity>` | `esc-20260530-001`, `iss-20260531-001` |
 | MCP server files | `oc_mcp_server_files_missing_20260614` | (same in data file) |
 
 **Always cross-reference by description/summary, not just issue_id.**
@@ -86,7 +86,7 @@ if d.get('status') == 'resolved' and d.get('escalation_needed') == True:
 
 ## Corvus Proposal Staleness (2026-06-15)
 
-Corvus writes InsightProposals to `<hermes-root>/proposals/` and `<hermes-home>/commons/data/ocas-corvus/proposals/`. These proposals can flag issues that **custodian has already resolved** by the time the escalation runner sees them. Example: `prop-mcp-server-files-missing-0615` proposed action on 4 MCP servers (instagram, pdsx, spotify, threads), but custodian had already verified all 4 were `enabled: false` in config.yaml.
+Corvus writes InsightProposals to `<hermes-home>/proposals/` and `<hermes-home>/profiles/indigo/commons/data/ocas-corvus/proposals/`. These proposals can flag issues that **custodian has already resolved** by the time the escalation runner sees them. Example: `prop-mcp-server-files-missing-0615` proposed action on 4 MCP servers (instagram, pdsx, spotify, threads), but custodian had already verified all 4 were `enabled: false` in config.yaml.
 
 **Before acting on any Corvus proposal:**
 1. Check the current live state independently (e.g., `grep "enabled:" config.yaml` for MCP servers)
@@ -95,7 +95,7 @@ Corvus writes InsightProposals to `<hermes-root>/proposals/` and `<hermes-home>/
 
 ## Workflow
 
-1. `find <hermes-root> -name "issues.jsonl"` — discover all paths
+1. `find <hermes-home> -name "issues.jsonl"` — discover all paths
 2. Parse each with the brace-depth parser (not naive `json.loads`)
 3. Extract open issues; check `escalation_needed` flag independently of status
 4. Deduplicate by root cause (compare descriptions, not issue_id)

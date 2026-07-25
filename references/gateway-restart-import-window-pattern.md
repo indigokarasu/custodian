@@ -11,7 +11,7 @@ When a cluster of cron jobs reports `ModuleNotFoundError` or `certifi points to 
 
 The following modules have been observed failing in post-restart clusters:
 
-1. **certifi SSL** — `agent.errors.SSLConfigurationError: certifi points to a missing CA bundle: <hermes-install>/.venv/lib/python3.14/site-packages/certifi/cacert.pem`
+1. **certifi SSL** — `agent.errors.SSLConfigurationError: certifi points to a missing CA bundle: <hermes-venv>/lib/python3.14/site-packages/certifi/cacert.pem`
    - The file exists on disk but the import system can't resolve it during the window
    - Self-resolves after the gateway fully starts and housekeeping runs
 

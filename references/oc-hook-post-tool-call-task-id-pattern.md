@@ -39,9 +39,9 @@ print(spec.origin)  # THIS is the file you need to edit
 ```
 
 In this session, the locations were:
-- **Editable (ACTIVE):** `<hermes-home>/home/.hermes/plugins/custodian/hermes_custodian_plugin/__init__.py`
-- **Plugin directory (INACTIVE):** `<hermes-root>/plugins/custodian/hermes_custodian_plugin/__init__.py` (belongs to default profile, cross-profile write blocked)
-- **Profile plugin dir (INACTIVE):** `<hermes-home>/plugins/custodian/` (old version, without `ctx`)
+- **Editable (ACTIVE):** `<hermes-home>/profiles/indigo/home/.hermes/plugins/custodian/hermes_custodian_plugin/__init__.py`
+- **Plugin directory (INACTIVE):** `<hermes-home>/plugins/custodian/hermes_custodian_plugin/__init__.py` (belongs to default profile, cross-profile write blocked)
+- **Profile plugin dir (INACTIVE):** `<hermes-home>/profiles/indigo/plugins/custodian/` (old version, without `ctx`)
 
 The editable finder is at:
 ```
@@ -52,7 +52,7 @@ Its `MAPPING` dict shows the actual path. **Always edit the mapped path, not the
 
 ## Fix Applied (2026-06-09)
 
-- **File:** `<hermes-home>/home/.hermes/plugins/custodian/hermes_custodian_plugin/__init__.py`
+- **File:** `<hermes-home>/profiles/indigo/home/.hermes/plugins/custodian/hermes_custodian_plugin/__init__.py`
 - Changed all 4 hook signatures: `ctx` → `ctx=None`
 - Also changed `args: dict = None` → `args: dict | None = None` (Pyright type fix)
 
@@ -60,7 +60,7 @@ Its `MAPPING` dict shows the actual path. **Always edit the mapped path, not the
 
 After gateway restart, check that the errors cease:
 ```bash
-grep -c "post_tool_call.*missing.*ctx" <hermes-home>/logs/errors.log
+grep -c "post_tool_call.*missing.*ctx" <hermes-home>/profiles/indigo/logs/errors.log
 ```
 Expected: 0 new occurrences after restart.
 
