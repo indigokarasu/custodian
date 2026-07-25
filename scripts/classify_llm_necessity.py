@@ -24,8 +24,8 @@ import sys
 # the agent is the default profile — this owns the cron fleet
 PROFILE = "indigo"
 JOBS_PATH_CANDIDATES = [
-    f"~/.hermes/profiles/{PROFILE}/cron/jobs.json",
-    "~/.hermes/cron/jobs.json",
+    fos.path.expanduser("~/.hermes/profiles/{PROFILE}/cron/jobs.json"),
+    os.path.expanduser("~/.hermes/cron/jobs.json"),
 ]
 
 # ── Strong positive signals (candidate llm_unnecessary) ─────────────────────
@@ -283,7 +283,7 @@ def main():
     # Handle profile override
     profile = args.profile
     if profile != "indigo":
-        JOBS_PATH_CANDIDATES[0] = f"~/.hermes/profiles/{profile}/cron/jobs.json"
+        JOBS_PATH_CANDIDATES[0] = fos.path.expanduser("~/.hermes/profiles/{profile}/cron/jobs.json")
 
     jobs = load_jobs()
 
@@ -355,7 +355,7 @@ def run_unit_tests():
         # ── llm_unnecessary: script_field_set ──
         ("Backup Hermes Sessions to GitHub",
          "Run the Hermes session backup script to GitHub LFS.",
-         "~/.hermes/profiles/indigo/scripts/backup_system.sh",
+         os.path.expanduser("~/.hermes/profiles/indigo/scripts/backup_system.sh"),
          False, "llm_unnecessary"),
         ("rally:update",
          "Run rally.update self-update from GitHub source",
@@ -382,7 +382,7 @@ def run_unit_tests():
 
         # ── llm_needed: persona framing ──
         ("Koda Dispatcher — BOOK",
-         "You are the Koda Dispatcher for BOOK (owner/BOOK). Repo at <projects-root>/github-staging/BOOK.",
+         "You are the Koda Dispatcher for BOOK (<external-repo>/BOOK). Repo at <projects-root>/github-staging/BOOK.",
          None, False, "llm_needed"),
         ("Engineering Manager — BOOK Escalation Handler",
          "You are the Engineering Manager. Load the engineering-manager skill.",

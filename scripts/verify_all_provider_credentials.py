@@ -24,7 +24,7 @@ try:
 except ImportError:
     yaml = None
 
-DEFAULT_PROFILE = "~/.hermes/profiles/indigo"
+DEFAULT_PROFILE = os.path.expanduser("~/.hermes/profiles/indigo")
 
 
 def load_config(profile):

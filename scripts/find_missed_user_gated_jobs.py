@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import os
 """Escalation-loop missed-enrollment probe.
 
 Loads the profile jobs.json, finds every ENABLED job currently in error state
@@ -24,9 +25,9 @@ Run: python3 ~/.hermes/profiles/indigo/skills/ocas-custodian/scripts/find_missed
 """
 import json
 
-JOBS_PATH = "~/.hermes/profiles/indigo/cron/jobs.json"
+JOBS_PATH = os.path.expanduser("~/.hermes/profiles/indigo/cron/jobs.json")
 ISSUES_PATHS = [
-    "~/.hermes/profiles/indigo/commons/data/ocas-custodian/issues.jsonl",
+    os.path.expanduser("~/.hermes/profiles/indigo/commons/data/ocas-custodian/issues.jsonl"),
 ]
 
 # (fingerprint, recommended_issue_id, match-substrings in last_error)
@@ -183,7 +184,7 @@ if __name__ == "__main__":
     )
     ap.add_argument("--profile", default="indigo", help="Profile name")
     args = ap.parse_args()
-    HOME = f"~/.hermes/profiles/{args.profile}"
+    HOME = fos.path.expanduser("~/.hermes/profiles/{args.profile}")
     JOBS_PATH = f"{HOME}/cron/jobs.json"
     ISSUES_PATHS[:] = [f"{HOME}/commons/data/ocas-custodian/issues.jsonl"]
     main()

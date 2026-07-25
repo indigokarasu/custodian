@@ -24,7 +24,7 @@ logic.
 STATE_SRC="<hermes-home>/state.db"
 STATE_REAL=$(readlink -f "$STATE_SRC" 2>/dev/null || echo "$STATE_SRC")
 STATE_SIZE=$(stat -L -c%s "$STATE_REAL" 2>/dev/null || echo 0)   # -L follows symlink
-AVAIL=$(df --output=avail -B1 /root 2>/dev/null | tail -1 | tr -d ' ')
+AVAIL=$(df --output=avail -B1 <fs-root> 2>/dev/null | tail -1 | tr -d ' ')
 if [ -n "$AVAIL" ] && [ "$STATE_SIZE" -gt 0 ] && [ "$AVAIL" -gt $((STATE_SIZE * 11 / 10)) ]; then
     cp "$STATE_SRC" "$BACKUP_DIR/state.db"
 else
@@ -47,7 +47,7 @@ After push, confirm objects actually landed on the remote:
 ```bash
 cd <fs-root>/indigo-repo && git lfs push --dry-run origin main   # empty output = all on remote
 git lfs ls-files | grep -E 'chronicle|chroma|mempalace|transactions|styx'
-df -h /root   # should not be at 100%
+df -h <fs-root>   # should not be at 100%
 ```
 
 ## Why this lives in the backup skill
@@ -59,7 +59,7 @@ Disk was at 100% → 91% after the space-aware skip + partial cleanup.
 ## Reproduction recipe
 ```bash
 # Force the trap: a guard using bare stat on the symlink
-AVAIL=$(df --output=avail -B1 /root | tail -1 | tr -d ' ')
+AVAIL=$(df --output=avail -B1 <fs-root> | tail -1 | tr -d ' ')
 S_BAD=$(stat -c%s <hermes-home>/state.db)        # -> 38 (symlink length), NOT 12G
 [ "$S_BAD" -gt 0 ] && [ "$AVAIL" -gt $((S_BAD*11/10)) ] && echo "WOULD COPY (WRONG)"
 # Correct:
