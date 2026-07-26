@@ -17,11 +17,7 @@ Terminal tool sessions can cache file reads. `terminal(command='python3 -c "..."
 ```bash
 # Method 1: Direct grep for null-value keys at column 0
 python3 -c "
-<<<<<<< Updated upstream
 with open('<hermes-home>/profiles/<profile>/config.yaml') as f:
-=======
-with open('~/.hermes/profiles/<profile>/config.yaml') as f:
->>>>>>> Stashed changes
     for i, line in enumerate(f, 1):
         if line[0] not in (' ', '\t', '#', '\n', '-'):
             stripped = line.rstrip()
@@ -30,13 +26,8 @@ with open('~/.hermes/profiles/<profile>/config.yaml') as f:
 "
 
 # Method 2: If PyYAML says None, confirm with sed
-<<<<<<< Updated upstream
 sed -n '/^fallback_model:/p' <hermes-home>/profiles/<profile>/config.yaml
 sed -n '/^max_concurrent_sessions:/p' <hermes-home>/profiles/<profile>/config.yaml
-=======
-sed -n '/^fallback_model:/p' ~/.hermes/profiles/<profile>/config.yaml
-sed -n '/^max_concurrent_sessions:/p' ~/.hermes/profiles/<profile>/config.yaml
->>>>>>> Stashed changes
 ```
 
 **If PyYAML and raw file disagree, raw file is authoritative.** Do NOT apply config fixes based solely on PyYAML output in cron/scheduled contexts.

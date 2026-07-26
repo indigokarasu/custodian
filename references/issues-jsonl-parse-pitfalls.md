@@ -72,11 +72,7 @@ Mode C implementation above.
 ## Mode D — indigo profile uses per-line JSON; inline brace-depth parsers emit PHANTOM EMPTIES (2026-07-13)
 
 The indigo deployment's issues file at
-<<<<<<< Updated upstream
 `<hermes-home>/profiles/indigo/commons/data/ocas-custodian/issues.jsonl`
-=======
-`~/.hermes/profiles/indigo/commons/data/ocas-custodian/issues.jsonl`
->>>>>>> Stashed changes
 is **newline-delimited**: exactly one JSON object per line, NO concatenation.
 
 A hand-rolled brace-depth parser (even a whole-file variant that resets at the
@@ -138,10 +134,6 @@ def find_null_keys(d, path=""):
         for i, v in enumerate(d):
             out += find_null_keys(v, f"{path}[{i}]")
     return out
-<<<<<<< Updated upstream
 # cfg = yaml.safe_load(open("<hermes-home>/profiles/indigo/config.yaml"))
-=======
-# cfg = yaml.safe_load(open("~/.hermes/profiles/indigo/config.yaml"))
->>>>>>> Stashed changes
 # nulls = find_null_keys(cfg)
 ```

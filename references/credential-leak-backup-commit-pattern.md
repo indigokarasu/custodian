@@ -8,11 +8,7 @@
 
 ## Root Cause
 
-<<<<<<< Updated upstream
 A backup cron job (`<hermes-home>/scripts/backup_hermes_config.py` or similar) commits the entire Hermes config directory to a git repo, including live credential files:
-=======
-A backup cron job (`~/.hermes/scripts/backup_hermes_config.py` or similar) commits the entire Hermes config directory to a git repo, including live credential files:
->>>>>>> Stashed changes
 
 | File | Credentials Exposed |
 |------|---------------------|
@@ -25,11 +21,7 @@ A backup cron job (`~/.hermes/scripts/backup_hermes_config.py` or similar) commi
 ## Detection
 
 - **GitGuardian** monitors the private repo and detects "Generic High Entropy Secret"
-<<<<<<< Updated upstream
 - **Security monitor cron** (`<hermes-home>/scripts/security_monitor.py`) polls Gmail for GitGuardian alerts
-=======
-- **Security monitor cron** (`~/.hermes/scripts/security_monitor.py`) polls Gmail for GitGuardian alerts
->>>>>>> Stashed changes
 - Classified as **LOW** by keyword-based severity (no "secret leak"/"exposed credential" in subject) but **actual severity: HIGH** — real production credentials in git history
 
 ## Fix Pattern

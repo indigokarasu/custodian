@@ -2,11 +2,7 @@
 
 ## The trap
 Every `last_run_at` / `next_run_at` in the profile `jobs.json`
-<<<<<<< Updated upstream
 (`<hermes-home>/profiles/<profile>/cron/jobs.json`) carries an EXPLICIT
-=======
-(`~/.hermes/profiles/<profile>/cron/jobs.json`) carries an EXPLICIT
->>>>>>> Stashed changes
 UTC offset, e.g.:
 
     "next_run_at": "2026-07-08T06:02:33.579453-07:00",

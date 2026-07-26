@@ -4,27 +4,16 @@
 
 ## Diagnosis
 
-<<<<<<< Updated upstream
 When `no_agent: true`, the `script` field is treated as a literal file path. The Hermes security model resolves relative paths against `$HERMES_HOME/scripts/`. Under a profile, `HERMES_HOME=<hermes-home>/profiles/<profile>`, so the job looks for the script at:
 
 ```
 <hermes-home>/profiles/<profile>/scripts/<basename>
-=======
-When `no_agent: true`, the `script` field is treated as a literal file path. The Hermes security model resolves relative paths against `$HERMES_HOME/scripts/`. Under a profile, `HERMES_HOME=~/.hermes/profiles/<profile>`, so the job looks for the script at:
-
-```
-~/.hermes/profiles/<profile>/scripts/<basename>
->>>>>>> Stashed changes
 ```
 
 But many scripts are installed to the shared scripts directory:
 
 ```
-<<<<<<< Updated upstream
 <hermes-home>/scripts/<basename>
-=======
-~/.hermes/scripts/<basename>
->>>>>>> Stashed changes
 ```
 
 This produces "Script not found" even though the script exists and is executable at the system path.
@@ -35,21 +24,13 @@ This produces "Script not found" even though the script exists and is executable
 |---------|-------------|----------------------|-----|
 | `oc_cron_script_not_found_transient` | "Script not found: /path/script.py" | Points to the exact path that exists | Transient (race), no fix needed |
 | `oc_cron_no_agent_script_args` | "Script not found: /path/foo.py --flag" | Contains embedded arguments | Wrapper script |
-<<<<<<< Updated upstream
 | **`oc_no_agent_script_path_mismatch`** | "Script not found: /profile/scripts/name.py" | Basename only, exists at `<hermes-home>/scripts/name.py` | **Symlink or copy** |
-=======
-| **`oc_no_agent_script_path_mismatch`** | "Script not found: /profile/scripts/name.py" | Basename only, exists at `~/.hermes/scripts/name.py` | **Symlink or copy** |
->>>>>>> Stashed changes
 
 ## Detection
 
 ```bash
 # Find no_agent jobs with "Script not found" where the script exists elsewhere
-<<<<<<< Updated upstream
 cat <hermes-home>/profiles/<profile>/cron/jobs.json | python3 -c "
-=======
-cat ~/.hermes/profiles/<profile>/cron/jobs.json | python3 -c "
->>>>>>> Stashed changes
 import json, sys, os
 data = json.load(sys.stdin)
 jobs = data.get('jobs', []) if isinstance(data, dict) else data
@@ -71,13 +52,8 @@ for j in jobs:
     print(f\"  Error path: {err_path}\")
     print(f\"  Script field: {script}\")
     # Check if script exists at system path
-<<<<<<< Updated upstream
     sys_path = f'<hermes-home>/scripts/{script}'
     prof_path = f'<hermes-home>/profiles/<profile>/scripts/{script}'
-=======
-    sys_path = f'~/.hermes/scripts/{script}'
-    prof_path = f'~/.hermes/profiles/<profile>/scripts/{script}'
->>>>>>> Stashed changes
     print(f\"  Exists at system path: {os.path.exists(sys_path)}\")
     print(f\"  Exists at profile path: {os.path.exists(prof_path)}\")
 "
@@ -88,22 +64,13 @@ for j in jobs:
 Create a symlink from the profile scripts dir to the system scripts dir:
 
 ```bash
-<<<<<<< Updated upstream
 mkdir -p <hermes-home>/profiles/<profile>/scripts/
 ln -sf <hermes-home>/scripts/<basename> <hermes-home>/profiles/<profile>/scripts/<basename>
-=======
-mkdir -p ~/.hermes/profiles/<profile>/scripts/
-ln -sf ~/.hermes/scripts/<basename> ~/.hermes/profiles/<profile>/scripts/<basename>
->>>>>>> Stashed changes
 ```
 
 Verify:
 ```bash
-<<<<<<< Updated upstream
 test -f <hermes-home>/profiles/<profile>/scripts/<basename> && echo "OK" || echo "BROKEN"
-=======
-test -f ~/.hermes/profiles/<profile>/scripts/<basename> && echo "OK" || echo "BROKEN"
->>>>>>> Stashed changes
 ```
 
 ## Post-Fix Verification (Required)
@@ -112,28 +79,17 @@ After creating the symlink, verify the script actually resolves and runs:
 
 ```bash
 # 1. Confirm symlink resolves to a real file
-<<<<<<< Updated upstream
 test -f <hermes-home>/profiles/<profile>/scripts/<basename> && echo "OK" || echo "BROKEN"
 
 # 2. Run the script directly to confirm exit code 0
 python3 <hermes-home>/profiles/<profile>/scripts/<basename> 2>&1 | tail -5
-=======
-test -f ~/.hermes/profiles/<profile>/scripts/<basename> && echo "OK" || echo "BROKEN"
-
-# 2. Run the script directly to confirm exit code 0
-python3 ~/.hermes/profiles/<profile>/scripts/<basename> 2>&1 | tail -5
->>>>>>> Stashed changes
 echo "EXIT: $?"
 ```
 
 If the script fails (e.g., import errors):
 ```bash
 # Run directly with python3 and check stderr
-<<<<<<< Updated upstream
 python3 <hermes-home>/profiles/<profile>/scripts/<basename>
-=======
-python3 ~/.hermes/profiles/<profile>/scripts/<basename>
->>>>>>> Stashed changes
 ```
 
 ### Stale Error After Fix

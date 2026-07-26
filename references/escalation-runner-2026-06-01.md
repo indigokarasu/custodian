@@ -55,19 +55,11 @@ MCP servers are **spawned on-demand by the gateway**, not persistent daemons. Wh
 
 When a job is paused with `last_status: error` and the error is a transient provider issue (HTTP 429, 502, 503), re-enable it. The system auto-pauses jobs on rate limits, but these self-resolve.
 
-<<<<<<< Updated upstream
 **jobs.json location:** `<hermes-home>/cron/jobs.json` (NOT `<hermes-home>/jobs.json`). Always use this path.
 
 ```python
 # In terminal() heredoc for cron mode
 jobs_path = Path('<hermes-home>/cron/jobs.json')
-=======
-**jobs.json location:** `~/.hermes/cron/jobs.json` (NOT `~/.hermes/jobs.json`). Always use this path.
-
-```python
-# In terminal() heredoc for cron mode
-jobs_path = Path('~/.hermes/cron/jobs.json')
->>>>>>> Stashed changes
 data = json.loads(jobs_path.read_text())
 jobs = data if isinstance(data, list) else data.get('jobs', [])
 for job in jobs:
@@ -92,17 +84,10 @@ jobs_path.write_text(json.dumps(data, indent=2, default=str))
 
 ### `email_check.py` — auth status (updated 2026-06-01)
 
-<<<<<<< Updated upstream
 The script at `<hermes-home>/scripts/email_check.py` imports `get_gmail_service` from `google_auth_mcp`. The import works correctly.
 
 The **primary** failure mode is `invalid_grant` (token revoked). Two token stores exist:
 - `<hermes-home>/google_token.json` (client: `550801240087...`) — NOT used by email_check.py
-=======
-The script at `~/.hermes/scripts/email_check.py` imports `get_gmail_service` from `google_auth_mcp`. The import works correctly.
-
-The **primary** failure mode is `invalid_grant` (token revoked). Two token stores exist:
-- `~/.hermes/google_token.json` (client: `550801240087...`) — NOT used by email_check.py
->>>>>>> Stashed changes
 - `<gworkspace-creds>/credentials/<user-google-email>.json` (client: `112292610034...`) — **this is what email_check.py reads**
 
 When diagnosing, test the MCP credentials directly (not google_token.json). When both stores have revoked tokens, no local recovery is possible — requires user re-auth.
@@ -123,11 +108,7 @@ import json
 from pathlib import Path
 from datetime import datetime, timezone
 
-<<<<<<< Updated upstream
 issues_path = Path('<hermes-home>/commons/data/ocas-custodian/issues.jsonl')
-=======
-issues_path = Path('~/.hermes/commons/data/ocas-custodian/issues.jsonl')
->>>>>>> Stashed changes
 issues = [json.loads(l) for l in issues_path.read_text().strip().split('\\n') if l.strip()]
 
 # ... modify issues ...

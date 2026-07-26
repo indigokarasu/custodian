@@ -7,29 +7,17 @@ Open issues with `escalation_needed: true` accumulate in **multiple** `issues.js
 ## All Known Paths (check every one)
 
 ```
-<<<<<<< Updated upstream
 <hermes-home>/commons/journals/ocas-custodian/issues.jsonl
 <hermes-home>/profiles/indigo/commons/journals/ocas-custodian/issues.jsonl
 <hermes-home>/profiles/indigo/commons/data/custodian/issues.jsonl
 <hermes-home>/profiles/indigo/commons/data/ocas-custodian/issues.jsonl
 <hermes-home>/profiles/indigo/commons/ocas-custodian/issues.jsonl
-=======
-~/.hermes/commons/journals/ocas-custodian/issues.jsonl
-~/.hermes/profiles/indigo/commons/journals/ocas-custodian/issues.jsonl
-~/.hermes/profiles/indigo/commons/data/custodian/issues.jsonl
-~/.hermes/profiles/indigo/commons/data/ocas-custodian/issues.jsonl
-~/.hermes/profiles/indigo/commons/ocas-custodian/issues.jsonl
->>>>>>> Stashed changes
 ```
 
 ## Discovery Pattern
 
 ```bash
-<<<<<<< Updated upstream
 find <hermes-home> -name "issues.jsonl" 2>/dev/null | while read f; do
-=======
-find ~/.hermes -name "issues.jsonl" 2>/dev/null | while read f; do
->>>>>>> Stashed changes
     grep '"escalation_needed": true' "$f" | grep -v '"status": "resolved"'
 done
 ```
@@ -98,11 +86,7 @@ if d.get('status') == 'resolved' and d.get('escalation_needed') == True:
 
 ## Corvus Proposal Staleness (2026-06-15)
 
-<<<<<<< Updated upstream
 Corvus writes InsightProposals to `<hermes-home>/proposals/` and `<hermes-home>/profiles/indigo/commons/data/ocas-corvus/proposals/`. These proposals can flag issues that **custodian has already resolved** by the time the escalation runner sees them. Example: `prop-mcp-server-files-missing-0615` proposed action on 4 MCP servers (instagram, pdsx, spotify, threads), but custodian had already verified all 4 were `enabled: false` in config.yaml.
-=======
-Corvus writes InsightProposals to `~/.hermes/proposals/` and `~/.hermes/profiles/indigo/commons/data/ocas-corvus/proposals/`. These proposals can flag issues that **custodian has already resolved** by the time the escalation runner sees them. Example: `prop-mcp-server-files-missing-0615` proposed action on 4 MCP servers (instagram, pdsx, spotify, threads), but custodian had already verified all 4 were `enabled: false` in config.yaml.
->>>>>>> Stashed changes
 
 **Before acting on any Corvus proposal:**
 1. Check the current live state independently (e.g., `grep "enabled:" config.yaml` for MCP servers)
@@ -111,11 +95,7 @@ Corvus writes InsightProposals to `~/.hermes/proposals/` and `~/.hermes/profiles
 
 ## Workflow
 
-<<<<<<< Updated upstream
 1. `find <hermes-home> -name "issues.jsonl"` — discover all paths
-=======
-1. `find ~/.hermes -name "issues.jsonl"` — discover all paths
->>>>>>> Stashed changes
 2. Parse each with the brace-depth parser (not naive `json.loads`)
 3. Extract open issues; check `escalation_needed` flag independently of status
 4. Deduplicate by root cause (compare descriptions, not issue_id)

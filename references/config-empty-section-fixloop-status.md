@@ -4,13 +4,8 @@ The `oc_config_empty_section` fix-loop has been the single most recurring issue 
 
 ## Current Status: ACTIVE / DORMANT CYCLE (2026-06-28)
 
-<<<<<<< Updated upstream
 - Main config (`<hermes-home>/config.yaml`): **CLEAN** after 2026-06-28 deep scan
 - the agent profile config (`<hermes-home>/profiles/indigo/config.yaml`): **CLEAN**
-=======
-- Main config (`~/.hermes/config.yaml`): **CLEAN** after 2026-06-28 deep scan
-- the agent profile config (`~/.hermes/profiles/indigo/config.yaml`): **CLEAN**
->>>>>>> Stashed changes
 - Last fix applied: 2026-06-28 (8th occurrence — 3 null keys removed via PyYAML)
 - **Pattern B RCA says null keys regenerate on gateway restart**
 
@@ -51,11 +46,7 @@ Gateway config migration or startup template regenerates null keys on restart. T
 
 ## Fix Protocol
 
-<<<<<<< Updated upstream
 1. **Diagnose**: `grep -nE ': ($|null$)' <hermes-home>/config.yaml <hermes-home>/profiles/*/config.yaml`
-=======
-1. **Diagnose**: `grep -nE ': ($|null$)' ~/.hermes/config.yaml ~/.hermes/profiles/*/config.yaml`
->>>>>>> Stashed changes
 2. **Verify with PyYAML**: `yaml.safe_load` + recursive null-key detection (catches both `key: null` and `key:` forms)
 3. **Remove**: Use PyYAML `del config[key]` (preferred) or sed with pitfall awareness
 4. **Verify-after**: Re-run grep to confirm all null keys gone from BOTH files

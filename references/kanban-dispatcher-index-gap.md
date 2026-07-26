@@ -38,11 +38,7 @@ Connect to the kanban DB and create missing indexes:
 
 ```python
 import sqlite3
-<<<<<<< Updated upstream
 conn = sqlite3.connect('<hermes-home>/kanban.db')
-=======
-conn = sqlite3.connect('~/.hermes/kanban.db')
->>>>>>> Stashed changes
 conn.execute("CREATE INDEX IF NOT EXISTS idx_tasks_session_id ON tasks(session_id)")
 conn.execute("CREATE INDEX IF NOT EXISTS idx_tasks_idempotency ON tasks(idempotency_key)")
 conn.execute("CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status)")
@@ -57,17 +53,10 @@ After creating indexes, restart the gateway or wait for the next natural restart
 
 ```bash
 # Check indexes exist
-<<<<<<< Updated upstream
 sqlite3 <hermes-home>/kanban.db "SELECT name FROM sqlite_master WHERE type='index' AND tbl_name='tasks'"
 
 # Check for new errors after gateway restart
 strings <hermes-home>/logs/gateway.log | grep "kanban dispatcher: tick failed" | tail -5
-=======
-sqlite3 ~/.hermes/kanban.db "SELECT name FROM sqlite_master WHERE type='index' AND tbl_name='tasks'"
-
-# Check for new errors after gateway restart
-strings ~/.hermes/logs/gateway.log | grep "kanban dispatcher: tick failed" | tail -5
->>>>>>> Stashed changes
 ```
 
 ## Long-Term Fix (Code Level)

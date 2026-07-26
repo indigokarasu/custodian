@@ -48,11 +48,7 @@ Multiple code paths write journals with different path construction:
 
 ```python
 import os, glob
-<<<<<<< Updated upstream
 journals_dir = "<hermes-home>/profiles/indigo/commons/journals/ocas-custodian"
-=======
-journals_dir = "~/.hermes/profiles/indigo/commons/journals/ocas-custodian"
->>>>>>> Stashed changes
 
 # Check all three locations
 canonical_dirs = sorted(glob.glob(f"{journals_dir}/2026-??-??/"))

@@ -53,11 +53,7 @@ All Tier 1 fixes defined in `references/known_issues.json`. Read at start of eve
 | `oc_http_429_concurrent` | Stagger cron schedules: offset each job's start minute so they fire sequentially instead of simultaneously. See Cron Schedule Staggering procedure in Escalation Runner section. |
 | `oc_vision_model_incompatible` | Set `auxiliary.vision.provider` from `auto` to the explicit provider that hosts the vision model (e.g., `openrouter`) |
 | `oc_http_401_nous_api_key` | Set `auxiliary.{task}.provider: openrouter` in config.yaml (bypass expired Nous credential) |
-<<<<<<< Updated upstream
 | `oc_google_oauth_refresh_400` | Google OAuth tokens are managed by the MCP server and the central `google_auth.py` helper. If tokens fail, re-authorize via `python3 <hermes-home>/skills/infrastructure/google-workspace-auth/scripts/google_oauth_init.py` — do NOT look for a `refresh_google_tokens.py` script (it does not exist). |
-=======
-| `oc_google_oauth_refresh_400` | Google OAuth tokens are managed by the MCP server and the central `google_auth.py` helper. If tokens fail, re-authorize via `python3 ~/.hermes/skills/infrastructure/google-workspace-auth/scripts/google_oauth_init.py` — do NOT look for a `refresh_google_tokens.py` script (it does not exist). |
->>>>>>> Stashed changes
 | `oc_cron_next_run_at_none` | Pause and resume the job via `hermes cron pause <id>` then `hermes cron resume <id>` to force scheduler recalculation |
 | `oc_cron_stale_empty_error` | Pause and resume the job via `hermes cron pause <id>` then `hermes cron resume <id>`. Triggered when `status=error` but `last_error` is empty/null and `consecutive_failures=0` — indicates a stale error state from a previous transient failure. |
 | `oc_kanban_dispatcher_stuck` | Kanban dispatcher reports "ready queue non-empty for N consecutive ticks but 0 workers spawned". Correlated with gateway mass-restarts. Tier 2 — monitor, investigate if >=15 ticks. See `references/kanban-dispatcher-stuck-pattern.md`. |

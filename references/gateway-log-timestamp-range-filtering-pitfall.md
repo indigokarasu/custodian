@@ -33,11 +33,7 @@ new errors. The errors were all pre-cutoff stale traceback tails.
 ## Correct pattern (use this, never naive awk range)
 ```python
 import re
-<<<<<<< Updated upstream
 LOG = "<hermes-home>/profiles/indigo/logs/gateway.log"
-=======
-LOG = "~/.hermes/profiles/indigo/logs/gateway.log"
->>>>>>> Stashed changes
 cut = ("2026-07-14", "08:08:11")   # (date, time) tuple, compared lexicographically
 cnt = 0
 for ln in open(LOG, errors="replace"):
@@ -97,11 +93,7 @@ transient read-path error) across 7 cron jobs — all already self-recovered (`l
 3. Convert the `last_scan_utc` … `now_utc` window into the log's local zone, then grep that
    range. Concrete recipe used 2026-07-17 (local `-07:00`):
    ```bash
-<<<<<<< Updated upstream
    cd <hermes-home>/profiles/indigo/logs
-=======
-   cd ~/.hermes/profiles/indigo/logs
->>>>>>> Stashed changes
    # WRONG (UTC window, false 0):
    grep -E "^2026-07-17 (0[2-9]|1[0-9]|2[0-3]):" errors.log | grep -iE "ERROR|Traceback" | wc -l
    # RIGHT (local -07:00 window):

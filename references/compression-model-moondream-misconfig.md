@@ -23,11 +23,7 @@ that block's `model` is typically correct. **Read the TOP-LEVEL `compression:` b
 ## Diagnostic (execute_code is blocked in cron — use terminal + /tmp script)
 ```python
 import os, re
-<<<<<<< Updated upstream
 for cfg in ["<hermes-home>/profiles/indigo/config.yaml", "<hermes-home>/config.yaml"]:
-=======
-for cfg in ["~/.hermes/profiles/indigo/config.yaml", "~/.hermes/config.yaml"]:
->>>>>>> Stashed changes
     if not os.path.exists(cfg): continue
     txt = open(cfg).read()
     for ln in txt.splitlines():
@@ -51,11 +47,7 @@ writing an issue or editing `config.yaml`:
 
 ```python
 import re
-<<<<<<< Updated upstream
 LOG = "<hermes-home>/profiles/indigo/logs/gateway.log"
-=======
-LOG = "~/.hermes/profiles/indigo/logs/gateway.log"
->>>>>>> Stashed changes
 lines = open(LOG, errors="replace").readlines()
 last_ts = None; last_err = None
 for ln in lines:

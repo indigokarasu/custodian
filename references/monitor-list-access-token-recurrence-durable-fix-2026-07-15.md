@@ -15,11 +15,7 @@ The upstream Google Workspace MCP credential store periodically REWRITES the cre
 1. **Immediate (non-interactive, no <operator> re-auth):** `refresh_token()` in tasks_monitor.py POSTs to `https://oauth2.googleapis.com/token` using the valid `refresh_token` + `client_secret`. It mints a fresh `access_token` and writes it back. Reuse the module's own function:
    ```python
    import importlib.util
-<<<<<<< Updated upstream
    spec = importlib.util.spec_from_file_location("tm", "<hermes-home>/profiles/indigo/skills/ocas-tasks/scripts/tasks_monitor.py")
-=======
-   spec = importlib.util.spec_from_file_location("tm", "~/.hermes/profiles/indigo/skills/ocas-tasks/scripts/tasks_monitor.py")
->>>>>>> Stashed changes
    mod = importlib.util.module_from_spec(spec); spec.loader.exec_module(mod)
    mod.refresh_token(mod.load_creds())
    ```
