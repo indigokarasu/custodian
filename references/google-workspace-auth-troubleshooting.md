@@ -13,13 +13,8 @@ The `workspace-mcp` server (v1.20.4) at `/usr/local/bin/workspace-mcp`:
 
 Each account uses its OWN OAuth client in its OWN Google Cloud project (both in Testing mode):
 
-<<<<<<< Updated upstream
-- **the agent**: client `550801240087-vmc47b1gflj2biblqdr6bkekl7qqm8ls`, creds at `<gworkspace-creds>/credentials/<third-party-or-user-email>.json`
-- **<operator>**: client `112292610034-1revbmnkves56ago2c2t5dul5mj9bc17`, creds at `<gworkspace-creds>/credentials/<user-google-email>.json`
-=======
 - **the agent**: client `550801240087-vmc47b1gflj2biblqdr6bkekl7qqm8ls`, creds at `<gworkspace-creds>/credentials/<agent-email>.json`
 - **<operator>**: client `112292610034-1revbmnkves56ago2c2t5dul5mj9bc17`, creds at `<gworkspace-creds>/credentials/<user-google-email>.json`
->>>>>>> Stashed changes
 
 Both files must have all 41 scopes pre-populated. The MCP checks stored scopes against required scopes — if any are missing, it triggers a re-auth loop.
 
@@ -55,11 +50,7 @@ Both files must have all 41 scopes pre-populated. The MCP checks stored scopes a
 
 ## Scripts
 
-<<<<<<< Updated upstream
 The old reauth scripts (`google_reauth_url.py`, `google_oauth_finish.py`) have been removed from `<hermes-home>/scripts/`. They are no longer needed — the MCP server handles OAuth flows directly. Credentials are stored at `<gworkspace-creds>/credentials/<email>.json`. To re-authorize, generate an auth URL using the correct client_id for each account (see Critical Rules above) and complete the OAuth flow in browser.
-=======
-The old reauth scripts (`google_reauth_url.py`, `google_oauth_finish.py`) have been removed from `~/.hermes/scripts/`. They are no longer needed — the MCP server handles OAuth flows directly. Credentials are stored at `<gworkspace-creds>/credentials/<email>.json`. To re-authorize, generate an auth URL using the correct client_id for each account (see Critical Rules above) and complete the OAuth flow in browser.
->>>>>>> Stashed changes
 
 ## Common Errors
 

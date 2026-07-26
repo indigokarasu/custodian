@@ -38,11 +38,7 @@ rm -rf <fs-root>/.cache/{uv,pnpm,chroma,typescript,mesa_shader_cache,pipx,mozill
 
 ## Rules
 
-<<<<<<< Updated upstream
 1. **Never clear `<hermes-home>`** without explicit user instruction.
-=======
-1. **Never clear `~/.hermes`** without explicit user instruction.
->>>>>>> Stashed changes
 2. **Never clear Docker images** if running containers are critical.
 3. **Never clear system binaries** (Chrome, CUDA libraries).
 4. **Always verify** with `df -h /` after cleanup.
@@ -61,10 +57,5 @@ Custodian's own `custodian:update` job can generate 14GB+ in state snapshots.
 Check and prune old snapshots when disk >80%:
 ```bash
 # Remove snapshots older than 7 days
-<<<<<<< Updated upstream
 find <hermes-home>/state-snapshots -name "*.json.gz" -mtime +7 -delete
 ```
-=======
-find ~/.hermes/state-snapshots -name "*.json.gz" -mtime +7 -delete
-```
->>>>>>> Stashed changes

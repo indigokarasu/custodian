@@ -36,11 +36,7 @@ the root cause is upstream of the container, not the container itself.
      (`len(results) == 0`), so probe the real endpoint (e.g.
      `GET /search?q=test&format=json`) and count the returned results.
 2. Check the job's recent run history BEFORE classifying:
-<<<<<<< Updated upstream
    - `ls -t <hermes-home>/profiles/<profile>/cron/output/<job_id>/` — if the
-=======
-   - `ls -t ~/.hermes/profiles/<profile>/cron/output/<job_id>/` — if the
->>>>>>> Stashed changes
      monitor was **silent/healthy (empty output) minutes before** the failed
      run, the current failure is a **transient blip, not a persistent crash
      loop**. A persistent upstream-degraded fault shows failures across

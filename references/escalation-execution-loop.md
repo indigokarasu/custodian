@@ -18,13 +18,8 @@ Confirmed working procedure (2026-07-07 escalation loop run):
      don't just re-pause. Both directions are real; never trust the issue flag alone.
 
 2. **Load issues from the PROFILE `issues.jsonl`** —
-<<<<<<< Updated upstream
    `<hermes-home>/profiles/<profile>/commons/data/ocas-custodian/issues.jsonl`. It is
    authoritative. The commons copy (`<hermes-home>/commons/data/ocas-custodian/issues.jsonl`)
-=======
-   `~/.hermes/profiles/<profile>/commons/data/ocas-custodian/issues.jsonl`. It is
-   authoritative. The commons copy (`~/.hermes/commons/data/ocas-custodian/issues.jsonl`)
->>>>>>> Stashed changes
    is a lagging sync target — **write only to the profile path**. Entries may be concatenated on
    a single line; use a brace-depth parser (see `scripts/parse_issues_jsonl.py` or the template
    below).
@@ -325,11 +320,7 @@ manually)`. Do NOT default UNKNOWN to transient — inspect each one. For `no_ag
 `Script exited with code 1` and no captured stderr:
 
 1. Pull the job's `script` field from `jobs.json` (literal path / bare basename).
-<<<<<<< Updated upstream
 2. Locate it: `find <hermes-home> -name "<script>.py"`.
-=======
-2. Locate it: `find ~/.hermes -name "<script>.py"`.
->>>>>>> Stashed changes
 3. **If the `script` is a `.sh` wrapper** (auto-generated no-agent wrapper), run the WRAPPER
    itself, not just the inner python — `timeout 120 bash <path-to-wrapper.sh>`. Confirmed
    2026-07-14: `rally:daily-activity-check` stored `"Script exited with code 1"` but running
@@ -365,11 +356,7 @@ no pipe-to-interpreter).
 import json, os
 from datetime import datetime, timezone
 
-<<<<<<< Updated upstream
 P = "<hermes-home>/profiles/indigo/commons/data/ocas-custodian/issues.jsonl"
-=======
-P = "~/.hermes/profiles/indigo/commons/data/ocas-custodian/issues.jsonl"
->>>>>>> Stashed changes
 NOW = datetime.now(timezone.utc).isoformat()
 
 def parse_line(line):

@@ -11,11 +11,7 @@ This addendum extends the custodian's cron health checks to catch Rally-specific
 **How to check:**
 ```bash
 # Read latest portfolio state
-<<<<<<< Updated upstream
 tail -1 <hermes-home>/profiles/indigo/commons/data/ocas-rally/portfolio_state.jsonl | python3 -c "import sys,json; d=json.load(sys.stdin); print(f'Cash: {d[\"cash_pct\"]:.1%}')"
-=======
-tail -1 ~/.hermes/profiles/indigo/commons/data/ocas-rally/portfolio_state.jsonl | python3 -c "import sys,json; d=json.load(sys.stdin); print(f'Cash: {d[\"cash_pct\"]:.1%}')"
->>>>>>> Stashed changes
 ```
 
 **Alert threshold:** `cash_pct > 0.15` → flag as `warning`. `cash_pct > 0.50` → flag as `critical`.
@@ -32,11 +28,7 @@ python3 -c "
 import json
 from datetime import datetime, timezone, timedelta
 cutoff = datetime.now(timezone.utc) - timedelta(hours=24)
-<<<<<<< Updated upstream
 with open('<hermes-home>/profiles/indigo/commons/data/ocas-rally/pending_actions.jsonl') as f:
-=======
-with open('~/.hermes/profiles/indigo/commons/data/ocas-rally/pending_actions.jsonl') as f:
->>>>>>> Stashed changes
     for line in f:
         a = json.loads(line.strip())
         if a.get('status') == 'staged':
@@ -54,11 +46,7 @@ with open('~/.hermes/profiles/indigo/commons/data/ocas-rally/pending_actions.jso
 
 **How to check:**
 ```bash
-<<<<<<< Updated upstream
 ls -lt <hermes-home>/profiles/indigo/commons/journals/ocas-rally/2026-06-17/ 2>/dev/null | head -3
-=======
-ls -lt ~/.hermes/profiles/indigo/commons/journals/ocas-rally/2026-06-17/ 2>/dev/null | head -3
->>>>>>> Stashed changes
 ```
 
 **Alert threshold:** No research journal from today (on a weekday) → flag as `warning`.

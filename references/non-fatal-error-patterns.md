@@ -89,11 +89,7 @@ These patterns are detected during scans but are NOT auto-fixed. They are logged
 
 | Fingerprint | Description | Action |
 |---|---|---|
-<<<<<<< Updated upstream
 | `oc_gateway_duplicate_systemd_service` | "Another gateway instance is already running" errors at very high frequency (1000+/day) caused by a **duplicate systemd service** (`hermes-gateway.service` without `--profile`) in an auto-restart crash loop. The indigo profile gateway (`hermes-gateway-indigo.service`) runs fine. The default profile gateway has `Restart=always`, `RestartSec=5`, `StartLimitIntervalSec=0` and fails because the indigo gateway holds the PID file. **Diagnostic**: `systemctl --user status hermes-gateway.service` shows `activating (auto-restart)`. `systemctl --user status hermes-gateway-indigo.service` shows `active (running)`. The two services use different `HERMES_HOME` values (`<hermes-home>` vs `<hermes-home>/profiles/indigo`). **Fix**: `systemctl --user stop hermes-gateway.service && systemctl --user disable hermes-gateway.service`. Cannot auto-fix in cron: disabling a systemd service requires user confirmation per safety envelope. | Surface in report with occurrence count and the specific fix command. Escalate as Tier 2 — requires user confirmation to disable the duplicate service. |
-=======
-| `oc_gateway_duplicate_systemd_service` | "Another gateway instance is already running" errors at very high frequency (1000+/day) caused by a **duplicate systemd service** (`hermes-gateway.service` without `--profile`) in an auto-restart crash loop. The indigo profile gateway (`hermes-gateway-indigo.service`) runs fine. The default profile gateway has `Restart=always`, `RestartSec=5`, `StartLimitIntervalSec=0` and fails because the indigo gateway holds the PID file. **Diagnostic**: `systemctl --user status hermes-gateway.service` shows `activating (auto-restart)`. `systemctl --user status hermes-gateway-indigo.service` shows `active (running)`. The two services use different `HERMES_HOME` values (`~/.hermes` vs `~/.hermes/profiles/indigo`). **Fix**: `systemctl --user stop hermes-gateway.service && systemctl --user disable hermes-gateway.service`. Cannot auto-fix in cron: disabling a systemd service requires user confirmation per safety envelope. | Surface in report with occurrence count and the specific fix command. Escalate as Tier 2 — requires user confirmation to disable the duplicate service. |
->>>>>>> Stashed changes
 
 ## Skill Name Mismatch
 
@@ -111,11 +107,7 @@ These patterns are detected during scans but are NOT auto-fixed. They are logged
 
 | Fingerprint | Description | Action |
 |---|---|---|
-<<<<<<< Updated upstream
-| `oc_subdirectory_hints_home_dir` | `RuntimeError: Could not determine home directory` in `subdirectory_hints.py` `_add_path_candidate`. Triggered when `Path(raw_path).expanduser()` fails because `$HOME` is unset in cron execution environment. Non-fatal — agent handles gracefully. **Fix (2026-06-17)**: Add `RuntimeError` to the except clause in `_add_path_candidate` — change `except (OSError, ValueError):` to `except (OSError, ValueError, RuntimeError):` on all 3 occurrences. **Patch BOTH the editable source** (`<hermes-agent>/agent/subdirectory_hints.py`) **and the installed copy** (`/usr/local/lib/hermes-agent/agent/subdirectory_hints.py`), then clear stale `.pyc` caches. See `references/subdirectory-hints-home-dir-pattern.md`. | Fix: patch both copies + clear pyc. Promoted from Tier 2 surface-only to actionable fix. |
-=======
 | `oc_subdirectory_hints_home_dir` | `RuntimeError: Could not determine home directory` in `subdirectory_hints.py` `_add_path_candidate`. Triggered when `Path(raw_path).expanduser()` fails because `$HOME` is unset in cron execution environment. Non-fatal — agent handles gracefully. **Fix (2026-06-17)**: Add `RuntimeError` to the except clause in `_add_path_candidate` — change `except (OSError, ValueError):` to `except (OSError, ValueError, RuntimeError):` on all 3 occurrences. **Patch BOTH the editable source** (`<fs-root>/hermes-agent/agent/subdirectory_hints.py`) **and the installed copy** (`/usr/local/lib/hermes-agent/agent/subdirectory_hints.py`), then clear stale `.pyc` caches. See `references/subdirectory-hints-home-dir-pattern.md`. | Fix: patch both copies + clear pyc. Promoted from Tier 2 surface-only to actionable fix. |
->>>>>>> Stashed changes
 
 ## Gateway Health Endpoint Unreachable
 

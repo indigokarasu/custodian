@@ -16,11 +16,7 @@ When you see "RuntimeError: Provider returned error" in cron logs:
 
 1. **Check the request dump files** — the generic log message hides the real error:
    ```bash
-<<<<<<< Updated upstream
    ls -lt <hermes-home>/sessions/request_dump_*.json | head -5
-=======
-   ls -lt ~/.hermes/sessions/request_dump_*.json | head -5
->>>>>>> Stashed changes
    ```
    Read the most recent dump and look at `error.body.metadata.error_type`:
    - `"provider_unavailable"` → HTTP 502, transient upstream outage
@@ -42,22 +38,14 @@ When you see "RuntimeError: Provider returned error" in cron logs:
 
 4. **Check for HTTP 429 errors** (rules out rate limit cascade):
    ```bash
-<<<<<<< Updated upstream
    grep "HTTP 429" <hermes-home>/logs/errors.log | grep "$(date +%Y-%m-%d)" | wc -l
-=======
-   grep "HTTP 429" ~/.hermes/logs/errors.log | grep "$(date +%Y-%m-%d)" | wc -l
->>>>>>> Stashed changes
    # 0 = not a rate limit issue
    ```
 
 5. **Check credential pool health**:
    ```python
    import json
-<<<<<<< Updated upstream
    with open('<hermes-home>/auth.json') as f:
-=======
-   with open('~/.hermes/auth.json') as f:
->>>>>>> Stashed changes
        auth = json.load(f)
    pool = auth.get('credential_pool', {}).get('openrouter', [])
    for entry in pool:

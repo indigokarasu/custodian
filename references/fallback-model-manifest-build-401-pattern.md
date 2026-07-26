@@ -17,11 +17,7 @@
 The `fallback_model` provider's API key (`mnfst_8977mcT5YGITdW1x_UrEGyI17xl-Ze401-5TU2WfUyQ`) was either expired, revoked, or the Manifest.build service was rate-limiting the account. When any job with `provider: null` + `model: null` hit a provider error on the default upstream (openrouter), the fallback routing could intercept the auxiliary/fallback LLM call and route it to the broken manifest.build provider.
 
 ## Fix Applied (2026-06-22)
-<<<<<<< Updated upstream
 Set `fallback_model: null` in `<hermes-home>/profiles/indigo/config.yaml`. This removes the broken provider from the fallback chain entirely. Jobs will now only use the default provider (openrouter) and its configured fallback_providers list (which is empty).
-=======
-Set `fallback_model: null` in `~/.hermes/profiles/indigo/config.yaml`. This removes the broken provider from the fallback chain entirely. Jobs will now only use the default provider (openrouter) and its configured fallback_providers list (which is empty).
->>>>>>> Stashed changes
 
 ## Verification
 After fix: check that affected jobs run successfully on their next scheduled run. The 401 errors should stop immediately. The 429 errors from manifest.build should also stop (openrouter 429s are transient and self-resolving).

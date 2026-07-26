@@ -31,11 +31,7 @@ If ALL jobs using a provider are failing → provider-wide auth issue.
 
 ## Step 4: Cross-reference with task list
 
-<<<<<<< Updated upstream
 Before creating a new issue, check `<hermes-home>/commons/data/ocas-finch/task-list.json` for existing open tasks with the same root cause. Consolidate rather than duplicate.
-=======
-Before creating a new issue, check `~/.hermes/commons/data/ocas-finch/task-list.json` for existing open tasks with the same root cause. Consolidate rather than duplicate.
->>>>>>> Stashed changes
 
 ## Key Insight (2026-06-04)
 

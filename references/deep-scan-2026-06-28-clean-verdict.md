@@ -25,11 +25,7 @@ When a job has `enabled: false` or `paused_at` set:
 ## SOUL.md Truncation Resolution Verification
 
 After updating `context_file_max_chars` in config.yaml:
-<<<<<<< Updated upstream
 1. Confirm config has new limit on BOTH main (`<hermes-home>/config.yaml`) AND profile (`<hermes-home>/profiles/<profile>/config.yaml`)
-=======
-1. Confirm config has new limit on BOTH main (`~/.hermes/config.yaml`) AND profile (`~/.hermes/profiles/<profile>/config.yaml`)
->>>>>>> Stashed changes
 2. Confirm gateway has restarted since config change (`grep "Starting Hermes Gateway" gateway.log`)
 3. Confirm no new truncation errors after restart timestamp
 - If all three conditions met → truncation is resolved. Stale log entries from pre-restart runs are noise.

@@ -39,11 +39,7 @@ the creds file, and returns:
 ```python
 # /tmp/trigger_refresh.py
 import sys
-<<<<<<< Updated upstream
 sys.path.insert(0, "<hermes-home>/profiles/indigo/skills/ocas-tasks/scripts")
-=======
-sys.path.insert(0, "~/.hermes/profiles/indigo/skills/ocas-tasks/scripts")
->>>>>>> Stashed changes
 import tasks_monitor as tm
 creds = tm.load_creds()
 refreshed = tm.refresh_token(creds)   # uses valid refresh_token
@@ -52,13 +48,8 @@ print("access_token now present:", "access_token" in refreshed)
 Run: `python3 /tmp/trigger_refresh.py` → expect `REFRESH OK; access_token now present: True`.
 
 ## Verification (authoritative)
-<<<<<<< Updated upstream
 1. `python3 <hermes-home>/profiles/indigo/skills/ocas-tasks/scripts/tasks_monitor.py --mode check` → exit **0** (was `KeyError`).
 2. `python3 <hermes-home>/profiles/indigo/scripts/monitor_list.py` → exit **0**.
-=======
-1. `python3 ~/.hermes/profiles/indigo/skills/ocas-tasks/scripts/tasks_monitor.py --mode check` → exit **0** (was `KeyError`).
-2. `python3 ~/.hermes/profiles/indigo/scripts/monitor_list.py` → exit **0**.
->>>>>>> Stashed changes
 3. `hermes cron run <job_id>` (e.g. `39b7edc44b35`) → **"succeeded"**.
 4. `jobs.json`: the job's `last_status` flips to `ok`, `last_error` → `None`.
 

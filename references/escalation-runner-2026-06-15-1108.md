@@ -15,11 +15,7 @@ Escalation runner cron job ran at 11:08 UTC. Found 3 open `escalation_needed: tr
 ### 2. `oc_chronicle_plugins_empty_20260614` — RESOLVED (false positive from incomplete scan)
 
 **Claim:** Chronicle plugin dirs at `/usr/local/lib/hermes-agent/plugins/memory/chronicle/` and `.../context_engine/chronicle/` are empty.
-<<<<<<< Updated upstream
 **Finding:** The Chronicle plugin loads from the profile path `<hermes-home>/profiles/indigo/plugins/chronicle/` (all .py files present). The system-path dirs are empty but the profile path takes precedence. The "already registered by a plugin" warnings in logs confirm successful loading.
-=======
-**Finding:** The Chronicle plugin loads from the profile path `~/.hermes/profiles/indigo/plugins/chronicle/` (all .py files present). The system-path dirs are empty but the profile path takes precedence. The "already registered by a plugin" warnings in logs confirm successful loading.
->>>>>>> Stashed changes
 **Action:** Set `status: resolved`, `escalation_needed: false`.
 
 ### 3. `oc_context_engine_chronicle_not_loaded_20260613` — DOWNGRADED (config choice, not failure)

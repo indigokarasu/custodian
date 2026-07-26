@@ -32,11 +32,7 @@ it never calls the model API. Only the `hermes chat -q` probe is authoritative.
 
 ## Step 2 — Reconcile issues.jsonl (profile path is authoritative)
 
-<<<<<<< Updated upstream
 `<hermes-home>/profiles/<profile>/commons/data/ocas-custodian/issues.jsonl` — newline-delimited
-=======
-`~/.hermes/profiles/<profile>/commons/data/ocas-custodian/issues.jsonl` — newline-delimited
->>>>>>> Stashed changes
 (one JSON per line) in this deployment; use line-by-line `json.loads`, NOT brace-depth, for this file.
 
 For each open issue touched by the outage:

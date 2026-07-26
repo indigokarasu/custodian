@@ -27,11 +27,7 @@ batches). The deadline check was also at the hard limit (no margin), so a slow f
 
 ## Verification (must be LIVE, not on a drained queue)
 Run the actual script against the production backlog:
-<<<<<<< Updated upstream
 `<hermes-venv>/bin/python <hermes-home>/profiles/indigo/scripts/chronicle_daily_embed.py`
-=======
-`<hermes-venv>/bin/python ~/.hermes/profiles/indigo/scripts/chronicle_daily_embed.py`
->>>>>>> Stashed changes
 Check the log tail: it must print `Total: N vectors in Xs` with **X < 600**. Verified: 171.1s, 8,498
 vectors (Facts 8,000 capped, Episodes 8,000, Events 498). A fast run (e.g. 163s) immediately AFTER
 another successful run proves nothing — the queue was just drained. Re-run after daily volume rebuilds
@@ -65,19 +61,11 @@ to the skill owner; the job stayed paused. **Separate the two decisions:**
 Pre-check the live backlog so the run can't be dismissed as a drained-queue false-pass
 (see `references/resolved-timeout-verify-drained-backlog.md`). Run the read-only probe:
 
-<<<<<<< Updated upstream
     python3 <hermes-home>/profiles/indigo/skills/ocas-custodian/scripts/chronicle_embed_backlog_probe.py
 
 Then re-run the REAL script under the exact cron hard limit, in a clean env, capturing exit + wall:
 
     cd <hermes-home>/profiles/indigo
-=======
-    python3 ~/.hermes/profiles/indigo/skills/ocas-custodian/scripts/chronicle_embed_backlog_probe.py
-
-Then re-run the REAL script under the exact cron hard limit, in a clean env, capturing exit + wall:
-
-    cd ~/.hermes/profiles/indigo
->>>>>>> Stashed changes
     timeout 600 python3 scripts/chronicle_daily_embed.py 2>&1 | tee /tmp/daily_embed_verify.log
     echo "exit=${PIPESTATUS[0]}"
 

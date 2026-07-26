@@ -8,17 +8,10 @@ When scanning for mass cron scheduling gaps, you check `jobs.json` for overdue `
 
 | File | Role | Updated by |
 |------|------|-----------|
-<<<<<<< Updated upstream
 | `<hermes-home>/profiles/indigo/cron/jobs.json` | **ACTIVE** — the scheduler reads/writes this file | Gateway cron ticker |
 | `<hermes-home>/cron/jobs.json` | **STALE COPY** — only updated on gateway restart or manual sync | Occasionally overwritten |
 
 After a gateway restart with `--replace`, the main `<hermes-home>/cron/jobs.json` retains pre-downtime `next_run_at` values. The indigo jobs.json is updated live by the scheduler.
-=======
-| `~/.hermes/profiles/indigo/cron/jobs.json` | **ACTIVE** — the scheduler reads/writes this file | Gateway cron ticker |
-| `~/.hermes/cron/jobs.json` | **STALE COPY** — only updated on gateway restart or manual sync | Occasionally overwritten |
-
-After a gateway restart with `--replace`, the main `~/.hermes/cron/jobs.json` retains pre-downtime `next_run_at` values. The indigo jobs.json is updated live by the scheduler.
->>>>>>> Stashed changes
 
 ## How to Diagnose Correctly
 
@@ -26,11 +19,7 @@ When detecting mass overdue jobs:
 
 1. **Always read the indigo jobs.json first:**
    ```python
-<<<<<<< Updated upstream
    data = json.loads(open('<hermes-home>/profiles/indigo/cron/jobs.json').read())
-=======
-   data = json.loads(open('~/.hermes/profiles/indigo/cron/jobs.json').read())
->>>>>>> Stashed changes
    jobs = data.get('jobs', data)
    ```
 
@@ -48,8 +37,4 @@ Custodian deep scan at 21:15 UTC created issue `mass_cron_scheduling_gap_2026060
 
 ## Key Rule
 
-<<<<<<< Updated upstream
 > **Never create a mass scheduling gap issue from `<hermes-home>/cron/jobs.json` alone. Always verify against the indigo jobs.json and `hermes cron list`.**
-=======
-> **Never create a mass scheduling gap issue from `~/.hermes/cron/jobs.json` alone. Always verify against the indigo jobs.json and `hermes cron list`.**
->>>>>>> Stashed changes

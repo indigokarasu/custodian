@@ -79,11 +79,7 @@ def _hook_on_session_reset(ctx, **kwargs) -> None:
 
 **Root cause:** System `context_engine.py` at `/usr/local/lib/hermes-agent/plugins/memory/chronicle/plugins/context_engine.py` uses `kwargs.get()` (line 152) instead of `kwargs.pop()` to extract `hermes_home` and `principal_id`. The values remain in `kwargs` and are passed again via `**kwargs` to `ChronicleCore.initialize()`, which already receives them as explicit keyword arguments. Python raises `TypeError: got multiple values for keyword argument`.
 
-<<<<<<< Updated upstream
 **Why it happens:** The profile-local version at `<hermes-home>/profiles/indigo/plugins/chronicle/plugins/context_engine.py` already has the correct `kwargs.pop()` code. But Python's import resolution loads the system version first (it's on the system path), so the buggy system version takes precedence. This is a case of a system update overwriting a profile-local fix.
-=======
-**Why it happens:** The profile-local version at `~/.hermes/profiles/indigo/plugins/chronicle/plugins/context_engine.py` already has the correct `kwargs.pop()` code. But Python's import resolution loads the system version first (it's on the system path), so the buggy system version takes precedence. This is a case of a system update overwriting a profile-local fix.
->>>>>>> Stashed changes
 
 **Fix pattern:**
 ```python

@@ -42,7 +42,6 @@ For jobs WITHOUT a `profile` field, `_job_profile_context` yields `None` immedia
 
 ## When Running Under a Profile (e.g., "indigo")
 
-<<<<<<< Updated upstream
 The systemd service sets: `Environment="HERMES_HOME=<hermes-home>/profiles/indigo"`
 
 For a job WITHOUT a profile:
@@ -62,42 +61,14 @@ For a job WITH `profile: "indigo"`:
 **Point script fields to `<hermes-home>/profiles/indigo/scripts/<basename>`** — the profile scripts directory. This is the directory that matches `HERMES_HOME/scripts/` when `HERMES_HOME=<hermes-home>/profiles/indigo`.
 
 Do NOT point to `<hermes-home>/scripts/` — that directory is NOT under the allowed scripts dir when running under a profile.
-=======
-The systemd service sets: `Environment="HERMES_HOME=~/.hermes/profiles/indigo"`
-
-For a job WITHOUT a profile:
-- `_hermes_home` global = `None`
-- Falls through to `get_hermes_home()` → returns `~/.hermes/profiles/indigo` (from env var)
-- `scripts_dir` = `~/.hermes/profiles/indigo/scripts`
-- Scripts at `~/.hermes/profiles/indigo/scripts/<name>` PASS validation
-- Scripts at `~/.hermes/scripts/<name>` FAIL validation (wrong directory)
-
-For a job WITH `profile: "indigo"`:
-- `_job_profile_context` sets `_hermes_home = profile_home` = `~/.hermes/profiles/indigo`
-- Same result: `scripts_dir` = `~/.hermes/profiles/indigo/scripts`
-- Scripts at `~/.hermes/profiles/indigo/scripts/<name>` PASS validation
-
-## The Correct Fix
-
-**Point script fields to `~/.hermes/profiles/indigo/scripts/<basename>`** — the profile scripts directory. This is the directory that matches `HERMES_HOME/scripts/` when `HERMES_HOME=~/.hermes/profiles/indigo`.
-
-Do NOT point to `~/.hermes/scripts/` — that directory is NOT under the allowed scripts dir when running under a profile.
->>>>>>> Stashed changes
 
 ## Why Previous Fixes Failed
 
 ### First Fix Attempt (2026-06-03)
-<<<<<<< Updated upstream
 Changed script fields from `<hermes-home>/profiles/indigo/scripts/` to `<hermes-home>/scripts/`. **This was the wrong direction** — it made things worse because `<hermes-home>/scripts/` is NOT under the profile scripts dir.
 
 ### Second Fix (2026-06-04/05)
 Reverted fields back to `<hermes-home>/profiles/indigo/scripts/`. This is correct but the errors persisted due to a transient issue (likely env var not propagated during a gateway restart or parallel job race condition).
-=======
-Changed script fields from `~/.hermes/profiles/indigo/scripts/` to `~/.hermes/scripts/`. **This was the wrong direction** — it made things worse because `~/.hermes/scripts/` is NOT under the profile scripts dir.
-
-### Second Fix (2026-06-04/05)
-Reverted fields back to `~/.hermes/profiles/indigo/scripts/`. This is correct but the errors persisted due to a transient issue (likely env var not propagated during a gateway restart or parallel job race condition).
->>>>>>> Stashed changes
 
 ## Error Message Format
 
@@ -105,23 +76,14 @@ Reverted fields back to `~/.hermes/profiles/indigo/scripts/`. This is correct bu
 Blocked: script path resolves outside the scripts directory (<ALLOWED_DIR>): '<BLOCKED_PATH>'
 ```
 
-<<<<<<< Updated upstream
 - `<ALLOWED_DIR>` = the resolved scripts directory (e.g., `<hermes-home>/profiles/indigo/scripts`)
-=======
-- `<ALLOWED_DIR>` = the resolved scripts directory (e.g., `~/.hermes/profiles/indigo/scripts`)
->>>>>>> Stashed changes
 - `<BLOCKED_PATH>` = the script path from the job's `script` field (before resolution)
 
 ## Detection
 
 Scan jobs.json for jobs whose `script` field points to a path that is NOT under the expected scripts directory. The expected directory depends on `HERMES_HOME`:
-<<<<<<< Updated upstream
 - If `HERMES_HOME=<hermes-home>/profiles/indigo` → scripts must be under `<hermes-home>/profiles/indigo/scripts/`
 - If `HERMES_HOME=<hermes-home>` (default) → scripts must be under `<hermes-home>/scripts/`
-=======
-- If `HERMES_HOME=~/.hermes/profiles/indigo` → scripts must be under `~/.hermes/profiles/indigo/scripts/`
-- If `HERMES_HOME=~/.hermes` (default) → scripts must be under `~/.hermes/scripts/`
->>>>>>> Stashed changes
 
 ## Fix Verification
 
@@ -141,11 +103,7 @@ These 8 jobs were failing but pass validation when `HERMES_HOME` is correctly se
 - vesper:deliver-morning (script: vesper_deliver.py)
 - plaid-transaction-sync (script: plaid_sync.py)
 
-<<<<<<< Updated upstream
 Root cause: transient env var propagation issue around gateway restart. Scripts at `<hermes-home>/profiles/indigo/scripts/` are the correct location.
-=======
-Root cause: transient env var propagation issue around gateway restart. Scripts at `~/.hermes/profiles/indigo/scripts/` are the correct location.
->>>>>>> Stashed changes
 
 ## Tier Classification
 

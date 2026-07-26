@@ -23,11 +23,7 @@ here the issue's OWN BODY asserts wrong facts about the world.
    never trust an "absent" claim. Environment state changes; the issue is a
    snapshot from a degraded window.
 2. **Read the ACTUAL monitoring/health script the cron job runs** (here
-<<<<<<< Updated upstream
    `<hermes-home>/scripts/searxng_watchdog.py`) to find the real probe TARGET
-=======
-   `~/.hermes/scripts/searxng_watchdog.py`) to find the real probe TARGET
->>>>>>> Stashed changes
    and METHOD. The issue author may have transcribed the wrong port. In this
    case the issue said `:8080`; the watchdog probes `:8888` (the container's
    published mapping is `127.0.0.1:8888->8080`). Trust the script, not the issue.
@@ -35,11 +31,7 @@ here the issue's OWN BODY asserts wrong facts about the world.
    `curl -s -o /dev/null -w "%{http_code}" --max-time 10 "http://localhost:8888/search?q=test&format=json"`
    and check the JSON result count (`len(results) > 0`).
 4. **Run the watchdog script exactly as the cron job invokes it**
-<<<<<<< Updated upstream
    (`python3 <hermes-home>/scripts/searxng_watchdog.py`) and capture the REAL
-=======
-   (`python3 ~/.hermes/scripts/searxng_watchdog.py`) and capture the REAL
->>>>>>> Stashed changes
    exit code. This is ground truth — it bypasses stale `last_status`/`last_error`
    in jobs.json.
 5. **If live state is healthy, mark the issue RESOLVED (not user-gated)** and

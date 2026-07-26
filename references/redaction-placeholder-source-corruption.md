@@ -32,21 +32,12 @@ Restore the intended code (the symmetric `.get()`-style default). Do **NOT** "fi
 ## Verification (exact-env re-run — `py_compile` alone is insufficient)
 Replicate the wrapper the cron job invokes:
 ```bash
-<<<<<<< Updated upstream
 export HERMES_HOME=<hermes-home>/profiles/indigo
 export AGENT_ROOT=<hermes-home>/profiles/indigo
 if [ -f "$HERMES_HOME/.env" ]; then set -a; . "$HERMES_HOME/.env" 2>/dev/null || true; set +a; fi
 timeout 110 <hermes-venv>/bin/python <hermes-home>/profiles/indigo/scripts/<wrapper.sh>
 # or the worker directly:
 <hermes-venv>/bin/python <hermes-home>/profiles/indigo/skills/<skill>/scripts/<worker.py>
-=======
-export HERMES_HOME=~/.hermes/profiles/indigo
-export AGENT_ROOT=~/.hermes/profiles/indigo
-if [ -f "$HERMES_HOME/.env" ]; then set -a; . "$HERMES_HOME/.env" 2>/dev/null || true; set +a; fi
-timeout 110 <hermes-venv>/bin/python ~/.hermes/profiles/indigo/scripts/<wrapper.sh>
-# or the worker directly:
-<hermes-venv>/bin/python ~/.hermes/profiles/indigo/skills/<skill>/scripts/<worker.py>
->>>>>>> Stashed changes
 ```
 Expect `EXIT_CODE=0` with real output (e.g. the weave fix re-ran with 981 inbound upserted, 587 outbound pushed, 0 failures). If clean, mark `status: resolved`, clear any carried `user_gated: false`.
 

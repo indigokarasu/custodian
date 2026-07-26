@@ -59,11 +59,7 @@ for f in ~/.hermes/skills/*; do [[ ! -d "$f" ]] && echo "ORPHAN: $(basename "$f"
 ### Stale Git Lock Files
 
 ```bash
-<<<<<<< Updated upstream
 find <hermes-home>/checkpoints/ -name "*.lock" -type f -mtime +1 -empty
-=======
-find ~/.hermes/checkpoints/ -name "*.lock" -type f -mtime +1 -empty
->>>>>>> Stashed changes
 ```
 
 Stale git lock files in `checkpoints/store/indexes/` persist after crashed git operations.
