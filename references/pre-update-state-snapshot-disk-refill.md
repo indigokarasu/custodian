@@ -5,11 +5,7 @@
 snapshot directory at:
 
 ```
-<<<<<<< Updated upstream
 <hermes-home>/profiles/<profile>/state-snapshots/<YYYYMMDD-HHMMSS>-pre-update/
-=======
-~/.hermes/profiles/<profile>/state-snapshots/<YYYYMMDD-HHMMSS>-pre-update/
->>>>>>> Stashed changes
 ```
 
 containing a **full copy of `state.db`** (~= live `state.db` size). For this
@@ -30,24 +26,14 @@ done to shrink `state.db` itself.
 
 ## Detection
 ```bash
-<<<<<<< Updated upstream
 du -sh <hermes-home>/profiles/<profile>/state-snapshots
 # flag any *-pre-update/ dir > 1 GB
 find <hermes-home>/profiles/<profile>/state-snapshots -maxdepth 1 -name '*-pre-update' -exec du -sh {} +
-=======
-du -sh ~/.hermes/profiles/<profile>/state-snapshots
-# flag any *-pre-update/ dir > 1 GB
-find ~/.hermes/profiles/<profile>/state-snapshots -maxdepth 1 -name '*-pre-update' -exec du -sh {} +
->>>>>>> Stashed changes
 ```
 
 ## Mitigation
 - Once the update is verified successful, remove the pre-update snapshot:
-<<<<<<< Updated upstream
   `rm -rf <hermes-home>/profiles/<profile>/state-snapshots/<ts>-pre-update`
-=======
-  `rm -rf ~/.hermes/profiles/<profile>/state-snapshots/<ts>-pre-update`
->>>>>>> Stashed changes
 - This is a backup, safe to prune post-success. Per skill hygiene rules, note the
   deletion in the journal; user confirmation is good practice but not required for a
   self-created pre-update backup.

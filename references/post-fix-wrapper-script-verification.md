@@ -12,11 +12,7 @@ A wrapper script can exist at the correct path and be the correct target of the 
 
 ```bash
 # 1. Run the wrapper script directly
-<<<<<<< Updated upstream
 bash <hermes-home>/profiles/<profile>/scripts/<wrapper>.sh 2>&1
-=======
-bash ~/.hermes/profiles/<profile>/scripts/<wrapper>.sh 2>&1
->>>>>>> Stashed changes
 echo "EXIT: $?"
 
 # 2. If EXIT=0, the stale error in jobs.json is confirmed resolved
@@ -31,7 +27,6 @@ echo "EXIT: $?"
 Both triage wrapper scripts were verified after confirming they existed:
 
 ```bash
-<<<<<<< Updated upstream
 $ bash <hermes-home>/profiles/indigo/scripts/triage_morning.sh 2>&1 | tail -5
 EXIT: 0
 
@@ -40,16 +35,6 @@ EXIT: 0
 ```
 
 Result: Both scripts ran successfully (exit 0, produced triage output). The `last_error` showing `Script not found: <hermes-home>/profiles/indigo/scripts/triage.py && python3 ...` was confirmed stale — the old compound command no longer matched the current `script` field (`triage_morning.sh` / `triage_evening.sh`).
-=======
-$ bash ~/.hermes/profiles/indigo/scripts/triage_morning.sh 2>&1 | tail -5
-EXIT: 0
-
-$ bash ~/.hermes/profiles/indigo/scripts/triage_evening.sh 2>&1 | tail -5
-EXIT: 0
-```
-
-Result: Both scripts ran successfully (exit 0, produced triage output). The `last_error` showing `Script not found: ~/.hermes/profiles/indigo/scripts/triage.py && python3 ...` was confirmed stale — the old compound command no longer matched the current `script` field (`triage_morning.sh` / `triage_evening.sh`).
->>>>>>> Stashed changes
 
 Classification: `oc_cron_stale_error_script_mismatch` — no fix needed, surface only.
 

@@ -1,20 +1,12 @@
 # Backup disk-full + symlink-size gotcha
 
 ## Symptom
-<<<<<<< Updated upstream
-`backup_all_hermes_data.sh` (canonical: `<repo-root>/scripts/backup_all_hermes_data.sh`)
-=======
 `backup_all_hermes_data.sh` (canonical: `<fs-root>/indigo-repo/scripts/backup_all_hermes_data.sh`)
->>>>>>> Stashed changes
 aborts with `cp: error copying '.../state.db' ...: No space left on device` and **never
 reaches the GitHub LFS push** — the actual deliverable.
 
 ## Root cause
-<<<<<<< Updated upstream
 1. `state.db` is a **symlink** (`<hermes-home>/state.db` → `profiles/indigo/state.db`) and
-=======
-1. `state.db` is a **symlink** (`~/.hermes/state.db` → `profiles/indigo/state.db`) and
->>>>>>> Stashed changes
    ~12G. The backup script copies it **locally only** (never to LFS), but the system disk
    (96G) has no room for a 12G local copy. With `set -euo pipefail`, the failed `cp` aborts
    the whole script before the LFS commit/push step runs.
@@ -29,11 +21,7 @@ logic.
 
 **Fix the size check — dereference first:**
 ```bash
-<<<<<<< Updated upstream
 STATE_SRC="<hermes-home>/state.db"
-=======
-STATE_SRC="~/.hermes/state.db"
->>>>>>> Stashed changes
 STATE_REAL=$(readlink -f "$STATE_SRC" 2>/dev/null || echo "$STATE_SRC")
 STATE_SIZE=$(stat -L -c%s "$STATE_REAL" 2>/dev/null || echo 0)   # -L follows symlink
 AVAIL=$(df --output=avail -B1 <fs-root> 2>/dev/null | tail -1 | tr -d ' ')
@@ -71,18 +59,9 @@ Disk was at 100% → 91% after the space-aware skip + partial cleanup.
 ## Reproduction recipe
 ```bash
 # Force the trap: a guard using bare stat on the symlink
-<<<<<<< Updated upstream
 AVAIL=$(df --output=avail -B1 <fs-root> | tail -1 | tr -d ' ')
 S_BAD=$(stat -c%s <hermes-home>/state.db)        # -> 38 (symlink length), NOT 12G
 [ "$S_BAD" -gt 0 ] && [ "$AVAIL" -gt $((S_BAD*11/10)) ] && echo "WOULD COPY (WRONG)"
 # Correct:
 S_OK=$(stat -L -c%s "$(readlink -f <hermes-home>/state.db)")   # -> 12247752704
 ```
-=======
-AVAIL=$(df --output=avail -B1 /root | tail -1 | tr -d ' ')
-S_BAD=$(stat -c%s ~/.hermes/state.db)        # -> 38 (symlink length), NOT 12G
-[ "$S_BAD" -gt 0 ] && [ "$AVAIL" -gt $((S_BAD*11/10)) ] && echo "WOULD COPY (WRONG)"
-# Correct:
-S_OK=$(stat -L -c%s "$(readlink -f ~/.hermes/state.db)")   # -> 12247752704
-```
->>>>>>> Stashed changes

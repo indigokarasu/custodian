@@ -16,11 +16,7 @@ The `dispatch:triage-evening` job failed every night at 02:45 with `Script not f
 }
 ```
 
-<<<<<<< Updated upstream
 The `script` field is now a single wrapper file. The wrapper exists at `<hermes-home>/profiles/indigo/scripts/triage_evening.sh` and is executable.
-=======
-The `script` field is now a single wrapper file. The wrapper exists at `~/.hermes/profiles/indigo/scripts/triage_evening.sh` and is executable.
->>>>>>> Stashed changes
 
 ## Historical Configuration (2026-05-28 to 2026-06-25)
 
@@ -28,11 +24,7 @@ The `script` field is now a single wrapper file. The wrapper exists at `~/.herme
 {
   "name": "dispatch:triage-evening",
   "no_agent": true,
-<<<<<<< Updated upstream
   "script": "triage.py && python3 <hermes-home>/skills/ocas-dispatch/scripts/journal.py",
-=======
-  "script": "triage.py && python3 ~/.hermes/skills/ocas-dispatch/scripts/journal.py",
->>>>>>> Stashed changes
   "prompt": "Run dispatch evening triage...",
   "schedule": {"kind": "cron", "expr": "45 2 * * *"}
 }
@@ -40,11 +32,7 @@ The `script` field is now a single wrapper file. The wrapper exists at `~/.herme
 
 ## Root Cause
 
-<<<<<<< Updated upstream
 When `no_agent: true`, the `script` field is treated as a **literal file path**. The entire string `triage.py && python3 <hermes-home>/skills/ocas-dispatch/scripts/journal.py` is resolved as a path, which does not exist.
-=======
-When `no_agent: true`, the `script` field is treated as a **literal file path**. The entire string `triage.py && python3 ~/.hermes/skills/ocas-dispatch/scripts/journal.py` is resolved as a path, which does not exist.
->>>>>>> Stashed changes
 
 ## Why It Persisted
 
@@ -67,7 +55,6 @@ The morning counterpart (`dispatch:triage-morning`) was fixed 2026-06-20, but th
 
 ```bash
 # 1. Create wrapper script
-<<<<<<< Updated upstream
 cat > <hermes-home>/profiles/indigo/scripts/triage_evening.sh << 'EOF'
 #!/usr/bin/env bash
 set -e
@@ -76,36 +63,18 @@ python3 triage.py
 python3 <hermes-home>/skills/ocas-dispatch/scripts/journal.py
 EOF
 chmod +x <hermes-home>/profiles/indigo/scripts/triage_evening.sh
-=======
-cat > ~/.hermes/profiles/indigo/scripts/triage_evening.sh << 'EOF'
-#!/usr/bin/env bash
-set -e
-cd ~/.hermes/profiles/indigo/skills/ocas-dispatch/scripts
-python3 triage.py
-python3 ~/.hermes/skills/ocas-dispatch/scripts/journal.py
-EOF
-chmod +x ~/.hermes/profiles/indigo/scripts/triage_evening.sh
->>>>>>> Stashed changes
 
 # 2. Update cron job script field (Python via terminal — execute_code blocked in cron)
 python3 << 'PYEOF'
 import json
-<<<<<<< Updated upstream
 with open("<hermes-home>/profiles/indigo/cron/jobs.json") as f:
-=======
-with open("~/.hermes/profiles/indigo/cron/jobs.json") as f:
->>>>>>> Stashed changes
     data = json.load(f)
 jobs = data.get("jobs", data) if isinstance(data, dict) else data
 for job in jobs:
     if job.get("name") == "dispatch:triage-evening" and job.get("no_agent") == True:
         job["script"] = "triage_evening.sh"
         break
-<<<<<<< Updated upstream
 with open("<hermes-home>/profiles/indigo/cron/jobs.json", "w") as f:
-=======
-with open("~/.hermes/profiles/indigo/cron/jobs.json", "w") as f:
->>>>>>> Stashed changes
     json.dump(data, f, indent=2, ensure_ascii=False)
 ```
 

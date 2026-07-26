@@ -5,11 +5,7 @@ When invoked as a cron job (e.g., `custodian:cron-health`), the `execute_code` t
 ## Pattern
 
 ```bash
-<<<<<<< Updated upstream
 cd <hermes-home>/plugins/custodian && python3 -c "
-=======
-cd ~/.hermes/plugins/custodian && python3 -c "
->>>>>>> Stashed changes
 import sys, json
 sys.path.insert(0, '.')
 from hermes_custodian_plugin.cron_health import run_cron_health_check, format_health_report
@@ -22,11 +18,7 @@ print(format_health_report(request))
 For the full JSON report (programmatic consumption):
 
 ```bash
-<<<<<<< Updated upstream
 cd <hermes-home>/plugins/custodian && python3 -c "
-=======
-cd ~/.hermes/plugins/custodian && python3 -c "
->>>>>>> Stashed changes
 import sys, json
 sys.path.insert(0, '.')
 from hermes_custodian_plugin.cron_health import run_cron_health_check
@@ -41,13 +33,8 @@ print(json.dumps(report, indent=2, default=str))
 - Module: `hermes_custodian_plugin.cron_health`
 - Function: `run_cron_health_check(dry_run: bool) -> dict`
 - Formatter: `format_health_report(report) -> str`
-<<<<<<< Updated upstream
 - Plugin dir: `<hermes-home>/plugins/custodian/`
 - Skill dir: `<hermes-home>/profiles/<profile>/skills/ocas-custodian/` (read-only reference)
-=======
-- Plugin dir: `~/.hermes/plugins/custodian/`
-- Skill dir: `~/.hermes/profiles/<profile>/skills/ocas-custodian/` (read-only reference)
->>>>>>> Stashed changes
 
 ## What the report includes
 
@@ -74,11 +61,7 @@ print(json.dumps(report, indent=2, default=str))
 For scheduled health-check crons that also need memory-guard verification, combine both in one `terminal()` call:
 
 ```bash
-<<<<<<< Updated upstream
 cd <hermes-home>/plugins/custodian && python3 << 'PYEOF'
-=======
-cd ~/.hermes/plugins/custodian && python3 << 'PYEOF'
->>>>>>> Stashed changes
 import sys, json
 sys.path.insert(0, '.')
 from hermes_custodian_plugin.cron_health import run_cron_health_check
@@ -86,13 +69,8 @@ report = run_cron_health_check(dry_run=True)  # dry_run for side-effect-free
 
 # Memory guard check
 import os
-<<<<<<< Updated upstream
 mem_path = "<hermes-home>/profiles/indigo/memories/MEMORY.md"
 decisions_path = "<hermes-home>/profiles/indigo/commons/data/ocas-finch/decisions.jsonl"
-=======
-mem_path = "~/.hermes/profiles/indigo/memories/MEMORY.md"
-decisions_path = "~/.hermes/profiles/indigo/commons/data/ocas-finch/decisions.jsonl"
->>>>>>> Stashed changes
 mem_size = os.path.getsize(mem_path) if os.path.exists(mem_path) else 0
 
 result = {

@@ -35,11 +35,7 @@ These raw entries **lack the `attempts` key**. When `should_escalate()` accesses
 ```bash
 python3 -c "
 import json
-<<<<<<< Updated upstream
 path = '<hermes-home>/profiles/indigo/commons/data/ocas-custodian/fix_effectiveness.jsonl'
-=======
-path = '~/.hermes/profiles/indigo/commons/data/ocas-custodian/fix_effectiveness.jsonl'
->>>>>>> Stashed changes
 with open(path) as f:
     for i, line in enumerate(f):
         line = line.strip()
@@ -55,11 +51,7 @@ Clean up malformed entries:
 ```bash
 python3 -c "
 import json
-<<<<<<< Updated upstream
 path = '<hermes-home>/profiles/indigo/commons/data/ocas-custodian/fix_effectiveness.jsonl'
-=======
-path = '~/.hermes/profiles/indigo/commons/data/ocas-custodian/fix_effectiveness.jsonl'
->>>>>>> Stashed changes
 valid = []
 with open(path) as f:
     for line in f:

@@ -27,11 +27,7 @@ Concrete 2026-07-24 case: the scan reported 5 "missing" ids (`oc_taste_spotify_t
 ## 2. Stale last_error vs. live failure — verify by inspecting the fix, not the error
 A job may still carry `last_error` matching a "resolved" issue's fingerprint even though the root cause is gone (fix landed after the job's last run; job hasn't re-run).
 
-<<<<<<< Updated upstream
 Pattern that caught a false reopen: `weave:sync-google` and `weave:enrichability-recalc` still errored with `home/.hermes` path failures, but their wrapper scripts (`rr_weave_sync.sh`) ALREADY set `AGENT_ROOT=<hermes-home>/profiles/indigo` and the canonical data (`config.json`, `weave.sqlite`) exists at the correct path. The errors were stale (last runs 01:09 / 04:00, before the wrapper fix).
-=======
-Pattern that caught a false reopen: `weave:sync-google` and `weave:enrichability-recalc` still errored with `home/.hermes` path failures, but their wrapper scripts (`rr_weave_sync.sh`) ALREADY set `AGENT_ROOT=~/.hermes/profiles/indigo` and the canonical data (`config.json`, `weave.sqlite`) exists at the correct path. The errors were stale (last runs 01:09 / 04:00, before the wrapper fix).
->>>>>>> Stashed changes
 
 **Rule:** Before reopening a resolved issue, (a) read the actual wrapper/script the job runs and confirm whether the fix is present, (b) confirm canonical data/paths exist, (c) compare `last_run_at` against the fix timestamp. If the fix is in place and `last_run_at` predates it, the error is stale — leave the issue resolved; the next scheduled run clears it.
 
@@ -48,9 +44,6 @@ When you re-run a script to PROVE a root cause is gone and it aborts with `sqlit
 ## 5. `user_gated` mislabeling on auto-fixable issues
 The chronicle `facts_fts` issue was filed with `user_gated: true`, but the root cause was a skill-internal schema bug already patched in on-disk code + removable triggers. It was auto-fixable, not user-gated.
 
-<<<<<<< Updated upstream
-**Rule:** On taking an "open" issue, verify the actual fix surface (on-disk script, DB schema/triggers, config) before accepting a `user_gated` flag. If the code fix is already present, resolve it and set `user_gated: false` — don't leave it open waiting on a user who isn't actually needed.
-=======
 **Rule:** On taking an "open" issue, verify the actual fix surface (on-disk script, DB schema/triggers, config) before accepting a `user_gated` flag. If the code fix is already present, resolve it and set `user_gated: false` — don't leave it open waiting on a user who isn't actually needed.
 
 ## 6. Watchdog `DEGRADED` exit-1 can be a FALSE POSITIVE — confirm against the referenced entity's lifecycle, not its snapshot
@@ -66,4 +59,3 @@ Confirmed 2026-07-22: `rally:pipeline-watchdog` reported `no_staged_rebalance` a
 5. Only if the referenced entity genuinely has NO corresponding in-progress/complete activity AND the upstream job it guards actually failed, treat it as a real failure.
 
 Generalization: any watchdog that flags on a *count of things in state X* will false-positive in the window AFTER those things transition out of X. Always check the transition history before concluding the pipeline is broken.
->>>>>>> Stashed changes

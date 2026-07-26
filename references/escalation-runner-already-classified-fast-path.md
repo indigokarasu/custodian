@@ -62,11 +62,7 @@ journal = {
     ...
 }
 
-<<<<<<< Updated upstream
 path = f'<hermes-home>/profiles/indigo/commons/journals/ocas-custodian/{date_dir}/{run_id}.json'
-=======
-path = f'~/.hermes/profiles/indigo/commons/journals/ocas-custodian/{date_dir}/{run_id}.json'
->>>>>>> Stashed changes
 os.makedirs(os.path.dirname(path), exist_ok=True)
 with open(path, 'w') as f:
     json.dump(journal, f, indent=2)

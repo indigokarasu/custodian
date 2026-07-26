@@ -23,11 +23,7 @@ Many no_agent monitors have SIDE EFFECTS on their "found work" path:
    - Find the latest journal file mtime under the monitor's `JOURNALS_DIR`:
      `Path(JOURNALS_DIR).rglob("*.json")` -> `max(f.stat().st_mtime for f if f.is_file())`.
    - Read the monitor's state file (e.g.
-<<<<<<< Updated upstream
      `<hermes-home>/commons/data/monitor_state/journal_ingest_state.json`) ->
-=======
-     `~/.hermes/commons/data/monitor_state/journal_ingest_state.json`) ->
->>>>>>> Stashed changes
      `latest_mtime`.
    - If `latest_journal_mtime <= state.latest_mtime` -> genuine no-op
      (`oc_cron_no_agent_exit_1_noop`, Tier 2, leave running). The monitor ran, found

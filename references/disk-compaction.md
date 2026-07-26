@@ -14,17 +14,12 @@ df -h /
 
 ### 2. Top-level breakdown
 ```bash
-<<<<<<< Updated upstream
 du -sh <hermes-home>/* | sort -rh | head -30
-=======
-du -sh ~/.hermes/* | sort -rh | head -30
->>>>>>> Stashed changes
 ```
 
 ### 3. Drill into top consumers
 ```bash
 # Sessions
-<<<<<<< Updated upstream
 du -sh <hermes-home>/sessions && find <hermes-home>/sessions -name "*.json" | wc -l
 
 # State snapshots
@@ -38,27 +33,11 @@ du -sh <hermes-home>/logs && find <hermes-home>/logs -name "*.log" -exec du -sh 
 
 # Backups
 du -sh <hermes-home>/backups && ls -lh <hermes-home>/backups/
-=======
-du -sh ~/.hermes/sessions && find ~/.hermes/sessions -name "*.json" | wc -l
-
-# State snapshots
-du -sh ~/.hermes/state-snapshots && ls ~/.hermes/state-snapshots/
-
-# Cron output
-du -sh ~/.hermes/cron/output && find ~/.hermes/cron/output -type f | wc -l
-
-# Logs
-du -sh ~/.hermes/logs && find ~/.hermes/logs -name "*.log" -exec du -sh {} \;
-
-# Backups
-du -sh ~/.hermes/backups && ls -lh ~/.hermes/backups/
->>>>>>> Stashed changes
 ```
 
 ### 4. State DB analysis
 ```bash
 # Quick size check
-<<<<<<< Updated upstream
 ls -lh <hermes-home>/state.db*
 
 # Message count and age distribution
@@ -68,17 +47,6 @@ sqlite3 <hermes-home>/state.db "SELECT COUNT(*) FROM sessions;"
 
 # WAL size
 ls -sh <hermes-home>/state.db-wal 2>/dev/null || echo "No WAL file"
-=======
-ls -lh ~/.hermes/state.db*
-
-# Message count and age distribution
-sqlite3 ~/.hermes/state.db "SELECT COUNT(*) FROM messages;"
-sqlite3 ~/.hermes/state.db "SELECT COUNT(*) FROM messages WHERE timestamp < (strftime('%s', 'now') - 14*86400);"
-sqlite3 ~/.hermes/state.db "SELECT COUNT(*) FROM sessions;"
-
-# WAL size
-ls -sh ~/.hermes/state.db-wal 2>/dev/null || echo "No WAL file"
->>>>>>> Stashed changes
 ```
 
 **⚠️ IMPORTANT**: PRAGMA queries on 15GB state.db may take 30-60s each. Use `execute_code` with python3+sqlite3 for complex queries, not `terminal()` which times out at 30s.
@@ -98,15 +66,9 @@ df -h /
 Use batch deletion to avoid timeout on large tables:
 ```bash
 # Delete in batches of 10,000
-<<<<<<< Updated upstream
 sqlite3 <hermes-home>/state.db "DELETE FROM messages WHERE timestamp < (strftime('%s', 'now') - 14*86400) AND rowid IN (SELECT rowid FROM messages WHERE timestamp < (strftime('%s', 'now') - 14*86400) LIMIT 10000);"
 # Repeat until count returns 0
 sqlite3 <hermes-home>/state.db "SELECT COUNT(*) FROM messages WHERE timestamp < (strftime('%s', 'now') - 14*86400);"
-=======
-sqlite3 ~/.hermes/state.db "DELETE FROM messages WHERE timestamp < (strftime('%s', 'now') - 14*86400) AND rowid IN (SELECT rowid FROM messages WHERE timestamp < (strftime('%s', 'now') - 14*86400) LIMIT 10000);"
-# Repeat until count returns 0
-sqlite3 ~/.hermes/state.db "SELECT COUNT(*) FROM messages WHERE timestamp < (strftime('%s', 'now') - 14*86400);"
->>>>>>> Stashed changes
 ```
 
 **Why batch?** A single `DELETE FROM messages WHERE timestamp < ...` on 115K+ rows times out in terminal. Batches of 10K complete in seconds.
@@ -116,21 +78,13 @@ sqlite3 ~/.hermes/state.db "SELECT COUNT(*) FROM messages WHERE timestamp < (str
 # VACUUM needs ~2x the DB size in free space temporarily
 # On a 15GB DB with 28GB free, VACUUM will fail with "database or disk is full"
 # Prune messages first (Step 2) until DB is small enough, or free disk space elsewhere
-<<<<<<< Updated upstream
 sqlite3 <hermes-home>/state.db "VACUUM;"
-=======
-sqlite3 ~/.hermes/state.db "VACUUM;"
->>>>>>> Stashed changes
 ```
 
 ### Step 4: FTS rebuild (if VACUUM didn't shrink)
 ```bash
 # FTS trigram indexes retain size even after VACUUM
-<<<<<<< Updated upstream
 sqlite3 <hermes-home>/state.db "INSERT INTO messages_fts(messages_fts) VALUES('rebuild');"
-=======
-sqlite3 ~/.hermes/state.db "INSERT INTO messages_fts(messages_fts) VALUES('rebuild');"
->>>>>>> Stashed changes
 ```
 
 **⚠️ Reality check (2026-06-03, corrected 2026-06-08):** The FTS trigram theory was wrong. VACUUM on 2026-06-08 succeeded, reclaiming 6.96 GB (53% of the DB was freelist). The primary space consumer was dead rows in the sessions table (old system_prompt data = 4.82 GB), NOT FTS indexes. VACUUM feasibility: free_disk >= db_size is sufficient (not 2x). On a 13.1 GB DB with 17.1 GB free, VACUUM completed in 97 seconds.
@@ -141,15 +95,9 @@ sqlite3 ~/.hermes/state.db "INSERT INTO messages_fts(messages_fts) VALUES('rebui
 
 **1. Delete pre-update backup zips** (saves ~3.5 GB each)
 ```bash
-<<<<<<< Updated upstream
 ls -lh <hermes-home>/backups/
 # Remove .zip files from already-completed updates
 rm -f <hermes-home>/backups/pre-update-*.zip
-=======
-ls -lh ~/.hermes/backups/
-# Remove .zip files from already-completed updates
-rm -f ~/.hermes/backups/pre-update-*.zip
->>>>>>> Stashed changes
 ```
 - Created by `custodian:update` before applying updates
 - Safe to remove once update is confirmed working (verify no rollback needed)
@@ -157,11 +105,7 @@ rm -f ~/.hermes/backups/pre-update-*.zip
 
 **2. Delete old state snapshots** (saves ~14 GB per snapshot)
 ```bash
-<<<<<<< Updated upstream
 rm -rf <hermes-home>/state-snapshots/<old-snapshot-dir>
-=======
-rm -rf ~/.hermes/state-snapshots/<old-snapshot-dir>
->>>>>>> Stashed changes
 ```
 - The live state.db is the source of truth
 - Snapshots are pre-update rollback copies, not read at runtime
@@ -171,15 +115,9 @@ rm -rf ~/.hermes/state-snapshots/<old-snapshot-dir>
 **3. Rotate logs** (saves ~15-20 MB)
 ```bash
 # Compress logs >7 days
-<<<<<<< Updated upstream
 find <hermes-home>/logs -name "*.log" -mtime +7 -exec gzip {} \;
 # Delete compressed logs >30 days
 find <hermes-home>/logs -name "*.log.gz" -mtime +30 -delete
-=======
-find ~/.hermes/logs -name "*.log" -mtime +7 -exec gzip {} \;
-# Delete compressed logs >30 days
-find ~/.hermes/logs -name "*.log.gz" -mtime +30 -delete
->>>>>>> Stashed changes
 ```
 
 ### Tier 2 — Low Risk (95% confidence)
@@ -187,15 +125,9 @@ find ~/.hermes/logs -name "*.log.gz" -mtime +30 -delete
 **4. Compress cron output** (saves ~130 MB)
 ```bash
 # Compress files >7 days
-<<<<<<< Updated upstream
 find <hermes-home>/cron/output -type f -mtime +7 -exec gzip {} \;
 # Delete compressed files >30 days
 find <hermes-home>/cron/output -type f.gz -mtime +30 -delete
-=======
-find ~/.hermes/cron/output -type f -mtime +7 -exec gzip {} \;
-# Delete compressed files >30 days
-find ~/.hermes/cron/output -type f.gz -mtime +30 -delete
->>>>>>> Stashed changes
 ```
 - Cron jobs write new output per run; they never read old output
 - Use `zgrep` if you need to search compressed files
@@ -203,25 +135,15 @@ find ~/.hermes/cron/output -type f.gz -mtime +30 -delete
 ### Tier 3 — Moderate Risk (70% confidence, verify first)
 
 **5. Session JSON files** (saves ~9.5 GB)
-<<<<<<< Updated upstream
 - Location: `<hermes-home>/sessions/session_*.json` (15,000+ files)
-=======
-- Location: `~/.hermes/sessions/session_*.json` (15,000+ files)
->>>>>>> Stashed changes
 - These are 1:1 duplicates of state.db rows (same session_id, same content)
 - session_search tool reads from state.db, NOT from JSON files
 - **Before deleting**: gzip first, wait a few days, confirm nothing breaks
 ```bash
 # Compress older than 7 days
-<<<<<<< Updated upstream
 find <hermes-home>/sessions -name "*.json" -mtime +7 -exec gzip {} \;
 # Delete .gz files after confirming system is stable (days later)
 find <hermes-home>/sessions -name "*.json.gz" -mtime +14 -delete
-=======
-find ~/.hermes/sessions -name "*.json" -mtime +7 -exec gzip {} \;
-# Delete .gz files after confirming system is stable (days later)
-find ~/.hermes/sessions -name "*.json.gz" -mtime +14 -delete
->>>>>>> Stashed changes
 ```
 - The `ghost_session_prune_v1` meta key in state.db suggests Hermes has a
   built-in pruning mechanism — the JSON files may be unintended duplicates

@@ -13,22 +13,13 @@ Getting either wrong means either doing a full scan unnecessarily, or failing th
 Custodian journals live in **date-based subdirectories**, not flat:
 
 ```
-<<<<<<< Updated upstream
 <hermes-home>/profiles/indigo/commons/journals/ocas-custodian/2026-06-19/esc-run-20260619T183216Z.json
 <hermes-home>/profiles/indigo/commons/journals/ocas-custodian/2026-06-19/light-scan-2026-06-19T120000-0700.json
-=======
-~/.hermes/profiles/indigo/commons/journals/ocas-custodian/2026-06-19/esc-run-20260619T183216Z.json
-~/.hermes/profiles/indigo/commons/journals/ocas-custodian/2026-06-19/light-scan-2026-06-19T120000-0700.json
->>>>>>> Stashed changes
 ```
 
 **NOT flat:**
 ```
-<<<<<<< Updated upstream
 <hermes-home>/profiles/indigo/commons/journals/ocas-custodian/esc-run-20260619T183216Z.json  ← does NOT exist
-=======
-~/.hermes/profiles/indigo/commons/journals/ocas-custodian/esc-run-20260619T183216Z.json  ← does NOT exist
->>>>>>> Stashed changes
 ```
 
 ### Path Template
@@ -46,21 +37,13 @@ For the commons (non-profile) path:
 
 ```bash
 # Find the most recent esc-run journal across all paths
-<<<<<<< Updated upstream
 find <hermes-home> -path "*/journals/ocas-custodian/*/esc-run-*.json" -mtime -1 2>/dev/null | sort | tail -1
-=======
-find ~/.hermes -path "*/journals/ocas-custodian/*/esc-run-*.json" -mtime -1 2>/dev/null | sort | tail -1
->>>>>>> Stashed changes
 ```
 
 Or for today's directory specifically:
 ```bash
 TODAY=$(date -u +%Y-%m-%d)
-<<<<<<< Updated upstream
 ls <hermes-home>/profiles/indigo/commons/journals/ocas-custodian/$TODAY/esc-run-*.json 2>/dev/null | sort | tail -1
-=======
-ls ~/.hermes/profiles/indigo/commons/journals/ocas-custodian/$TODAY/esc-run-*.json 2>/dev/null | sort | tail -1
->>>>>>> Stashed changes
 ```
 
 **IMPORTANT:** Use `date -u` (UTC) for the directory name, not `date` (local). The `run_id` is UTC-based, so the directory must match.
@@ -131,11 +114,7 @@ journal = {
     "system_health": "nominal"
 }
 
-<<<<<<< Updated upstream
 journal_dir = f"<hermes-home>/profiles/indigo/commons/journals/ocas-custodian/{date_dir}"
-=======
-journal_dir = f"~/.hermes/profiles/indigo/commons/journals/ocas-custodian/{date_dir}"
->>>>>>> Stashed changes
 import os
 os.makedirs(journal_dir, exist_ok=True)
 
@@ -160,13 +139,8 @@ The escalation runner checks issues from two sources:
 
 | Path | Authority | Notes |
 |------|-----------|-------|
-<<<<<<< Updated upstream
 | `<hermes-home>/profiles/indigo/commons/data/custodian/issues.jsonl` | **Primary** | Live source, updated by custodian plugin |
 | `<hermes-home>/commons/data/ocas-custodian/issues.jsonl` | **Secondary** | Lagging copy, may contain stale entries |
-=======
-| `~/.hermes/profiles/indigo/commons/data/custodian/issues.jsonl` | **Primary** | Live source, updated by custodian plugin |
-| `~/.hermes/commons/data/ocas-custodian/issues.jsonl` | **Secondary** | Lagging copy, may contain stale entries |
->>>>>>> Stashed changes
 
 **Always write to the profile path.** The commons path receives data via sync.
 
@@ -202,11 +176,7 @@ def parse_jsonl(path):
 
 ```
 1. Check latest esc-run journal → if all_clear & recent → [SILENT]
-<<<<<<< Updated upstream
 2. find <hermes-home> -name "issues.jsonl" → discover all paths
-=======
-2. find ~/.hermes -name "issues.jsonl" → discover all paths
->>>>>>> Stashed changes
 3. Parse each with brace-depth parser
 4. Filter: status NOT IN (resolved, superseded)
 5. Cross-reference by description (dedup)
