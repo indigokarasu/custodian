@@ -135,5 +135,5 @@ if __name__ == "__main__":
     ap.add_argument("--jobs", default=JOBS, help="Path to jobs.json (default: indigo profile)")
     ap.add_argument("--profile", default="indigo", help="Profile name, used only if --jobs is omitted")
     args = ap.parse_args()
-    JOBS = args.jobs or fos.path.expanduser("~/.hermes/profiles/{args.profile}/cron/jobs.json")
+    JOBS = args.jobs or os.path.expanduser("~/.hermes/profiles/{args.profile}/cron/jobs.json")
     main()

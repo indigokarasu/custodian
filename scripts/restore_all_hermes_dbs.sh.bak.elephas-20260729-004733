@@ -54,8 +54,10 @@ if [ -d "$BACKUP_DIR"/hermes_state_snapshots_* ] 2>/dev/null; then
     restore "$BACKUP_DIR"/hermes_state_snapshots_* ~/.hermes/state-snapshots/
 fi
 
-restore "$BACKUP_DIR"/weave_lbug_* <repo-root>/commons/db/ocas-weave/weave.sqlite
-restore "$BACKUP_DIR"/weave_lbug_backup_* ~/.hermes/prep_preservation/chronicle.db
-restore "$BACKUP_DIR"/weave_lbug_data_* ~/.hermes/data/hermes-weave/weave.sqlite
+restore "$BACKUP_DIR"/chronicle_lbug_* ~/.hermes/commons/db/ocas-elephas/chronicle.lbug
+restore "$BACKUP_DIR"/chronicle_lbug_backup_* ~/.hermes/prep_preservation/chronicle.lbug
+restore "$BACKUP_DIR"/weave_lbug_* <repo-root>/commons/db/ocas-weave/weave.lbug
+restore "$BACKUP_DIR"/weave_lbug_backup_* ~/.hermes/prep_preservation/chronicle.lbug
+restore "$BACKUP_DIR"/weave_lbug_data_* ~/.hermes/data/hermes-weave/weave.lbug
 
 echo "[*] Done."
