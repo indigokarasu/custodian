@@ -48,10 +48,10 @@ do_backup() {
 }
 
 # Chronicle (Elephas)
-do_backup ~/.hermes/commons/db/chronicle/chronicle.db "$LOCAL_BACKUP/chronicle.db"
+do_backup ~/.hermes/commons/db/chronicle/chronicle.db "$LOCAL_BACKUP/chronicle.lbug"
 
 # Weave
-do_backup ~/.hermes/commons/db/ocas-weave/weave.sqlite "$LOCAL_BACKUP/weave.sqlite"
+do_backup ~/.hermes/commons/db/ocas-weave/weave.sqlite "$LOCAL_BACKUP/weave.lbug"
 
 # Styx + Transactions
 do_backup ~/.hermes/data/styx.db "$LOCAL_BACKUP/styx.db"

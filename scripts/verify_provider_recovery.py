@@ -21,7 +21,7 @@ from datetime import datetime, timezone
 
 
 def load_jobs(profile):
-    path = fos.path.expanduser("~/.hermes/profiles/{profile}/cron/jobs.json")
+    path = os.path.expanduser("~/.hermes/profiles/{profile}/cron/jobs.json")
     with open(path) as f:
         data = json.load(f)
     return data.get("jobs", []) if isinstance(data, dict) else data
@@ -37,7 +37,7 @@ def utc(s):
 
 
 def default_provider(profile):
-    cfg = fos.path.expanduser("~/.hermes/profiles/{profile}/config.yaml")
+    cfg = os.path.expanduser("~/.hermes/profiles/{profile}/config.yaml")
     prov = model = None
     try:
         with open(cfg) as f:

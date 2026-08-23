@@ -131,7 +131,7 @@ if __name__ == "__main__":
     )
     ap.add_argument("--profile", default=PROFILE, help="Profile HOME dir or name")
     args = ap.parse_args()
-    PROFILE = args.profile if os.path.sep in args.profile else fos.path.expanduser("~/.hermes/profiles/{args.profile}")
+    PROFILE = args.profile if os.path.sep in args.profile else os.path.expanduser("~/.hermes/profiles/{args.profile}")
     JOBS = os.path.join(PROFILE, "cron", "jobs.json")
     ISSUES = os.path.join(PROFILE, "commons", "data", "ocas-custodian", "issues.jsonl")
     main()

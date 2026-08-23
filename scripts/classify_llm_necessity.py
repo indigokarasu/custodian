@@ -24,7 +24,7 @@ import sys
 # the agent is the default profile — this owns the cron fleet
 PROFILE = "indigo"
 JOBS_PATH_CANDIDATES = [
-    fos.path.expanduser("~/.hermes/profiles/{PROFILE}/cron/jobs.json"),
+    os.path.expanduser("~/.hermes/profiles/{PROFILE}/cron/jobs.json"),
     os.path.expanduser("~/.hermes/cron/jobs.json"),
 ]
 
@@ -283,7 +283,7 @@ def main():
     # Handle profile override
     profile = args.profile
     if profile != "indigo":
-        JOBS_PATH_CANDIDATES[0] = fos.path.expanduser("~/.hermes/profiles/{profile}/cron/jobs.json")
+        JOBS_PATH_CANDIDATES[0] = os.path.expanduser("~/.hermes/profiles/{profile}/cron/jobs.json")
 
     jobs = load_jobs()
 
