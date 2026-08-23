@@ -17,7 +17,7 @@ from collections import Counter
 
 PROFILE = os.environ.get("HERMES_PROFILE", "indigo")
 CANDIDATES = [
-    fos.path.expanduser("~/.hermes/profiles/{PROFILE}/cron/jobs.json"),
+    os.path.expanduser("~/.hermes/profiles/{PROFILE}/cron/jobs.json"),
     os.path.expanduser("~/.hermes/profiles/indigo/cron/jobs.json"),
     os.path.expanduser("~/.hermes/cron/jobs.json"),
 ]
@@ -87,7 +87,7 @@ if __name__ == "__main__":
     args = ap.parse_args()
     PROFILE = args.profile
     CANDIDATES[:] = [
-        fos.path.expanduser("~/.hermes/profiles/{PROFILE}/cron/jobs.json"),
+        os.path.expanduser("~/.hermes/profiles/{PROFILE}/cron/jobs.json"),
         os.path.expanduser("~/.hermes/profiles/indigo/cron/jobs.json"),
         os.path.expanduser("~/.hermes/cron/jobs.json"),
     ]

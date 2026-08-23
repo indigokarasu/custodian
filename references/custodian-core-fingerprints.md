@@ -19,6 +19,7 @@ For the `monitor:list` access-token case, also load
 | `oc_cron_script_not_found_transient` | Write/read race, script exists and runs | Transient |
 | `oc_cron_stale_error_script_mismatch` | last_error ≠ current script field | Tier 2 |
 | `oc_cron_provider_error_transient` | Generic "Provider returned error", cf=None | Transient |
+| `oc_http_503_upstream_capacity` | OpenRouter HTTP 503 — upstream capacity limits. "The requested model is temporarily unavailable due to upstream capacity limits." Distinct from 502 (provider_unavailable, not capacity). Self-resolves when capacity recovers. Often affects multiple jobs simultaneously (provider-side throttling). Confirmed 2026-07-27: 5 concurrent 503 errors across vesper:morning, vesper:evening, ocas-finch:daily, haiku:content-post, 10khr-grind. | Transient |
 | `oc_cron_llm_unnecessary` | LLM job whose prompt is just a script-wrapper, self-update, or needless skill-load — no LLM reasoning needed | Tier 2 |
 | `oc_fallback_model_manifest_build_401` | fallback_model has expired custom provider key | Tier 3 |
 | `oc_skill_reference_path_mismatch` | Skill reads refs from wrong path | Tier 2 |

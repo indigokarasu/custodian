@@ -184,7 +184,7 @@ if __name__ == "__main__":
     )
     ap.add_argument("--profile", default="indigo", help="Profile name")
     args = ap.parse_args()
-    HOME = fos.path.expanduser("~/.hermes/profiles/{args.profile}")
+    HOME = os.path.expanduser("~/.hermes/profiles/{args.profile}")
     JOBS_PATH = f"{HOME}/cron/jobs.json"
     ISSUES_PATHS[:] = [f"{HOME}/commons/data/ocas-custodian/issues.jsonl"]
     main()
