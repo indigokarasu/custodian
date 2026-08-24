@@ -39,7 +39,7 @@ defect didn't recur after the close."
 
 ## PATH GOTCHA (critical)
 The verifier scans BOTH of these and aggregates in its SUMMARY:
-- `~/.hermes/profiles/<profile>/logs/gateway.log`   <- where the recurrence lived
+- `$HERMES_HOME/../<profile>/logs/gateway.log`   <- where the recurrence lived
 - `~/.hermes/logs/gateway.log`                      <- system log, may be stale/empty
 When you manually `grep` to confirm a verifier "LIVE" verdict, grep BOTH paths.
 Grepping only `~/.hermes/logs/gateway.log` returned 0 hits for `seq_unique`

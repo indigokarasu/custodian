@@ -103,7 +103,7 @@ Any `last_error` containing `AttributeError` + `sqlite3.Connection` + `is read-o
 
 ## Confirmed
 2026-07-22: `Chronicle Embedding Enrichment` (`39d06c70d0a6`) failed every hour
-with this error. Proxy fix applied to `~/.hermes/profiles/indigo/scripts/
+with this error. Proxy fix applied to `$HERMES_HOME/../indigo/scripts/
 enrich_embeddings.py` (backup `enrich_embeddings.py.bak_20260722T0505`); real run
 rebuilt FTS (belief_fts=102805, observed_fts=74320) in 38.9s, exit 0; registry
 flipped to ok via `hermes cron run`.

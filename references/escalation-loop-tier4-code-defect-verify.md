@@ -14,12 +14,12 @@ still carry the pre-restart premise long after the fault stopped recurring.
 
 Procedure:
 - Find the restart boundary in the active gateway log:
-  `grep -n "Starting Hermes Gateway" ~/.hermes/profiles/indigo/logs/gateway.log | tail -1`
+  `grep -n "Starting Hermes Gateway" $HERMES_HOME/../indigo/logs/gateway.log | tail -1`
   → take the line number `RESTART_LINE`.
 - Count signature occurrences **after** that line:
-  `awk -v rl=$RESTART_LINE 'NR>rl && /SIGNATURE_REGEX/ {c++} END{print c+0}' ~/.hermes/profiles/indigo/logs/gateway.log`
+  `awk -v rl=$RESTART_LINE 'NR>rl && /SIGNATURE_REGEX/ {c++} END{print c+0}' $HERMES_HOME/../indigo/logs/gateway.log`
 - Or across all logs (covers rotated files):
-  `grep -rhE "SIGNATURE" ~/.hermes/profiles/indigo/logs/*.log ~/.hermes/logs/*.log 2>/dev/null | grep -cE "2026-07-23 0[4-9]|2026-07-23 1[0-6]"`
+  `grep -rhE "SIGNATURE" $HERMES_HOME/../indigo/logs/*.log ~/.hermes/logs/*.log 2>/dev/null | grep -cE "2026-07-23 0[4-9]|2026-07-23 1[0-6]"`
 - **If 0 post-restart → reclassify to `latent_dormant`** (set `status=latent_dormant`, `escalation_needed=false`, add `post_restart_recurrence=0` + `dormant_evidence`). PRESERVE the issue — do NOT delete it. Only a future live recurrence should reactivate it.
 
 ## 2. Read the LIVE loaded module to confirm the defect still exists
@@ -28,7 +28,7 @@ The flagged defect may already be **mitigated in current code**. Reading the
 issue text is not enough.
 
 Concrete confirmed example (2026-07-23): the `oc_chronicle_contextengine_compress_force_kwarg`
-issue was open, but the live `/usr/local/lib/hermes-agent/agent/conversation_compression.py`
+issue was open, but the live `$HERMES_INSTALL/agent/conversation_compression.py`
 (and the `.venv` copy) **already wraps** `compress(... force=force, focus_topic=...)`
 in `try/except TypeError` that retries `compress(messages, current_tokens=...)`
 without the extra kwargs. The signature is effectively resolved in code even
@@ -74,7 +74,7 @@ Therefore, for a live plugin memory-engine defect:
 ## Reusable awk recipe (copy-paste)
 
 ```bash
-LOG=~/.hermes/profiles/indigo/logs/gateway.log
+LOG=$HERMES_HOME/../indigo/logs/gateway.log
 RESTART_LINE=$(grep -n "Starting Hermes Gateway" "$LOG" | tail -1 | cut -d: -f1)
 echo -n "post-restart occurrences: "
 awk -v rl="$RESTART_LINE" 'NR>rl && /SIGNATURE_REGEX/ {c++} END{print c+0}' "$LOG"

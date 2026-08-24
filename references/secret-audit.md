@@ -8,7 +8,7 @@ INLINE in files — the "wrong places" — instead of the canonical secret store
 
 Scan roots:
 - `~/.hermes/config.yaml`
-- `~/.hermes/profiles/*` (each profile's `config.yaml` + `skills/` + `scripts/` + `plugins/`)
+- `$HERMES_HOME/../*` (each profile's `config.yaml` + `skills/` + `scripts/` + `plugins/`)
 - `~/.hermes/plugins/*` (live plugin / MCP server code)
 
 Excluded: `node_modules`, `.bun`, `gentube-output`, `state-snapshots`,
@@ -48,12 +48,12 @@ push risk — the scanner still covers those because it walks `skills/`.
 
 ## The canonical secret store (where secrets SHOULD live)
 
-Confirmed from `/usr/local/lib/hermes-agent` source:
-1. **`~/.hermes/profiles/<profile>/.env`** — loaded into `os.environ`
+Confirmed from `$HERMES_INSTALL` source:
+1. **`$HERMES_HOME/../<profile>/.env`** — loaded into `os.environ`
    by the gateway at startup (`hermes_cli/env_loader.py`,
    `load_hermes_dotenv`). This is the primary store. `.env` is gitignored
    by design. (`HERMES_HOME` selects the profile; here
-   `HERMES_HOME=~/.hermes/profiles/indigo`.)
+   `HERMES_HOME=$HERMES_HOME/../indigo`.)
 2. **`secrets.bitwarden.access_token_env`** (default `BWS_ACCESS_TOKEN`)
    — `agent/secret_sources/bitwarden.py` reads the token from that env var.
 3. **MCP `mcp_servers[*].headers`** support **`${ENV}` indirection**
@@ -124,6 +124,6 @@ Optional scheduled audit (dry-run report; escalation if inline secrets found):
 ```
 cronjob action=create name="custodian:secrets-audit"
   schedule="0 3 * * *"
-  prompt="Run: python3 ~/.hermes/profiles/indigo/skills/ocas-custodian/scripts/secret_audit.py --mode audit --json /tmp/secret_audit_<date>.json . If total_findings > 0, report the by_type breakdown and flag for <operator>; do NOT auto-remediate."
+  prompt="Run: python3 $HERMES_HOME/../indigo/skills/ocas-custodian/scripts/secret_audit.py --mode audit --json /tmp/secret_audit_<date>.json . If total_findings > 0, report the by_type breakdown and flag for <operator>; do NOT auto-remediate."
   skills=["ocas-custodian"]
 ```

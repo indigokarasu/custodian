@@ -22,13 +22,13 @@ without re-deriving it is unsafe.
 ```bash
 # 1. Derive TRUE last restart from the LIVE log (PROFILE path, not ~/.hermes/logs/gateway.log)
 grep -nE "Connecting to telegram|telegram connected|Starting Hermes|Received SIGTERM" \
-  ~/.hermes/profiles/indigo/logs/gateway.log | tail -3
+  $HERMES_HOME/../indigo/logs/gateway.log | tail -3
 # → most recent timestamp = true_last_restart
 ```
 ```python
 # 2. Count the signature strictly AFTER true_last_restart
 import re
-f="~/.hermes/profiles/indigo/logs/gateway.log"
+f="$HERMES_HOME/../indigo/logs/gateway.log"
 lines=open(f,encoding="utf-8",errors="replace").read().splitlines()
 restart=None; hits=[]
 for ln in lines:

@@ -38,12 +38,12 @@ The `expanduser()` call on line 130 is already inside a `try` block, but the exc
 
 ## Installed Copy vs Editable Source (2026-06-17 Lesson)
 
-When hermes-agent is installed in editable mode (`pip install -e`), Python imports resolve to the **source checkout** at `<fs-root>/hermes-agent/agent/`, NOT the installed copy at `/usr/local/lib/hermes-agent/agent/`. However, **both copies exist** and both may be loaded depending on the import path:
+When hermes-agent is installed in editable mode (`pip install -e`), Python imports resolve to the **source checkout** at `<fs-root>/hermes-agent/agent/`, NOT the installed copy at `$HERMES_INSTALL/agent/`. However, **both copies exist** and both may be loaded depending on the import path:
 
 - **Editable source** (loaded by the agent at runtime): `<fs-root>/hermes-agent/agent/subdirectory_hints.py`
-- **Installed copy** (may be loaded by other processes): `/usr/local/lib/hermes-agent/agent/subdirectory_hints.py`
+- **Installed copy** (may be loaded by other processes): `$HERMES_INSTALL/agent/subdirectory_hints.py`
 
-**Both must be patched.** The editable source had the fix (RuntimeError in except) but the installed copy did not. Errors continued until both were patched and the stale `.pyc` at `/usr/local/lib/hermes-agent/agent/__pycache__/` was cleared.
+**Both must be patched.** The editable source had the fix (RuntimeError in except) but the installed copy did not. Errors continued until both were patched and the stale `.pyc` at `$HERMES_INSTALL/agent/__pycache__/` was cleared.
 
 **Detection**: Check which file is actually loaded:
 ```bash
@@ -56,13 +56,13 @@ python3 -c "import importlib.util; spec = importlib.util.find_spec('agent.subdir
 grep -n "except.*OSError.*ValueError" <fs-root>/hermes-agent/agent/subdirectory_hints.py
 
 # Installed copy (often missed)
-grep -n "except.*OSError.*ValueError" /usr/local/lib/hermes-agent/agent/subdirectory_hints.py
+grep -n "except.*OSError.*ValueError" $HERMES_INSTALL/agent/subdirectory_hints.py
 
 # Patch all except clauses in installed copy
-sed -i 's/except (OSError, ValueError):/except (OSError, ValueError, RuntimeError):/g' /usr/local/lib/hermes-agent/agent/subdirectory_hints.py
+sed -i 's/except (OSError, ValueError):/except (OSError, ValueError, RuntimeError):/g' $HERMES_INSTALL/agent/subdirectory_hints.py
 
 # Clear stale .pyc
-rm -f /usr/local/lib/hermes-agent/agent/__pycache__/subdirectory_hints*.pyc
+rm -f $HERMES_INSTALL/agent/__pycache__/subdirectory_hints*.pyc
 ```
 
 ## Fix Direction (for future reference)

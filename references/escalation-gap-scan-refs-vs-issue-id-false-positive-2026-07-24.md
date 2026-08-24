@@ -13,7 +13,7 @@ The scan cross-references each journal's `escalation_refs` (which are **skill/jo
 2. `python3 scripts/verify_escalation_state.py` — confirms live job/issue state.
 3. For each cited "missing" id, grep the **authoritative** data-path file directly:
    ```python
-   python3 -c "d=open('~/.hermes/profiles/indigo/commons/data/ocas-custodian/issues.jsonl').read(); print('PRESENT' if '<id>' in d else 'ABSENT')"
+   python3 -c "d=open('$HERMES_HOME/../indigo/commons/data/ocas-custodian/issues.jsonl').read(); print('PRESENT' if '<id>' in d else 'ABSENT')"
    ```
    If PRESENT → it is a FALSE POSITIVE.
 4. **Do NOT pass `--write`** to the gap-scan. Writing would re-persist existing open issues as duplicate escalations.
