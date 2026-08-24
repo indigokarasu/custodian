@@ -77,13 +77,13 @@ def _hook_on_session_reset(ctx, **kwargs) -> None:
 
 **Symptom:** 100+ WARNING lines/day: `Chronicle Context Engine init failed: engine.core.ChronicleCore.initialize() got multiple values for keyword argument 'hermes_home'`.
 
-**Root cause:** System `context_engine.py` at `/usr/local/lib/hermes-agent/plugins/memory/chronicle/plugins/context_engine.py` uses `kwargs.get()` (line 152) instead of `kwargs.pop()` to extract `hermes_home` and `principal_id`. The values remain in `kwargs` and are passed again via `**kwargs` to `ChronicleCore.initialize()`, which already receives them as explicit keyword arguments. Python raises `TypeError: got multiple values for keyword argument`.
+**Root cause:** System `context_engine.py` at `$HERMES_INSTALL/plugins/memory/chronicle/plugins/context_engine.py` uses `kwargs.get()` (line 152) instead of `kwargs.pop()` to extract `hermes_home` and `principal_id`. The values remain in `kwargs` and are passed again via `**kwargs` to `ChronicleCore.initialize()`, which already receives them as explicit keyword arguments. Python raises `TypeError: got multiple values for keyword argument`.
 
 **Why it happens:** The profile-local version at `<hermes-home>/profiles/indigo/plugins/chronicle/plugins/context_engine.py` already has the correct `kwargs.pop()` code. But Python's import resolution loads the system version first (it's on the system path), so the buggy system version takes precedence. This is a case of a system update overwriting a profile-local fix.
 
 **Fix pattern:**
 ```python
-# /usr/local/lib/hermes-agent/plugins/memory/chronicle/plugins/context_engine.py
+# $HERMES_INSTALL/plugins/memory/chronicle/plugins/context_engine.py
 # Line 152 — BEFORE:
 hermes_home = kwargs.get("hermes_home", "~/.hermes")
 # Line 152 — AFTER:
@@ -99,22 +99,22 @@ self._principal_id = kwargs.pop("principal_id", "default")
 **Restart required:** No — Python reimports the module on next session start. The fix takes effect for new sessions/cron jobs immediately.
 **Detection:** Grep errors.log for `Chronicle Context Engine init failed.*multiple values`. Check which `context_engine.py` is loaded: `python3 -c "import importlib.util; spec = importlib.util.find_spec('plugins.memory.chronicle.plugins.context_engine'); print(spec.origin)"`. If it resolves to the system path, the profile fix is being shadowed.
 
-**General lesson:** When a profile-local plugin fix is overwritten by a system update, check import resolution order. The system path (`/usr/local/lib/hermes-agent/`) takes precedence over profile paths for Python module imports. Apply the fix to the system version too, or ensure the profile path is prepended to `sys.path` before the system path.
+**General lesson:** When a profile-local plugin fix is overwritten by a system update, check import resolution order. The system path (`$HERMES_INSTALL/`) takes precedence over profile paths for Python module imports. Apply the fix to the system version too, or ensure the profile path is prepended to `sys.path` before the system path.
 
 **⚠️ Sibling file trap (June 2026):** The same `kwargs.get()` → `kwargs.pop()` bug existed in BOTH `context_engine.py` AND `memory_provider.py` in the same directory. Fixing only `context_engine.py` resolved the error for context engine sessions, but `memory_provider.py` continued to trigger the identical error (292+ occurrences) because it also calls `ChronicleCore.initialize()` with `**kwargs` still containing `hermes_home`. **When fixing a `kwargs.get` → `kwargs.pop` pattern, ALWAYS grep the entire sibling directory for the same pattern:**
 ```bash
-grep -rn 'kwargs\.get.*hermes_home' /usr/local/lib/hermes-agent/plugins/memory/chronicle/plugins/
+grep -rn 'kwargs\.get.*hermes_home' $HERMES_INSTALL/plugins/memory/chronicle/plugins/
 ```
 
 ### `oc_chronicle_memory_provider_hermes_home` — same kwargs.get() bug in memory_provider.py
 
 **Symptom:** Identical to `oc_chronicle_context_engine_hermes_home` — `ChronicleCore.initialize() got multiple values for keyword argument 'hermes_home'`. Continues firing even after `context_engine.py` is fixed.
 
-**Root cause:** `/usr/local/lib/hermes-agent/plugins/memory/chronicle/plugins/memory_provider.py` line 49 uses `kwargs.get("hermes_home", ...)` instead of `kwargs.pop()`. Same pattern, same directory, same downstream call.
+**Root cause:** `$HERMES_INSTALL/plugins/memory/chronicle/plugins/memory_provider.py` line 49 uses `kwargs.get("hermes_home", ...)` instead of `kwargs.pop()`. Same pattern, same directory, same downstream call.
 
 **Fix pattern:**
 ```python
-# /usr/local/lib/hermes-agent/plugins/memory/chronicle/plugins/memory_provider.py
+# $HERMES_INSTALL/plugins/memory/chronicle/plugins/memory_provider.py
 # BEFORE:
 hermes_home = kwargs.get("hermes_home", str(Path.home() / ".hermes"))
 principal_id = kwargs.get("principal_id", "default")
@@ -125,7 +125,7 @@ principal_id = kwargs.pop("principal_id", "default")
 ```
 
 **Restart required:** Yes — gateway must restart to reload the patched module.
-**Detection:** Same as context_engine variant. Check `memory_provider.py` specifically: `grep 'kwargs\.get.*hermes_home' /usr/local/lib/hermes-agent/plugins/memory/chronicle/plugins/memory_provider.py`.
+**Detection:** Same as context_engine variant. Check `memory_provider.py` specifically: `grep 'kwargs\.get.*hermes_home' $HERMES_INSTALL/plugins/memory/chronicle/plugins/memory_provider.py`.
 
 ### Escalation Runner Pattern for Code-Level Bugs
 

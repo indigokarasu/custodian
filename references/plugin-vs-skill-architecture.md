@@ -9,14 +9,14 @@ Custodian v2.0.0+ runs as a **Hermes plugin** (active operational code) while th
 | Component | Path | Purpose |
 |-----------|------|---------|
 | Plugin | `~/.hermes/plugins/custodian/` | Active code — hooks, tools, slash commands loaded by gateway |
-| Skill | `~/.hermes/profiles/<profile>/skills/ocas-custodian/` | Reference copy — SKILL.md + references + scripts for docs |
+| Skill | `$HERMES_HOME/../<profile>/skills/ocas-custodian/` | Reference copy — SKILL.md + references + scripts for docs |
 
 ## Version Tracking
 
 | Source | How to Check |
 |--------|--------------|
 | Plugin (active) | `cat ~/.hermes/plugins/custodian/hermes_custodian_plugin/__init__.py \| grep __version__` or `cd ~/.hermes/plugins/custodian && git log -1 --oneline` |
-| Skill (reference) | `head -30 ~/.hermes/profiles/indigo/skills/ocas-custodian/SKILL.md \| grep version` |
+| Skill (reference) | `head -30 $HERMES_HOME/../indigo/skills/ocas-custodian/SKILL.md \| grep version` |
 
 ## Update Procedure
 
@@ -39,7 +39,7 @@ If the skill directory is missing (e.g., deleted by a faulty self-update):
 
 1. Find source URL from cron output logs:
    ```bash
-   grep -r "source:" ~/.hermes/profiles/indigo/cron/output/*/*.md | grep custodian
+   grep -r "source:" $HERMES_HOME/../indigo/cron/output/*/*.md | grep custodian
    ```
 2. Clone and restore:
    ```bash

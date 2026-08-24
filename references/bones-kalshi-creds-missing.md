@@ -4,7 +4,7 @@
 `oc_bones_missing_kalshi_creds_file` — Tier 3
 
 ## Detection
-Two no_agent cron jobs fail with `FileNotFoundError: /root/.hermes/profiles/indigo/commons/data/ocas-bones/kalshi_creds.json`:
+Two no_agent cron jobs fail with `FileNotFoundError: $HERMES_HOME/commons/data/ocas-bones/kalshi_creds.json`:
 - `bones:position-tracker` (script: `rr_bones_position_tracker.sh`)
 - `bones:market-monitor` (script: `rr_bones_market_monitor.sh`)
 

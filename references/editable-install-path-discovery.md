@@ -28,7 +28,7 @@ print(spec.origin)
 
 The finder module (if present) is at:
 ```
-/usr/local/lib/hermes-agent/venv/lib/python3.11/site-packages/__editable___hermes_<plugin_name>_finder.py
+$HERMES_INSTALL/venv/lib/python3.11/site-packages/__editable___hermes_<plugin_name>_finder.py
 ```
 
 Inside, the `MAPPING` dict maps package names to actual filesystem paths.

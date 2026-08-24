@@ -17,7 +17,7 @@ A 24h scan produced 9 "GAP" journals; on inspection every cited fingerprint (`oc
 2. `python3 scripts/verify_escalation_state.py` → live job/issue reconciliation.
 3. For each cited "missing" id, grep the authoritative file directly:
    ```python
-   python3 -c "d=open('~/.hermes/profiles/indigo/commons/data/ocas-custodian/issues.jsonl').read(); print('PRESENT' if '<id>' in d else 'ABSENT')"
+   python3 -c "d=open('$HERMES_HOME/../indigo/commons/data/ocas-custodian/issues.jsonl').read(); print('PRESENT' if '<id>' in d else 'ABSENT')"
    ```
    PRESENT ⇒ **false positive**, not a persistence gap.
 4. **Do NOT pass `--write`** to the gap-scan. It would re-persist existing open issues as duplicate escalations.

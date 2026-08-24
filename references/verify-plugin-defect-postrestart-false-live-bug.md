@@ -10,7 +10,7 @@
 Before trusting any `LIVE` verdict, independently confirm with a tool that scopes to the **most recent** restart line:
 
 ```bash
-LOG=~/.hermes/profiles/indigo/logs/gateway.log
+LOG=$HERMES_HOME/../indigo/logs/gateway.log
 # real last restart line number + time
 grep -nE "Starting Hermes Gateway" "$LOG" | tail -1
 # any actor/seq constraint errors AFTER that line number?
@@ -27,4 +27,4 @@ If the independent count is 0 but the verifier says LIVE, the verifier is wrong 
 A chronic FALSE-LIVE verdict re-escalates already-`resolved` issues (e.g. `oc_chronicle_event_actor_check_constraint_20260722`, `oc_chronicle_event_seq_unique_constraint_20260722`) on every light scan, creating data-integrity regressions that a later scan must reverse. Always cross-check the verifier against the raw log before acting on its LIVE verdict.
 
 ## Live-vs-stale log caveat
-The script's DEFAULT scans BOTH `~/.hermes/profiles/<profile>/logs/gateway.log` (LIVE) and `~/.hermes/logs/gateway.log` (often STALE). Prefer running with `--log <live path>` to avoid counting stale-pre-restart noise. (The stale root log had 0 Chronicle errors, so it did not contribute post-fix, but the live-path flag is the safe default.)
+The script's DEFAULT scans BOTH `$HERMES_HOME/../<profile>/logs/gateway.log` (LIVE) and `~/.hermes/logs/gateway.log` (often STALE). Prefer running with `--log <live path>` to avoid counting stale-pre-restart noise. (The stale root log had 0 Chronicle errors, so it did not contribute post-fix, but the live-path flag is the safe default.)

@@ -25,7 +25,7 @@ per line).
    forward-staleness candidates. If `Reconcile write needed: False`, no issues.jsonl
    write is needed for pause-state sync.
 2. **Dump + classify every enabled+erroring job individually** from
-   `~/.hermes/profiles/<profile>/cron/jobs.json` (top-level `"jobs"` key — NOT
+   `$HERMES_HOME/../<profile>/cron/jobs.json` (top-level `"jobs"` key — NOT
    `data.jobs`). Do NOT trust `issues.jsonl` alone: the 4 erroring jobs in this run were
    2 transient (429, interpreter-shutdown → leave running), 1 spend-guard (matches an
    open issue), and 1 untracked live code defect.

@@ -63,7 +63,7 @@ strings <hermes-home>/logs/gateway.log | grep "kanban dispatcher: tick failed" |
 
 The `_migrate_add_optional_columns` function in `kanban_db.py` should also create missing indexes, not just missing columns. This would make the fix automatic on first connection.
 
-**File**: `/usr/local/lib/hermes-agent/hermes_cli/kanban_db.py`
+**File**: `$HERMES_INSTALL/hermes_cli/kanban_db.py`
 **Function**: `_migrate_add_optional_columns()`
 
 Add index creation at the end of the function:

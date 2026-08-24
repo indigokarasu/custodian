@@ -7,9 +7,9 @@ Session-derived fixes and resolution procedures catalogued from the escalation e
 ### `oc_praxis_literal_tilde_path` — Tier 4 auto-fixable code defect
 
 **Fingerprint:** `oc_praxis_literal_tilde_path`  
-**Affected pattern:** Python scripts in OCAS skills use literal `~/.hermes/...` or `/root/.hermes/...` string paths instead of `os.path.expanduser()`. The `~` tilde is never expanded in Python `open()` calls, causing `FileNotFoundError` at runtime even though the expanded path exists.
+**Affected pattern:** Python scripts in OCAS skills use literal `~/.hermes/...` or `$AGENT_ROOT/...` string paths instead of `os.path.expanduser()`. The `~` tilde is never expanded in Python `open()` calls, causing `FileNotFoundError` at runtime even though the expanded path exists.
 
-**Detection:** During light-scan Step 6 (script path blocks), check any `FileNotFoundError` whose path starts with `~` or `/root/.hermes` and the script is in a skill's `scripts/` directory. The path will contain a literal tilde or `/root` prefix that won't resolve in the cron execution environment.
+**Detection:** During light-scan Step 6 (script path blocks), check any `FileNotFoundError` whose path starts with `~` or `$AGENT_ROOT` and the script is in a skill's `scripts/` directory. The path will contain a literal tilde or `/root` prefix that won't resolve in the cron execution environment.
 
 **Fix:** Replace literal tilde paths with `os.path.expanduser()` calls. Ensure `import os` is present. Run the script to verify. Force-flip the cron registry with `hermes cron run <job_id>`.
 
@@ -34,4 +34,4 @@ Session-derived fixes and resolution procedures catalogued from the escalation e
 **Fingerprint:** `oc_bones_missing_kalshi_creds_file` — `FileNotFoundError: kalshi_creds.json` in both `bones:position-tracker` and `stones:market-monitor`.  
 **Root cause:** The `kalshi_creds.json` credential file has not been created in the Bones data directory after Kalshi OAuth setup.
 
-**Fix direction:** User-gated. Requires user to create `kalshi_creds.json` with valid Kalshi API credentials in `~/.hermes/profiles/indigo/commons/data/ocas-bones/`. Both Bones jobs share the same `CREDS_PATH` variable (`{BONES_DIR}/kalshi_creds.json`), so a single credential file fixes both. The scripts should ideally handle missing credentials gracefully (exit 0 with a warning rather than crashing), but the primary fix is credential provisioning.
+**Fix direction:** User-gated. Requires user to create `kalshi_creds.json` with valid Kalshi API credentials in `$HERMES_HOME/../indigo/commons/data/ocas-bones/`. Both Bones jobs share the same `CREDS_PATH` variable (`{BONES_DIR}/kalshi_creds.json`), so a single credential file fixes both. The scripts should ideally handle missing credentials gracefully (exit 0 with a warning rather than crashing), but the primary fix is credential provisioning.

@@ -41,6 +41,9 @@ def run_one(jid):
 
 
 def main():
+    if set(sys.argv[1:]) & {"--help", "-h"}:
+        print((__doc__ or "").strip())
+        sys.exit(0)
     ids = []
     if "--file" in sys.argv:
         i = sys.argv.index("--file")

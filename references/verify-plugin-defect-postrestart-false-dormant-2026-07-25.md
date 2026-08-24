@@ -19,7 +19,7 @@ signatures and produce a false-DORMANT verdict.
 - The verifier reported `compress_force: post=0 → DORMANT` (do not
   re-escalate).
 - Independent confirmation:
-  `awk 'NR>=2918' ~/.hermes/profiles/indigo/logs/gateway.log | grep -cE "got an unexpected keyword argument 'force'"`
+  `awk 'NR>=2918' $HERMES_HOME/../indigo/logs/gateway.log | grep -cE "got an unexpected keyword argument 'force'"`
   returned **1** post-restart hit. The catalog regex had not matched the
   actual traceback text, so the verifier undercounted to 0.
 

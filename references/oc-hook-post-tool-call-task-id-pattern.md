@@ -45,7 +45,7 @@ In this session, the locations were:
 
 The editable finder is at:
 ```
-/usr/local/lib/hermes-agent/venv/lib/python3.11/site-packages/__editable___hermes_custodian_plugin_2_0_0_finder.py
+$HERMES_INSTALL/venv/lib/python3.11/site-packages/__editable___hermes_custodian_plugin_2_0_0_finder.py
 ```
 
 Its `MAPPING` dict shows the actual path. **Always edit the mapped path, not the plugin directory.**

@@ -16,7 +16,7 @@ These directories are **not tracked by git** in the hermes-agent HEAD (verified 
 ## Detection
 
 ```bash
-for d in /usr/local/lib/hermes-agent/plugins/memory/chronicle/ /usr/local/lib/hermes-agent/plugins/context_engine/chronicle/; do
+for d in $HERMES_INSTALL/plugins/memory/chronicle/ $HERMES_INSTALL/plugins/context_engine/chronicle/; do
   count=$(find "$d" -maxdepth 1 -name "*.py" -not -path "*__pycache__" 2>/dev/null | wc -l)
   [ "$count" -eq 0 ] && echo "EMPTY CHRONICLE PLUGIN DIR: $d"
 done
