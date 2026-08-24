@@ -2,7 +2,7 @@
 
 ## Symptom
 
-All scripts in `~/.hermes/profiles/<profile>/skills/ocas-custodian/scripts/` that use `fos.path.expanduser(...)` crash with `NameError: name 'fos' is not defined` at import/exec time.
+All scripts in `$HERMES_HOME/../<profile>/skills/ocas-custodian/scripts/` that use `fos.path.expanduser(...)` crash with `NameError: name 'fos' is not defined` at import/exec time.
 
 ## Scope (confirmed 2026-07-27)
 

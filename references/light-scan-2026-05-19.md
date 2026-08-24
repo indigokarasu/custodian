@@ -12,13 +12,13 @@ The ocas-rally frontmatter only declares: `rally:research`, `rally:healthcheck-p
 
 ### `kalshi_portfolio.py` — Prompt-Based Job Path Mismatch
 
-The `bones:market-monitor` cron job (ID: `bbb15fb19401`) is a prompt-based job (`script: null`) whose prompt instructs the agent to run `python3 /usr/local/lib/hermes-agent/scripts/kalshi_portfolio.py`. That file does not exist at that path.
+The `bones:market-monitor` cron job (ID: `bbb15fb19401`) is a prompt-based job (`script: null`) whose prompt instructs the agent to run `python3 $HERMES_INSTALL/scripts/kalshi_portfolio.py`. That file does not exist at that path.
 
 **Actual location**: `<hermes-home>/skills/ocas-bones/scripts/kalshi_portfolio.py`
 
 **Error in logs**:
 ```
-python3: can't open file '/usr/local/lib/hermes-agent/scripts/kalshi_portfolio.py': [Errno 2] No such file or directory
+python3: can't open file '$HERMES_INSTALL/scripts/kalshi_portfolio.py': [Errno 2] No such file or directory
 ```
 
 **Classification**: Tier 2 — prompt-based job with dead script reference. Cannot auto-fix without knowing the correct path. The job's `last_status` was `ok` at time of scan (the error was from a previous run), suggesting the agent may have found a workaround.

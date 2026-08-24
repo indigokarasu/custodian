@@ -12,7 +12,7 @@ Custodian monitors disk usage and cleans caches as part of its system health rol
 | HuggingFace models | `~/.cache/huggingface` | 1-20 GB | Safe if models can be re-downloaded |
 | Playwright browsers | `~/.cache/ms-playwright` | 1-3 GB | `rm -rf ~/.cache/ms-playwright` |
 | Hermes state/sessions | `~/.hermes/state.db`, `state-snapshots`, `sessions` | 10s of GB | **Do NOT clear** without explicit instruction |
-| Hermes agent packages | `/usr/local/lib/hermes-agent` | Varies | **Do NOT clear** |
+| Hermes agent packages | `$HERMES_INSTALL` | Varies | **Do NOT clear** |
 
 ## Safe Cleanup Commands
 
