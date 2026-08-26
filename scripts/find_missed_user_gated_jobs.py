@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import os
+import argparse
 """Escalation-loop missed-enrollment probe.
 
 Loads the profile jobs.json, finds every ENABLED job currently in error state
@@ -184,7 +185,7 @@ if __name__ == "__main__":
     )
     ap.add_argument("--profile", default="indigo", help="Profile name")
     args = ap.parse_args()
-    HOME = os.path.expanduser("~/.hermes/profiles/{args.profile}")
+    HOME = os.path.expanduser(f"~/.hermes/profiles/{args.profile}")
     JOBS_PATH = f"{HOME}/cron/jobs.json"
     ISSUES_PATHS[:] = [f"{HOME}/commons/data/ocas-custodian/issues.jsonl"]
     main()
