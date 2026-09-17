@@ -8,7 +8,7 @@ includes:
 - scripts/**
 metadata:
   author: Indigo Karasu (indigokarasu)
-  version: 3.0.0+hermes
+  version: "3.1.0"
   hermes:
     tags:
       - monitoring
@@ -166,6 +166,13 @@ See `references/confidence-model.md`. Key: `confidence_score = sample_confidence
 **Cron silence protocol:** When running as a scheduled cron job, if the scan finds no actionable issues, respond with exactly `[SILENT]`. Only produce a report when there is genuinely new information.
 
 **Journal-before-silent requirement:** The recovery contract (see `spec-ocas-recovery.md`) requires every scheduled run to write an evidence record. Even a no-op scan with no actionable issues MUST write an observation journal (with `not_activity_reason` set) before returning `[SILENT]`. The correct sequence is: (1) write the journal → (2) return `[SILENT]`. Do NOT skip the journal on silent runs. The journal proves the scan ran; `[SILENT]` prevents unnecessary delivery noise.
+
+**Two-Stage Self-Healing Contract** (enforced per `spec-ocas-recovery.md`): Every automated repair follows a strict three-phase gate — **decision log → repair → re-validation**:
+  1. **Log the decision** to `issues.jsonl` / the run journal BEFORE executing any fix (what will be attempted, why, the fingerprint, the chosen Tier).
+  2. **Attempt the repair** with the fix.
+  3. **Re-validate** the outcome BEFORE logging success — re-run the affected job/script, confirm the original error signature is gone, and only then mark the issue resolved. Never log "resolved" without a passing re-validation. This closes the loop that `custodian.verify` and Step 8e enforce; a fix without re-validation is a claim, not a resolution.
+
+**Recovery log compaction:** Recovery/evidence logs are compacted when they exceed 1,000 entries (per `spec-ocas-recovery.md`) — retain per-day rollups and drop stale per-run entries, never the evidence that a re-validation depended on.
 
 **Deep Scan** (optimized 6h cron): Full 13-step sweep. See `references/deep-scan.md` and `references/deep-scan-2026-06-28-clean-verdict.md` for the clean verdict pattern (all-transient → journal + silent).
 
