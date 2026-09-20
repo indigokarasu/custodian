@@ -18,6 +18,7 @@ Detected failure modes:
 
 import json
 import os
+import re
 import signal
 import subprocess
 import sys
@@ -28,6 +29,30 @@ from pathlib import Path
 
 SERVICE = "hermes-gateway.service"
 SYSTEMCTL = "systemctl --user"  # Gateway runs as user-level systemd service
+
+# Markers that actually appear in this service's journal at its WARNING log
+# level. Measured 2026-09-20 over the full journal for hermes-gateway.service:
+#   "Connected to Telegram"                 1 occurrence   <- usable
+#   "inbound message: platform=telegram"    0 occurrences  <- INFO-level, never seen
+#   "polling resumed"                       0 occurrences  <- never emitted
+#   "409" / "Conflict"                      0 occurrences
+# A check that treats the ABSENCE of an INFO-level line as a fault fires
+# unconditionally on a WARNING-level journal. See check_telegram_silent_death.
+MARKER_CONNECTED = "Connected to Telegram"
+
+# Matches a genuine Telegram polling conflict. Never a bare "409" substring:
+# on the sibling gateway's journal every historical "409" was a millisecond
+# timestamp ("21:02:13,409"), a thread address or a memory figure ("409.4M") --
+# 11 matches, 0 real conflicts.
+CONFLICT_RE = re.compile(
+    r"telegram\.error\.Conflict"
+    r"|Conflict:\s*terminated by other"
+    r"|terminated by other getUpdates"
+    r"|HTTP\s*409\b"
+    r"|error_code[\"']?\s*[:=]\s*409\b"
+    r"|\b409\s+Conflict\b",
+    re.IGNORECASE,
+)
 MAX_LOG_AGE_MINUTES = 5
 STARTUP_WAIT = 10
 
@@ -222,12 +247,27 @@ def check_telegram_responding(token):
 
 
 def check_telegram_polling_conflict(journal_10min):
-    """Check if Telegram polling has a 409 conflict."""
-    if "polling conflict" in journal_10min.lower() or "409" in journal_10min:
-        if "polling resumed" in journal_10min.lower():
-            return False, "Polling conflict detected but already recovered"
-        return True, "Telegram polling conflict (409) detected — another instance may be polling"
-    return False, "No polling conflict"
+    """Check if Telegram polling has a genuine 409 conflict.
+
+    Matches conflict SEMANTICS, never a bare "409" substring: that test made
+    any log line containing those three digits -- a millisecond timestamp, a
+    thread address, a memory figure -- look like a competing poller and
+    restart the gateway.
+
+    Recovery is judged by a MARKER_CONNECTED line after the last conflict,
+    because "polling resumed" is never emitted (0 occurrences).
+    """
+    matches = list(CONFLICT_RE.finditer(journal_10min))
+    if not matches:
+        return False, "No polling conflict"
+
+    if journal_10min.find(MARKER_CONNECTED, matches[-1].start()) != -1:
+        return False, "Polling conflict detected but adapter reconnected afterwards"
+
+    return True, (
+        f"Telegram polling conflict ({len(matches)} found, no reconnect since) "
+        f"— another instance may be polling"
+    )
 
 
 def check_telegram_network_errors(journal_window):
@@ -253,12 +293,33 @@ def check_telegram_disconnect_loop(journal_window):
 
 
 def check_telegram_silent_death(journal_silent):
-    """Check if gateway is running but Telegram hasn't received messages in a while."""
+    """Check whether Telegram polling looks wedged.
+
+    This check used to restart the gateway whenever the window held a
+    "Connected to Telegram" line and no "inbound message" line. That is
+    unconditional in practice: "inbound message: platform=telegram" is logged
+    at INFO and this service journals at WARNING, so it has 0 occurrences --
+    while "Connected to Telegram" is present precisely because the gateway
+    started normally. Every restart re-emitted the trigger line, which is the
+    same self-sustaining loop the sibling gateway monitor hit on 2026-09-18.
+
+    An absent INFO-level line is not evidence of anything. Quiet inbound
+    traffic is indistinguishable from a wedged poller at this log level, so
+    this check reports rather than restarts; real faults are caught by the
+    conflict, network-error and disconnect-loop checks, which key on lines the
+    journal actually contains.
+    """
     inbound_count = journal_silent.count("inbound message: platform=telegram")
-    if inbound_count == 0:
-        if "Connected to Telegram" in journal_silent and "inbound message" not in journal_silent:
-            return True, f"No Telegram inbound messages in last {SILENT_DEATH_MINUTES} min (polling may be stuck)"
-    return False, "Telegram receiving messages normally"
+    if inbound_count > 0:
+        return False, f"Telegram receiving messages normally ({inbound_count} inbound)"
+
+    if MARKER_CONNECTED in journal_silent:
+        return False, (
+            "Telegram connected; no inbound-message evidence either way at this "
+            "log level (INFO not journalled) — not treating silence as a fault"
+        )
+
+    return False, "No Telegram connection recorded in window"
 
 
 def check_import_errors(journal_tail):
