@@ -2,7 +2,7 @@
 
 | File | When to read |
 |------|-------------|
-| `references/cron-output-verification-gap.md` | Cron `last_status=ok` but output not updated |
+| `references/execution-loops.md` | Before running any scan or escalation — full checklists for Light Scan (10-step), Deep Scan, Escalation Runner, and Escalation Execution Loop |
 | `references/script-path-security-block-pattern.md` | Script points outside `$HERMES_HOME/scripts/` |
 | `references/google-oauth-client-deleted-pattern.md` | Google OAuth `deleted_client` and `invalid_grant` (token revoked) errors |
 | `references/email-check-invalid-grant-diagnostic.md` | Diagnostic procedure for `invalid_grant` on email:check — step-by-step token store testing and re-auth flow |
