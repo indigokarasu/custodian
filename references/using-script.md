@@ -1,9 +1,9 @@
 # Using the script
 
-All deterministic operations delegate to `scripts/custodian.py`. Call it via Bash tool:
+All deterministic operations delegate to the per-task scripts under `scripts/`. Call them via Bash tool:
 
 ```
-python3 {skill_dir}/scripts/custodian.py <command> [args]
+python3 {skill_dir}/scripts/<task-script>.py [args]
 ```
 
 Where `{skill_dir}` is the path to this skill package (e.g. `{agent_root}/skills/ocas-custodian`).

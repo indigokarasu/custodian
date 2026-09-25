@@ -19,6 +19,8 @@ import os
 import datetime
 import argparse
 
+from custodian_common import parse_issues
+
 PROFILE = os.path.expanduser("~/.hermes/profiles/indigo")
 JOBS = os.path.join(PROFILE, "cron", "jobs.json")
 ISSUES = os.path.join(PROFILE, "commons", "data", "ocas-custodian", "issues.jsonl")
@@ -31,42 +33,6 @@ OUTAGE_MATCH = {
     "oc_openrouter_402_credits_exhausted": ["402", "credits"],
     "oc_http_404_model_deprecated": ["No endpoints found for", "owl-alpha"],
 }
-
-
-def brace_depth_parse(text):
-    """Fast JSON stream parser using C-optimized json.JSONDecoder().raw_decode()
-    instead of character-by-character string accumulation loop (~9x speedup).
-    """
-    if not text:
-        return []
-    out = []
-    decoder = json.JSONDecoder()
-    idx = 0
-    length = len(text)
-    while idx < length:
-        while idx < length and text[idx].isspace():
-            idx += 1
-        if idx >= length:
-            break
-        try:
-            obj, end = decoder.raw_decode(text, idx)
-            if isinstance(obj, dict):
-                out.append(obj)
-            elif isinstance(obj, list):
-                out.extend(x for x in obj if isinstance(x, dict))
-            idx = end
-        except json.JSONDecodeError:
-            pos_brace = text.find("{", idx + 1)
-            pos_bracket = text.find("[", idx + 1)
-            if pos_brace == -1 and pos_bracket == -1:
-                break
-            if pos_brace == -1:
-                idx = pos_bracket
-            elif pos_bracket == -1:
-                idx = pos_brace
-            else:
-                idx = min(pos_brace, pos_bracket)
-    return out
 
 
 def live_error_count(fp):
@@ -94,7 +60,7 @@ def main():
         print("No issues.jsonl at", ISSUES)
         return
 
-    entries = brace_depth_parse(open(ISSUES).read())
+    entries = parse_issues(open(ISSUES).read())
     now = datetime.datetime.now(datetime.timezone.utc).isoformat()
     reopened = []
     for e in entries:

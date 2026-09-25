@@ -21,6 +21,8 @@ Run: python3 scripts/verify_escalation_state.py
 import json
 import os
 
+from custodian_common import parse_issues
+
 PROFILE = os.path.expanduser("~/.hermes/profiles/indigo")
 ISSUES = f"{PROFILE}/commons/data/ocas-custodian/issues.jsonl"
 JOBS = f"{PROFILE}/cron/jobs.json"
@@ -32,42 +34,6 @@ LIVE_FP = {
     "oc_http_404_model_deprecated": "owl_404",
 }
 MONITOR_LIST_ID = "39b7edc44b35"  # monitor:list (Google Tasks 403)
-
-
-def parse_brace_depth(text):
-    """Fast JSON stream parser using C-optimized json.JSONDecoder().raw_decode()
-    instead of character-by-character string accumulation loop (~9x speedup).
-    """
-    if not text:
-        return []
-    objs = []
-    decoder = json.JSONDecoder()
-    idx = 0
-    length = len(text)
-    while idx < length:
-        while idx < length and text[idx].isspace():
-            idx += 1
-        if idx >= length:
-            break
-        try:
-            obj, end = decoder.raw_decode(text, idx)
-            if isinstance(obj, dict):
-                objs.append(obj)
-            elif isinstance(obj, list):
-                objs.extend(x for x in obj if isinstance(x, dict))
-            idx = end
-        except json.JSONDecodeError:
-            pos_brace = text.find('{', idx + 1)
-            pos_bracket = text.find('[', idx + 1)
-            if pos_brace == -1 and pos_bracket == -1:
-                break
-            if pos_brace == -1:
-                idx = pos_bracket
-            elif pos_bracket == -1:
-                idx = pos_brace
-            else:
-                idx = min(pos_brace, pos_bracket)
-    return objs
 
 
 def fp_of(j):
@@ -100,7 +66,7 @@ def main():
         issues = []
         for line in f:
             if line.strip():
-                issues.extend(parse_brace_depth(line))
+                issues.extend(parse_issues(line))
 
     print(f"Jobs total={len(jobs)} enabled+erroring={len(enabled_err)}")
     print("Live paused by fp: " + ", ".join(f"{k}={len(v)}" for k, v in paused_by_fp.items()))

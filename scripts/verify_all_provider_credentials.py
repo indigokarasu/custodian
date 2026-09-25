@@ -12,9 +12,7 @@ Run:
   python3 verify_all_provider_credentials.py [profile_dir]
 profile_dir defaults to ~/.hermes/profiles/indigo
 """
-import json
 import os
-import sys
 import socket
 import urllib.request
 import urllib.error

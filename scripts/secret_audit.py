@@ -38,7 +38,7 @@ Usage:
   python3 secret_audit.py --mode audit [--json /tmp/out.json] [--profile indigo]
   python3 secret_audit.py --mode remediate [--apply] [--profile indigo]
 """
-import os, re, sys, json, math, argparse, datetime, shutil
+import os, re, json, math, argparse, datetime, shutil
 
 HERMES_HOME = os.environ.get("HERMES_HOME", os.path.expanduser("~/.hermes/profiles/indigo"))
 ROOT = os.path.expanduser("~/.hermes")

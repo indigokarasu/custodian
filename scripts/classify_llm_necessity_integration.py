@@ -16,13 +16,14 @@ REPORT-ONLY: NEVER auto-converts a job to no_agent.
 
 import json
 import os
+import pathlib
 import subprocess
 import sys
 from datetime import datetime, timezone
 
 PROFILE = "indigo"
-PROFILE_HOME = os.path.expanduser("~/.hermes/profiles/{PROFILE}")
-CLASSIFY_SCRIPT = os.path.expanduser("~/.hermes/skills/ocas-custodian/scripts/classify_llm_necessity.py")
+PROFILE_HOME = os.path.expanduser(f"~/.hermes/profiles/{PROFILE}")
+CLASSIFY_SCRIPT = pathlib.Path(__file__).with_name("classify_llm_necessity.py")
 ISSUES_PATH = f"{PROFILE_HOME}/commons/data/ocas-custodian/issues.jsonl"
 ACK_PATH = f"{PROFILE_HOME}/commons/data/ocas-custodian/llm_necessity_ack.json"
 
@@ -261,7 +262,6 @@ if __name__ == "__main__":
     ap.add_argument("--profile", default=PROFILE, help="Profile name")
     args = ap.parse_args()
     PROFILE = args.profile
-    PROFILE_HOME = os.path.expanduser("~/.hermes/profiles/{PROFILE}")
     ISSUES_PATH = f"{PROFILE_HOME}/commons/data/ocas-custodian/issues.jsonl"
     ACK_PATH = f"{PROFILE_HOME}/commons/data/ocas-custodian/llm_necessity_ack.json"
     main()

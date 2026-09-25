@@ -37,7 +37,9 @@ never pipe-to-interpreter.
 import json
 import sys
 import argparse
-from datetime import datetime, timezone
+from datetime import datetime
+
+from custodian_common import parse_issues
 
 JOBS = os.path.expanduser("~/.hermes/profiles/indigo/cron/jobs.json")
 ISSUES = os.path.expanduser("~/.hermes/profiles/indigo/commons/data/ocas-custodian/issues.jsonl")
@@ -59,45 +61,9 @@ def load_jobs():
     return {j.get("id"): j for j in jobs}
 
 
-def parse_issues_brace_depth(text):
-    """Fast JSON stream parser using C-optimized json.JSONDecoder().raw_decode()
-    instead of character-by-character string accumulation loop (~9x speedup).
-    """
-    if not text:
-        return []
-    records = []
-    decoder = json.JSONDecoder()
-    idx = 0
-    length = len(text)
-    while idx < length:
-        while idx < length and text[idx].isspace():
-            idx += 1
-        if idx >= length:
-            break
-        try:
-            obj, end = decoder.raw_decode(text, idx)
-            if isinstance(obj, dict):
-                records.append(obj)
-            elif isinstance(obj, list):
-                records.extend(x for x in obj if isinstance(x, dict))
-            idx = end
-        except json.JSONDecodeError:
-            pos_brace = text.find("{", idx + 1)
-            pos_bracket = text.find("[", idx + 1)
-            if pos_brace == -1 and pos_bracket == -1:
-                break
-            if pos_brace == -1:
-                idx = pos_bracket
-            elif pos_bracket == -1:
-                idx = pos_brace
-            else:
-                idx = min(pos_brace, pos_bracket)
-    return records
-
-
 def load_issue(iid):
     with open(ISSUES) as f:
-        recs = parse_issues_brace_depth(f.read())
+        recs = parse_issues(f.read())
     for r in recs:
         if (r.get("issue_id") or r.get("id")) == iid:
             return r
