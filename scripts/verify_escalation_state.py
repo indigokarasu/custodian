@@ -21,8 +21,6 @@ Run: python3 scripts/verify_escalation_state.py
 import json
 import os
 
-from custodian_common import parse_issues
-
 PROFILE = os.path.expanduser("~/.hermes/profiles/indigo")
 ISSUES = f"{PROFILE}/commons/data/ocas-custodian/issues.jsonl"
 JOBS = f"{PROFILE}/cron/jobs.json"
@@ -62,6 +60,7 @@ def main():
     enabled_err = [j.get("id") for j in jobs
                    if j.get("enabled", True) and j.get("last_status") == "error"]
 
+    from custodian_common import parse_issues  # lazy: keeps --help working without deps
     with open(ISSUES) as f:
         issues = []
         for line in f:

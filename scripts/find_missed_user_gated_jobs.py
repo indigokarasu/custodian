@@ -26,8 +26,6 @@ Run: python3 ~/.hermes/profiles/indigo/skills/ocas-custodian/scripts/find_missed
 """
 import json
 
-from custodian_common import parse_issues
-
 JOBS_PATH = os.path.expanduser("~/.hermes/profiles/indigo/cron/jobs.json")
 ISSUES_PATHS = [
     os.path.expanduser("~/.hermes/profiles/indigo/commons/data/ocas-custodian/issues.jsonl"),
@@ -58,6 +56,7 @@ TRANSIENT = [
 
 
 def collect_paused():
+    from custodian_common import parse_issues  # lazy: keeps --help working without deps
     paused = set()
     for p in ISSUES_PATHS:
         try:

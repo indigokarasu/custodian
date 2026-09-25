@@ -19,8 +19,6 @@ import os
 import datetime
 import argparse
 
-from custodian_common import parse_issues
-
 PROFILE = os.path.expanduser("~/.hermes/profiles/indigo")
 JOBS = os.path.join(PROFILE, "cron", "jobs.json")
 ISSUES = os.path.join(PROFILE, "commons", "data", "ocas-custodian", "issues.jsonl")
@@ -55,6 +53,7 @@ def main():
     ap.add_argument("--write", action="store_true",
                     help="persist reopens (default: dry-run)")
     args = ap.parse_args()
+    from custodian_common import parse_issues  # lazy: keeps --help working without deps
 
     if not os.path.isfile(ISSUES):
         print("No issues.jsonl at", ISSUES)

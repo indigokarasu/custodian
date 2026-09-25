@@ -39,8 +39,6 @@ import sys
 import argparse
 from datetime import datetime
 
-from custodian_common import parse_issues
-
 JOBS = os.path.expanduser("~/.hermes/profiles/indigo/cron/jobs.json")
 ISSUES = os.path.expanduser("~/.hermes/profiles/indigo/commons/data/ocas-custodian/issues.jsonl")
 
@@ -62,6 +60,7 @@ def load_jobs():
 
 
 def load_issue(iid):
+    from custodian_common import parse_issues  # lazy: keeps --help working without deps
     with open(ISSUES) as f:
         recs = parse_issues(f.read())
     for r in recs:
