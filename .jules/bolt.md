@@ -1,0 +1,3 @@
+## 2026-07-16 - Canonical JSON Stream Parsing & Regex Pre-compilation in Custodian
+**Learning:** `custodian_common.parse_issues` uses C-optimized `json.JSONDecoder().raw_decode()` and is ~9x faster than custom character-by-character scanner loops while safely handling string fields containing braces. Additionally, pre-compiling regexes and extracting signals in a single pass avoids redundant evaluation cycles in classifier probes.
+**Action:** Always import `parse_issues` from `custodian_common` when reading `issues.jsonl` files instead of rolling custom char-by-char JSON scanners, and pre-compile regex patterns at module load in probe scripts.

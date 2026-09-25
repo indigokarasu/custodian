@@ -62,10 +62,7 @@ def main():
 
     from custodian_common import parse_issues  # lazy: keeps --help working without deps
     with open(ISSUES) as f:
-        issues = []
-        for line in f:
-            if line.strip():
-                issues.extend(parse_issues(line))
+        issues = parse_issues(f.read())
 
     print(f"Jobs total={len(jobs)} enabled+erroring={len(enabled_err)}")
     print("Live paused by fp: " + ", ".join(f"{k}={len(v)}" for k, v in paused_by_fp.items()))

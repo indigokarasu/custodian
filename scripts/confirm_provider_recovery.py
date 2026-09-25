@@ -39,32 +39,9 @@ def fp_of(le):
 
 
 def parse_issues(path):
-    recs = []
-    depth = 0
-    cur = ""
-    started = False
-    for ch in open(path, encoding="utf-8", errors="replace").read():
-        if ch == "{":
-            depth += 1
-            started = True
-            cur += ch
-        elif ch == "}":
-            depth -= 1
-            cur += ch
-            if depth == 0 and started:
-                recs.append(cur)
-                cur = ""
-                started = False
-        else:
-            if started:
-                cur += ch
-    out = []
-    for r in recs:
-        try:
-            out.append(json.loads(r))
-        except Exception:
-            pass
-    return out
+    from custodian_common import parse_issues as _parse_issues
+    with open(path, encoding="utf-8", errors="replace") as f:
+        return _parse_issues(f.read())
 
 
 def main():
