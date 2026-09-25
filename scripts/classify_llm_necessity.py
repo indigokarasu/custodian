@@ -120,6 +120,20 @@ _KNOWN_GENUINE_LLM = [
     "lucid:dream",
 ]
 
+# Pre-compiled regex patterns for zero re-compilation overhead and faster matching
+_SELF_UPDATE_RE = [re.compile(p, re.IGNORECASE) for p in _SELF_UPDATE_PATTERNS]
+_SCRIPT_WRAPPER_RE = [re.compile(p) for p in _SCRIPT_WRAPPER_PATTERNS]
+_SKILL_LOAD_SCRIPT_RE = [re.compile(p, re.IGNORECASE) for p in _SKILL_LOAD_SCRIPT_PATTERNS]
+
+_GENERATION_VERBS_RE = [re.compile(p, re.IGNORECASE) for p in _GENERATION_VERBS]
+_WRITE_CREATIVE_RE = [re.compile(p, re.IGNORECASE) for p in _WRITE_CREATIVE]
+_PERSONA_FRAMING_RE = [re.compile(p) for p in _PERSONA_FRAMING]
+_MULTI_SOURCE_RE = [re.compile(p, re.IGNORECASE) for p in _MULTI_SOURCE]
+_DISPATCH_PATTERNS_RE = [re.compile(p, re.IGNORECASE) for p in _DISPATCH_PATTERNS]
+
+_BORDERLINE_EXIT_CODE_RE = re.compile(r"exit code", re.IGNORECASE)
+_BORDERLINE_SKILL_LOAD_RE = re.compile(r"(run|check|scan|monitor)\s+(daily|weekly|regular)\s+\S+\s+(using|with)\s+the?\s+\S+\s+skill", re.IGNORECASE)
+
 
 def load_jobs():
     for p in JOBS_PATH_CANDIDATES:
@@ -130,30 +144,33 @@ def load_jobs():
     raise SystemExit("jobs.json not found in candidates")
 
 
-def has_positive_signal(prompt, script):
-    """True if any STRONG positive signal (wasted LLM) matches."""
+def extract_positive_signals(prompt, script):
+    """Return list of positive signals (wasted LLM) that match in a single pass."""
+    signals = []
     pl = prompt.lower()
 
-    # Signal 1: Script-field set but LLM — strong standalone.
+    # Signal 1: Script-field set
     if script and isinstance(script, str) and script.strip():
-        return True
+        signals.append("script_field_set")
 
     # Signal 2: Self-update cluster
-    for pat in _SELF_UPDATE_PATTERNS:
-        if re.search(pat, pl):
-            return True
+    if any(p.search(pl) for p in _SELF_UPDATE_RE):
+        signals.append("self_update")
 
     # Signal 3: Script-wrapper pattern
-    for pat in _SCRIPT_WRAPPER_PATTERNS:
-        if re.search(pat, prompt):
-            return True
+    if any(p.search(prompt) for p in _SCRIPT_WRAPPER_RE):
+        signals.append("script_wrapper")
 
     # Signal 4: Needless skill-load + script
-    for pat in _SKILL_LOAD_SCRIPT_PATTERNS:
-        if re.search(pat, pl):
-            return True
+    if any(p.search(pl) for p in _SKILL_LOAD_SCRIPT_RE):
+        signals.append("skill_load_script")
 
-    return False
+    return signals
+
+
+def has_positive_signal(prompt, script):
+    """True if any STRONG positive signal (wasted LLM) matches."""
+    return bool(extract_positive_signals(prompt, script))
 
 
 def has_negative_signal(prompt, name):
@@ -167,29 +184,24 @@ def has_negative_signal(prompt, name):
             return True
 
     # Generation/reasoning verbs
-    for pat in _GENERATION_VERBS:
-        if re.search(pat, pl):
-            return True
+    if any(p.search(pl) for p in _GENERATION_VERBS_RE):
+        return True
 
     # Creative write
-    for pat in _WRITE_CREATIVE:
-        if re.search(pat, pl):
-            return True
+    if any(p.search(pl) for p in _WRITE_CREATIVE_RE):
+        return True
 
     # Persona framing — don't need lower() here, persona has caps
-    for pat in _PERSONA_FRAMING:
-        if re.search(pat, prompt):
-            return True
+    if any(p.search(prompt) for p in _PERSONA_FRAMING_RE):
+        return True
 
     # Multi-source synthesis
-    for pat in _MULTI_SOURCE:
-        if re.search(pat, pl):
-            return True
+    if any(p.search(pl) for p in _MULTI_SOURCE_RE):
+        return True
 
     # Dispatch / code-review
-    for pat in _DISPATCH_PATTERNS:
-        if re.search(pat, pl):
-            return True
+    if any(p.search(pl) for p in _DISPATCH_PATTERNS_RE):
+        return True
 
     return False
 
@@ -198,10 +210,10 @@ def is_borderline(prompt, name):
     """Jobs that are mechanical but need a purpose-built wrapper."""
     pl = prompt.lower()
     # Check for exit-code interpretation needs
-    if re.search(r"exit code", pl):
+    if _BORDERLINE_EXIT_CODE_RE.search(pl):
         return True
     # Check for skill-load patterns that aren't full synthesis
-    if re.search(r"(run|check|scan|monitor)\s+(daily|weekly|regular)\s+\S+\s+(using|with)\s+the?\s+\S+\s+skill", pl):
+    if _BORDERLINE_SKILL_LOAD_RE.search(pl):
         return True
     return False
 
@@ -217,19 +229,10 @@ def classify(job):
         return ("already_no_agent", "no_agent=true already", {})
 
     script_signal = bool(script and isinstance(script, str) and script.strip())
-    positive_signals = []
-    negative_signals = []
 
-    pos = has_positive_signal(prompt, script)
-    if pos:
-        if script_signal:
-            positive_signals.append("script_field_set")
-        if any(re.search(p, prompt.lower()) for p in _SELF_UPDATE_PATTERNS):
-            positive_signals.append("self_update")
-        if any(re.search(p, prompt) for p in _SCRIPT_WRAPPER_PATTERNS):
-            positive_signals.append("script_wrapper")
-        if any(re.search(p, prompt.lower()) for p in _SKILL_LOAD_SCRIPT_PATTERNS):
-            positive_signals.append("skill_load_script")
+    # Single pass extraction of positive signals
+    positive_signals = extract_positive_signals(prompt, script)
+    negative_signals = []
 
     neg = has_negative_signal(prompt, name)
     if neg:
@@ -253,7 +256,7 @@ def classify(job):
                 f"Genuine LLM needed ({', '.join(negative_signals)})",
                 signals_info)
 
-    if not pos:
+    if not positive_signals:
         return ("llm_needed", "Default — no positive signal found", signals_info)
 
     if is_borderline(prompt, name):

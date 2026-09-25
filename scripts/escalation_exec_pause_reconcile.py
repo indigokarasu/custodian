@@ -62,47 +62,9 @@ def classify(le, name):
 
 
 def parse_issues(path):
-    recs = []
-    text = open(path).read()
-    depth = 0
-    buf = []
-    ins = False
-    esc = False
-    for ch in text:
-        if ins:
-            buf.append(ch)
-            if esc:
-                esc = False
-            elif ch == '\\':
-                esc = True
-            elif ch == '"':
-                ins = False
-            continue
-        if ch == '"':
-            ins = True
-            buf.append(ch)
-            continue
-        if ch == '{':
-            if depth == 0:
-                buf = ['{']
-            else:
-                buf.append(ch)
-            depth += 1
-            continue
-        if ch == '}':
-            if depth > 0:
-                buf.append('}')
-                depth -= 1
-                if depth == 0:
-                    try:
-                        recs.append(json.loads("".join(buf)))
-                    except Exception:
-                        pass
-                    buf = []
-            continue
-        if depth > 0:
-            buf.append(ch)
-    return recs
+    from custodian_common import parse_issues as _parse_issues
+    with open(path) as f:
+        return _parse_issues(f.read())
 
 
 def main():
