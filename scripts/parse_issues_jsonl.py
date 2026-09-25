@@ -36,8 +36,8 @@ if set(sys.argv[1:]) & _HELP_ARGS:
     sys.exit(0)
 
 
-DEFAULT = '~/.hermes/profiles/indigo/commons/data/ocas-custodian/issues.jsonl'
-STALE_PATH = '~/.hermes/profiles/indigo/commons/journals/ocas-custodian/issues.jsonl'
+DEFAULT = os.path.expanduser('~/.hermes/profiles/indigo/commons/data/ocas-custodian/issues.jsonl')
+STALE_PATH = os.path.expanduser('~/.hermes/profiles/indigo/commons/journals/ocas-custodian/issues.jsonl')
 
 
 def parse(path):
@@ -91,7 +91,7 @@ def dedupe(entries):
 
 
 if __name__ == '__main__':
-    path = sys.argv[1] if len(sys.argv) > 1 else DEFAULT
+    path = os.path.expanduser(sys.argv[1] if len(sys.argv) > 1 else DEFAULT)
     if os.path.abspath(path) == os.path.abspath(STALE_PATH):
         sys.stderr.write(
             'WARNING: reading the STALE issues.jsonl copy at .../journals/ocas-custodian/.\n'

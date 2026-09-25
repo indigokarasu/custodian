@@ -59,3 +59,6 @@ Confirmed 2026-07-22: `rally:pipeline-watchdog` reported `no_staged_rebalance` a
 5. Only if the referenced entity genuinely has NO corresponding in-progress/complete activity AND the upstream job it guards actually failed, treat it as a real failure.
 
 Generalization: any watchdog that flags on a *count of things in state X* will false-positive in the window AFTER those things transition out of X. Always check the transition history before concluding the pipeline is broken.
+
+## 7. `escalation_needed: false` open issues are NOT resolution candidates
+An issue can be `user_gated` yet `escalation_needed: false` (e.g. OpenRouter free-model-period issues whose jobs recovered or were disabled). Do not resolve it on judgment alone: `verify_escalation_state.py` gates forward-staleness on `escalation_needed: true`, so an empty forward-stale list + `Reconcile write needed: False` means a **verification-only pass** — journal the disposition and leave `issues.jsonl` untouched (no-delta fast path; avoids the write-race clobber). Confirm time-based recovery with `verify_recovery_by_runtime.py --jobs <ids> --recovery <ts>`; if it exits 1 (a disabled job still carries the stale error), the issue stays OPEN as-is.
