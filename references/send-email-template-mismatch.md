@@ -42,3 +42,23 @@ flagged as broken and MCP-based delivery is the recommended path.
 
 - `oc_vesper_template_missing` fingerprint in issues.jsonl
 - `references/ocas-custodian.md` § Error Handling table for escalation
+
+## Status: FIXED 2026-09-25
+
+`send_email.py` no longer has a hardcoded template allowlist. It now discovers any
+`<name>.py` module in `commons/email-templates/` at runtime (must export
+`subject(data)`/`render(data)`) and actually sends via `send_html()` — the CLI path
+previously always printed "Delivery simulated" and never sent real email regardless
+of which template was requested; that's fixed too. All templates (`dream_journal`,
+`vesper_briefing`, `job_search`) are now built on a shared `_base.py` (the file this
+doc's "Fix Direction" section correctly anticipated but which didn't exist yet) for
+consistent, mobile-safe, light/dark-aware HTML. `--dry-run` (already documented in
+the email-sending skill, never implemented) now works.
+
+Separately: `dispatch:briefing-deliver`'s cron target
+(`~/.hermes/scripts/briefing_deliver.py`) was an unrelated stub that only marked
+briefings `delivered: true` without ever sending anything — the real, working sender
+sat unused at `ocas-dispatch/scripts/briefing_deliver.py`. The root script is now a
+thin wrapper that execs the real one, which has been updated to use the shared
+`vesper_briefing` template. This is why briefings were being silently no-op'd rather
+than hitting this doc's `Unknown template type` error path at all.
