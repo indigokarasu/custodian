@@ -35,8 +35,7 @@
 | `references/kanban-dispatcher-stuck-diagnostic.md` | During log scanning — when gateway shows "kanban dispatcher stuck: ready queue non-empty for N consecutive ticks but 0 workers spawned." Root cause hierarchy: worker crashes (most common), max_in_progress reached, or blocked dependencies. |
 | `references/using-script.md` | When running scripts |
 | `references/platform-compatibility.md` | Before running scans on a new platform |
-| `references/plugin-self-update-2026-06-18.md` | During `custodian.update` — plugin directory update procedure, stash pop conflict resolution, known local patches |
-| `references/self-update.md` | Before running `custodian.update` |
+| `references/skill-update-rebase-conflict-batch-pattern.md` | Update-wrapper failure batches (rebase-stuck / merge conflicts) — per-repo reset + registry force-flip recipe |
 | `references/config-recovery.md` | When config corruption is detected |
 | `references/escalation-runner-2026-06-08-1915.md` | Escalation runner 2026-06-08 19:15 — JSONL deduplication pattern, state.db batch pruning, spot:update git stash fix |
 | `references/deep-scan-stale-error-verification.md` | During deep scan clean verdict — verifying whether "Script not found" errors are stale (fix already applied post-error) or active (re-apply fix). Symlink timestamp vs error timestamp comparison. |
@@ -108,3 +107,5 @@
 | `references/resolved-timeout-verify-drained-backlog.md` | **Step 8e inverse gotcha** — a timeout/throughput issue marked 'resolved' from a re-run against a drained queue is a FALSE CLOSE; verify against real production volume before accepting. |
 | `references/custodian-pitfall-map.md` | Additional pitfall + stale-premise verification references (chronicle forward-stale, db-malformed, enrich false-backlog). |
 | `references/mcp-server-reconnect-loop-escalation-pitfall.md` | When an external HTTP MCP server reconnect loop was previously dismissed as "info-only transient" but shows real `connection lost (attempt N/5)` errors and >hours of non-recovery (no `registered N tools` line). Detection recipe + the `find_missed_user_gated_jobs.py` `affected_job_ids` false-positive. |
+| `references/cron-tool-failure-handling-table.md` | In cron context — any tool call failure (`read_file` dedup, pipe-to-interpreter, `write_file`, heredoc `$(date)`, `hermes cron` path mismatch): full failure→fix table |
+| `references/fos-nameerror-pattern.md` | Historical — `fos.path`→`os.path` NameError across 8 scripts (fixed 2026-07-27); read if the symptom recurs |

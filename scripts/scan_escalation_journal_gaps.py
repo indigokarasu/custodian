@@ -29,8 +29,6 @@ Usage:
 import json, os, argparse
 from datetime import datetime, timezone
 
-from custodian_common import parse_issues
-
 JOURNAL_DIRS = [
     os.path.expanduser("~/.hermes/profiles/indigo/commons/journals/ocas-custodian"),
     os.path.expanduser("~/.hermes/commons/journals/ocas-custodian"),
@@ -43,6 +41,7 @@ TRANSIENT_MARKERS = ("transient", "noop", "shutdown", "rate_limit",
 
 def brace_depth_parse(path):
     """Read a JSON/JSONL file and parse it via the shared custodian parser."""
+    from custodian_common import parse_issues  # lazy: keeps --help working without deps
     try:
         with open(path) as f:
             return parse_issues(f.read())

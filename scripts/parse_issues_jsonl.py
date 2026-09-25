@@ -30,8 +30,6 @@ copy until 2026-07-15 and manufactured 7 phantom escalations in one run.
 """
 import sys, os
 
-from custodian_common import parse_issues
-
 _HELP_ARGS = {"--help", "-h"}
 if set(sys.argv[1:]) & _HELP_ARGS:
     print((__doc__ or "").strip() or "Usage: python3 parse_issues_jsonl.py")
@@ -43,6 +41,7 @@ STALE_PATH = os.path.expanduser('~/.hermes/profiles/indigo/commons/journals/ocas
 
 
 def parse(path):
+    from custodian_common import parse_issues  # lazy: keeps --help working without deps
     with open(path) as f:
         return parse_issues(f.read())
 
