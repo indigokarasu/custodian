@@ -28,7 +28,9 @@ outage fingerprints (OpenRouter-402, Nous-401, Google-403, token_expired, etc.)
 were still open. ALWAYS read the data-path. This script's DEFAULT was the stale
 copy until 2026-07-15 and manufactured 7 phantom escalations in one run.
 """
-import json, sys, os
+import sys, os
+
+from custodian_common import parse_issues
 
 _HELP_ARGS = {"--help", "-h"}
 if set(sys.argv[1:]) & _HELP_ARGS:
@@ -42,38 +44,7 @@ STALE_PATH = os.path.expanduser('~/.hermes/profiles/indigo/commons/journals/ocas
 
 def parse(path):
     with open(path) as f:
-        raw = f.read()
-    entries = []
-    for line in raw.splitlines():
-        line = line.strip()
-        if not line:
-            continue
-        try:
-            entries.append(json.loads(line))
-            continue
-        except json.JSONDecodeError:
-            pass
-        # Fast streaming parse for concatenated JSON objects on a single line.
-        # Bolt performance optimization: use C-optimized json.JSONDecoder().raw_decode()
-        # instead of character-by-character string accumulation loop (yields ~5.5x speedup).
-        decoder = json.JSONDecoder()
-        idx = 0
-        length = len(line)
-        while idx < length:
-            while idx < length and line[idx].isspace():
-                idx += 1
-            if idx >= length:
-                break
-            try:
-                obj, end = decoder.raw_decode(line, idx)
-                entries.append(obj)
-                idx = end
-            except json.JSONDecodeError:
-                # On malformed character, skip forward to next object start '{'
-                idx = line.find('{', idx + 1)
-                if idx == -1:
-                    break
-    return entries
+        return parse_issues(f.read())
 
 
 def dedupe(entries):

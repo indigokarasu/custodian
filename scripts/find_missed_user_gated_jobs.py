@@ -26,6 +26,8 @@ Run: python3 ~/.hermes/profiles/indigo/skills/ocas-custodian/scripts/find_missed
 """
 import json
 
+from custodian_common import parse_issues
+
 JOBS_PATH = os.path.expanduser("~/.hermes/profiles/indigo/cron/jobs.json")
 ISSUES_PATHS = [
     os.path.expanduser("~/.hermes/profiles/indigo/commons/data/ocas-custodian/issues.jsonl"),
@@ -55,42 +57,6 @@ TRANSIENT = [
 ]
 
 
-def brace_depth_parse(text):
-    """Fast JSON stream parser using C-optimized json.JSONDecoder().raw_decode()
-    instead of character-by-character string accumulation loop (~9x speedup).
-    """
-    if not text:
-        return []
-    objs = []
-    decoder = json.JSONDecoder()
-    idx = 0
-    length = len(text)
-    while idx < length:
-        while idx < length and text[idx].isspace():
-            idx += 1
-        if idx >= length:
-            break
-        try:
-            obj, end = decoder.raw_decode(text, idx)
-            if isinstance(obj, dict):
-                objs.append(obj)
-            elif isinstance(obj, list):
-                objs.extend(x for x in obj if isinstance(x, dict))
-            idx = end
-        except json.JSONDecodeError:
-            pos_brace = text.find('{', idx + 1)
-            pos_bracket = text.find('[', idx + 1)
-            if pos_brace == -1 and pos_bracket == -1:
-                break
-            if pos_brace == -1:
-                idx = pos_bracket
-            elif pos_bracket == -1:
-                idx = pos_brace
-            else:
-                idx = min(pos_brace, pos_bracket)
-    return objs
-
-
 def collect_paused():
     paused = set()
     for p in ISSUES_PATHS:
@@ -99,7 +65,7 @@ def collect_paused():
                 text = f.read()
         except Exception:
             continue
-        for o in brace_depth_parse(text):
+        for o in parse_issues(text):
             for jid in (o.get("jobs_paused") or []):
                 if isinstance(jid, str):
                     paused.add(jid)
