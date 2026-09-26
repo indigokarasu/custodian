@@ -21,6 +21,7 @@ import custodian_common                       # noqa: E402
 import find_missed_user_gated_jobs as missed  # noqa: E402
 import parse_issues_jsonl                     # noqa: E402
 import reopen_false_resolutions as reopen     # noqa: E402
+import scan_escalation_journal_gaps as gaps   # noqa: E402
 
 # Mirror of the skilllab runner's stdlib allow-list: a module-scope import of
 # anything else breaks `--help` on a machine where the dependency is absent.
@@ -113,6 +114,32 @@ class TestClassify(unittest.TestCase):
     def test_empty_and_none(self):
         self.assertEqual(missed.classify("")[0], "UNKNOWN")
         self.assertEqual(missed.classify(None)[0], "UNKNOWN")
+
+
+class TestScanEscalationJournalGaps(unittest.TestCase):
+    """scan_escalation_journal_gaps.get_ts — ISO 8601 & fallback parsing."""
+
+    def test_get_ts_iso_formats(self):
+        # Standard ISO 8601 with Z
+        d1 = {"timestamp": "2026-07-16T12:34:56Z"}
+        ts1 = gaps.get_ts(d1)
+        self.assertIsNotNone(ts1)
+
+        # ISO 8601 with subsecond resolution and Z
+        d2 = {"created_at": "2026-07-16T12:34:56.789123Z"}
+        ts2 = gaps.get_ts(d2)
+        self.assertIsNotNone(ts2)
+        self.assertAlmostEqual(ts2 - ts1, 0.789123, places=3)
+
+        # ISO 8601 with explicit timezone offset
+        d3 = {"run_ts": "2026-07-16T12:34:56+00:00"}
+        ts3 = gaps.get_ts(d3)
+        self.assertEqual(ts1, ts3)
+
+    def test_get_ts_missing_or_invalid(self):
+        self.assertIsNone(gaps.get_ts({}))
+        self.assertIsNone(gaps.get_ts({"timestamp": "invalid date string"}))
+        self.assertIsNone(gaps.get_ts({"timestamp": 12345678}))
 
 
 class TestReopenLiveErrorCount(unittest.TestCase):
