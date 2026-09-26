@@ -103,7 +103,7 @@ Full checklists in `references/execution-loops.md` — read before any scan or e
 
 Run gates (all apply in cron context):
 
-- [ ] Registry parsed from `<profile>/cron/jobs.json` (never `hermes cron list`); raw-file re-check before any false-clean verdict
+- [ ] Registry parsed from `<profile>/cron/jobs.json` (never `hermes cron list`); read the raw file head BEFORE parsing (a wrong key path yields a false-clean); raw-file re-check before any false-clean verdict
 - [ ] New gateway errors since the last scan tailed and fingerprinted; error jobs re-run/live-probed before stale-vs-active classification
 - [ ] Journal written BEFORE `[SILENT]`; fix outcomes re-validated before any issue is marked resolved
 

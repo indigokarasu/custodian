@@ -32,7 +32,10 @@ def parse_line(line):
     if not line:
         return None
     try:
-        return json.loads(line)
+        v = json.loads(line)
+        if isinstance(v, str):
+            v = json.loads(v)
+        return v if isinstance(v, dict) else None
     except Exception:
         return None
 

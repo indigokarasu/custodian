@@ -45,6 +45,19 @@ def parse_issues(text):
                 objs.append(obj)
             elif isinstance(obj, list):
                 objs.extend(x for x in obj if isinstance(x, dict))
+            elif isinstance(obj, str):
+                # Tolerate string-wrapped (double-encoded) records: on
+                # 2026-09-25 every issues.jsonl line was string-wrapped and
+                # readers silently returned 0 records. Never skip a dict
+                # that only got wrapped in a JSON string.
+                try:
+                    inner = json.loads(obj)
+                except Exception:
+                    inner = None
+                if isinstance(inner, dict):
+                    objs.append(inner)
+                elif isinstance(inner, list):
+                    objs.extend(x for x in inner if isinstance(x, dict))
             idx = end
         except json.JSONDecodeError:
             pos_brace = text.find('{', idx + 1)
@@ -79,4 +92,5 @@ if __name__ == "__main__":
     assert parse_issues('{"a": 1}{"b": 2}') == [{"a": 1}, {"b": 2}]
     assert parse_issues('[{"a": 1}, {"b": 2}]') == [{"a": 1}, {"b": 2}]
     assert parse_issues('garbage {"a": 1}') == [{"a": 1}]
+    assert parse_issues(json.dumps({"a": 1})) == [{"a": 1}]
     print("custodian_common self-check OK")
