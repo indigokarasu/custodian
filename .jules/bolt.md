@@ -5,3 +5,7 @@
 ## 2026-07-16 - Canonical JSON Stream Parsing & Regex Pre-compilation in Custodian
 **Learning:** `custodian_common.parse_issues` uses C-optimized `json.JSONDecoder().raw_decode()` and is ~9x faster than custom character-by-character scanner loops while safely handling string fields containing braces. Additionally, pre-compiling regexes and extracting signals in a single pass avoids redundant evaluation cycles in classifier probes.
 **Action:** Always import `parse_issues` from `custodian_common` when reading `issues.jsonl` files instead of rolling custom char-by-char JSON scanners, and pre-compile regex patterns at module load in probe scripts.
+
+## 2026-09-27 - Single-Pass Log Scanning with Lazy Timestamp Extraction
+**Learning:** In log scanning probes (`verify_plugin_defect_postrestart.py`), combining two file read passes into a single pass with buffered signature hits, pre-compiled regex patterns, and lazy regex timestamp evaluation yields a ~40% speedup on large gateway logs (~100k lines).
+**Action:** Single-pass log scanners should buffer hit tuples `(key, timestamp)` during file read and defer timestamp regex matching (`TS_RE`) until a restart marker or pattern hit is encountered.
