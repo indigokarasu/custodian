@@ -22,6 +22,7 @@ import find_missed_user_gated_jobs as missed  # noqa: E402
 import parse_issues_jsonl                     # noqa: E402
 import reopen_false_resolutions as reopen     # noqa: E402
 import scan_escalation_journal_gaps as gaps   # noqa: E402
+import verify_plugin_defect_postrestart as vp # noqa: E402
 
 # Mirror of the skilllab runner's stdlib allow-list: a module-scope import of
 # anything else breaks `--help` on a machine where the dependency is absent.
@@ -140,6 +141,35 @@ class TestScanEscalationJournalGaps(unittest.TestCase):
         self.assertIsNone(gaps.get_ts({}))
         self.assertIsNone(gaps.get_ts({"timestamp": "invalid date string"}))
         self.assertIsNone(gaps.get_ts({"timestamp": 12345678}))
+
+
+class TestVerifyPluginDefectPostrestart(unittest.TestCase):
+    """verify_plugin_defect_postrestart.scan_log — pre vs post restart bucketing."""
+
+    def test_scan_log_bucketing(self):
+        log_content = (
+            "2026-07-22 10:00:00 CHECK constraint failed: actor\n"
+            "2026-07-22 10:05:00 Received SIGTERM - restart\n"
+            "2026-07-22 10:10:00 CHECK constraint failed: actor\n"
+            "2026-07-22 10:15:00 UNIQUE constraint failed\n"
+        )
+        with tempfile.NamedTemporaryFile("w", suffix=".log", delete=False) as fh:
+            fh.write(log_content)
+            path = fh.name
+
+        try:
+            last_restart, counts, last_ts = vp.scan_log(path, vp.DEFAULT_PATTERNS)
+            self.assertEqual(last_restart, "2026-07-22T10:05:00")
+            self.assertEqual(counts["actor_check"], {"pre": 1, "post": 1})
+            self.assertEqual(counts["seq_unique"], {"pre": 0, "post": 1})
+            self.assertEqual(counts["compress_force"], {"pre": 0, "post": 0})
+            self.assertEqual(last_ts["actor_check"], "2026-07-22T10:10:00")
+            self.assertEqual(last_ts["seq_unique"], "2026-07-22T10:15:00")
+        finally:
+            os.unlink(path)
+
+    def test_scan_log_nonexistent_file(self):
+        self.assertIsNone(vp.scan_log("/no/such/log/file.log", vp.DEFAULT_PATTERNS))
 
 
 class TestReopenLiveErrorCount(unittest.TestCase):
