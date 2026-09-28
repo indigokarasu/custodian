@@ -33,8 +33,14 @@ OUTAGE_MATCH = {
 }
 
 
-def live_error_count(fp):
-    jobs = json.load(open(JOBS)).get("jobs", [])
+def live_error_count(fp, jobs=None):
+    # If jobs list is not provided, load it once safely using context manager
+    if jobs is None:
+        if not os.path.isfile(JOBS):
+            return 0
+        with open(JOBS) as f:
+            d = json.load(f)
+            jobs = d.get("jobs", []) if isinstance(d, dict) else d
     subs = OUTAGE_MATCH.get(fp, [])
     if not subs:
         return 0
@@ -59,7 +65,16 @@ def main():
         print("No issues.jsonl at", ISSUES)
         return
 
-    entries = parse_issues(open(ISSUES).read())
+    with open(ISSUES, encoding="utf-8", errors="replace") as f:
+        entries = parse_issues(f.read())
+
+    # Pre-load jobs once for efficiency across all issues
+    jobs = None
+    if os.path.isfile(JOBS):
+        with open(JOBS) as f:
+            d = json.load(f)
+            jobs = d.get("jobs", []) if isinstance(d, dict) else d
+
     now = datetime.datetime.now(datetime.timezone.utc).isoformat()
     reopened = []
     for e in entries:
@@ -68,7 +83,7 @@ def main():
             continue
         if fp not in OUTAGE_MATCH:
             continue
-        cnt = live_error_count(fp)
+        cnt = live_error_count(fp, jobs=jobs)
         if cnt >= 1:
             e["status"] = "user_gated"
             e["escalation_needed"] = True
