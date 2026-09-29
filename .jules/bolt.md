@@ -13,3 +13,7 @@
 ## 2026-10-15 - Single JSON Pre-loading in Iterative Reconciliation Scanners
 **Learning:** In probe scripts like `reopen_false_resolutions.py`, re-parsing `jobs.json` inside per-issue evaluation loops creates O(N) redundant disk I/O and JSON parsing overhead while risking unclosed file descriptors.
 **Action:** Pre-load reference JSON files once in `main()` before looping over issue entries and pass the loaded data structure to helper functions, while using context managers (`with open(...)`) for safe resource handling.
+
+## 2026-10-28 - Pre-Grouping Classification Lookups in Reconciliation Loops
+**Learning:** In reconciliation loops (`escalation_exec_pause_reconcile.py`), classifying each paused job repeatedly inside per-issue evaluation loops creates O(recs * actual_paused) string matching cycles. Pre-classifying and grouping paused jobs by bucket before entering the issue loop reduces overhead to O(actual_paused + recs) (~51x speedup).
+**Action:** Pre-classify items into dictionary buckets prior to iterating over container objects that query item classifications.
