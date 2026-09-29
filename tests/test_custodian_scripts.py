@@ -18,6 +18,7 @@ SCRIPTS = SKILL_DIR / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 
 import custodian_common                       # noqa: E402
+import escalation_exec_pause_reconcile as esc # noqa: E402
 import find_missed_user_gated_jobs as missed  # noqa: E402
 import parse_issues_jsonl                     # noqa: E402
 import reopen_false_resolutions as reopen     # noqa: E402
@@ -199,6 +200,35 @@ class TestReopenLiveErrorCount(unittest.TestCase):
 
     def test_unknown_fingerprint_counts_zero(self):
         self.assertEqual(reopen.live_error_count("oc_no_such_fingerprint"), 0)
+
+
+class TestEscalationExecPauseReconcile(unittest.TestCase):
+    """escalation_exec_pause_reconcile — classify and reconciliation pre-grouping."""
+
+    def test_classify(self):
+        self.assertEqual(esc.classify("portal.nousresearch.com invalid key", "job1"), "nous")
+        self.assertEqual(esc.classify("HTTP 402 insufficient credits", "job2"), "openrouter")
+        self.assertEqual(esc.classify("403 Forbidden", "monitor:list"), "google403")
+        self.assertEqual(esc.classify("ResourceExhausted limit", "job3"), "transient")
+        self.assertEqual(esc.classify("random failure", "job4"), "unknown")
+
+    def test_reconciliation_pre_grouping(self):
+        jobs = {
+            "j1": {"enabled": False, "state": "paused", "last_error": "portal.nousresearch.com 401", "name": "j1"},
+            "j2": {"enabled": False, "state": "paused", "last_error": "402 credits openrouter", "name": "j2"},
+            "j3": {"enabled": False, "state": "paused", "last_error": "403 Forbidden", "name": "j3"},
+        }
+        actual_paused = {jid for jid, j in jobs.items()
+                         if j.get("enabled") is False and j.get("state") == "paused"}
+        paused_by_bucket = {}
+        for jid in actual_paused:
+            b = esc.classify(jobs[jid].get("last_error"), jobs[jid].get("name"))
+            paused_by_bucket.setdefault(b, []).append(jid)
+
+        self.assertEqual(sorted(paused_by_bucket.get("nous", [])), ["j1"])
+        self.assertEqual(sorted(paused_by_bucket.get("openrouter", [])), ["j2"])
+        self.assertEqual(sorted(paused_by_bucket.get("google403", [])), ["j3"])
+        self.assertEqual(paused_by_bucket.get("owl", []), [])
 
 
 class TestNoModuleScopeThirdPartyImports(unittest.TestCase):
