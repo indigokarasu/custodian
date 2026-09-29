@@ -26,7 +26,7 @@ gap is real — auto-creating from a transient fingerprint pollutes issues.jsonl
 Usage:
   python3 scripts/scan_escalation_journal_gaps.py [--hours 24] [--write]
 """
-import json, os, argparse
+import json, os, argparse, re
 from datetime import datetime, timezone
 
 JOURNAL_DIRS = [
@@ -37,6 +37,24 @@ PROFILE_ISSUES = os.path.expanduser("~/.hermes/profiles/indigo/commons/data/ocas
 
 TRANSIENT_MARKERS = ("transient", "noop", "shutdown", "rate_limit",
                      "resource_exhausted", "provider_error", "interpreter")
+
+_ID_RE_BAD = re.compile(r"[^A-Za-z0-9_.:-]+")
+
+
+def sanitize_id(raw):
+    """Reduce a journal's raw fingerprint string to a clean, keyable token.
+
+    Journal prose frequently embeds the fingerprint in a sentence, e.g.
+    'oc_hello_operator_restart_drops_inflight (not present in prior light run's
+    escalation set)'. Un-sanitized that produces an issue_id containing spaces
+    and parentheses: it parses cleanly, raises no error, and is unreachable by
+    every exact-key downstream lookup. Cut at the first whitespace and then
+    allow-list the remaining characters.
+    """
+    s = str(raw).strip()
+    s = s.split()[0] if s.split() else s      # drop any trailing parenthetical/prose
+    s = _ID_RE_BAD.sub("_", s).strip("_")
+    return s or "unnamed_fingerprint"
 
 
 def brace_depth_parse(path):
@@ -90,14 +108,21 @@ def main():
     now = datetime.now(timezone.utc)
     cutoff = now.timestamp() - args.hours * 3600
 
-    # open issues (exclude resolved)
+    # open issues (exclude resolved) for DETECTION reporting...
     open_ids = set(); open_fps = set()
+    # ...and an all-status presence set for WRITE suppression. A journal that cites a
+    # fingerprint whose real issue was already resolved is still a genuine GAP to report
+    # (detection stays correct), but --write must NOT re-create it. Conflating the two sets
+    # is what manufactured phantom user_gated rows on every --write pass.
+    seen_ids = set(); seen_fps = set()
     for r in brace_depth_parse(PROFILE_ISSUES):
+        iid = r.get("issue_id") or r.get("id")
+        fp = r.get("fingerprint") or r.get("error_fingerprint")
+        if iid: seen_ids.add(iid)
+        if fp: seen_fps.add(fp)
         if r.get("status") in ("resolved",):
             continue
-        iid = r.get("issue_id") or r.get("id")
         if iid: open_ids.add(iid)
-        fp = r.get("fingerprint") or r.get("error_fingerprint")
         if fp: open_fps.add(fp)
 
     # scan journals
@@ -152,25 +177,35 @@ def main():
         print(f"  {datetime.fromtimestamp(ts, timezone.utc).isoformat()} {rid}")
 
     if args.write and gaps:
-        recs = brace_depth_parse(PROFILE_ISSUES)
-        created = 0
+        created = 0; skipped = 0
+        new_recs = []
         for rid, ts, mids, mfs in gaps:
             for f in mfs:
-                recs.append({
-                    "issue_id": f + "_" + now.strftime("%Y%m%d"),
-                    "fingerprint": f,
+                clean = sanitize_id(f)
+                if clean in seen_fps or clean in seen_ids:
+                    skipped += 1
+                    continue
+                rec = {
+                    "issue_id": clean + "_" + now.strftime("%Y%m%d"),
+                    "fingerprint": clean,
                     "status": "user_gated",
                     "escalation_needed": True,
                     "summary": (f"Auto-created from journal gap scan (run {rid}); fingerprint "
-                                f"{f} flagged escalation_needed but absent from issues.jsonl."),
+                                f"{clean} flagged escalation_needed but absent from issues.jsonl."),
                     "jobs_paused": [],
                     "created_at": now.isoformat(),
-                })
+                }
+                new_recs.append(rec)
+                seen_fps.add(clean); seen_ids.add(rec["issue_id"])
                 created += 1
-        with open(PROFILE_ISSUES, "w") as out:
-            for r in recs:
-                out.write(json.dumps(r) + "\n")
-        print(f"\nWROTE {created} missing-issue records to {PROFILE_ISSUES}")
+        if new_recs:
+            # Race-safe append: do NOT rewrite the whole file (a concurrent writer's rows
+            # would be lost). Open in append mode so an interleaved write cannot clobber.
+            with open(PROFILE_ISSUES, "a") as out:
+                for r in new_recs:
+                    out.write(json.dumps(r) + "\n")
+        print(f"\nWROTE {created} missing-issue record(s) to {PROFILE_ISSUES}"
+              f" (suppressed {skipped} already-present fingerprint(s))")
 
 
 if __name__ == "__main__":

@@ -63,6 +63,8 @@ Interactive invocation: two-level menu in `references/interactive-menu.md`.
 
 Cron-run `issues.jsonl`/journal mutations: `terminal()` + heredoc only — never `read_file` (corrupts JSONL) or `execute_code` (blocked in cron).
 
+**Every appended issues.jsonl row MUST set `issue_id` (2026-09-28).** A row without one parses cleanly, raises no error, and is unreachable by *every* sanctioned tool (`parse_issues_jsonl`, `race_safe_issue_patch`, `verify_escalation_state`, `reopen_false_resolutions`, `confirm_provider_recovery` all key on `issue_id or id`). Detect it only by structural audit — count rows missing the key. Repair recipe, and why `race_safe_issue_patch.py` cannot do it: `references/issues-jsonl-row-integrity.md`.
+
 ## Responsibility Boundary
 
 **Owns:** gateway log scanning + fingerprinting, cron registry health, skill journal completeness, data-dir health, skill initialization, background-task conformance, Tier 1 auto-repair, activity/schedule optimization, escalation signaling, fix-effectiveness tracking, tier management, library hygiene.
