@@ -17,3 +17,7 @@
 ## 2026-10-28 - Pre-Grouping Classification Lookups in Reconciliation Loops
 **Learning:** In reconciliation loops (`escalation_exec_pause_reconcile.py`), classifying each paused job repeatedly inside per-issue evaluation loops creates O(recs * actual_paused) string matching cycles. Pre-classifying and grouping paused jobs by bucket before entering the issue loop reduces overhead to O(actual_paused + recs) (~51x speedup).
 **Action:** Pre-classify items into dictionary buckets prior to iterating over container objects that query item classifications.
+
+## 2026-11-12 - Unified Single-Pass Regexes for Heuristic Classifiers
+**Learning:** In `classify_llm_necessity.py`, evaluating list-of-regex patterns (`any(p.search(text) for p in patterns)`) incurs Python loop overhead across every evaluated job prompt. Combining sub-pattern string lists into unified single-pass regexes (`re.compile("|".join(patterns))`) delegates alternation directly to the C regex engine and speeds up classification matching by ~4x (~21.5 μs vs ~82.6 μs per verb set check).
+**Action:** Combine list-based regex patterns into single `|`-delimited compiled regexes when performing boolean hit checks in classifier loops.
