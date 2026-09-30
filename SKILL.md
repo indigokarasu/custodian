@@ -144,6 +144,19 @@ Safety envelope + Tier 1 auto-fix registry: `references/fix-safety.md`. Backgrou
 
 See `references/known-code-fixes-and-cascade.md` (Tier 4 code fixes, MCP cascade triage) and `references/redaction-placeholder-source-corruption.md` (secret-redaction pattern that corrupts skill source — fix directly, do NOT leave user-gated).
 
+**Env-sync gate: a Tier 1 fix that looked revalidated did not stop the next occurrence.** Two defects — an unguarded loop fall-through, and an urgency guard that measured the token the script had just replaced (0 lifetime firings). The revalidation case that "hung" was a real branch-order bug, not a slow test. Full RCA + re-runnable harness notes: `references/envsync-budget-fallthrough-and-inoperable-urgency-guard-2026-09-29.md`.
+
+**Naming trap: "Router" is a class inside hello-operator**
+
+`hello_operator/server.py` names the class serving `/v1/chat/completions`
+**`Router`**. A `ps | grep router` probe cannot see it, and "the gateway never
+restarted" is evidence about a *different* process than a `hello-operator.service`
+restart. Before acting on any "router restart" issue, confirm WHICH service.
+Identified failure class, Tier 1 fix, and the revalidation procedure:
+`references/hello-operator-envsync-restart-drops-inflight.md`. When a unit
+restart looks unexplained, read `/root/.hello-operator/stop-forensics.log` first
+— an ExecStopPost hook that captures the caller's parent chain.
+
 ## Escalation Path
 
 Tier 3: InsightProposal to the proposals dir + journal tag `escalation_needed: true`. Confidence-gated: `confidence_score >= 0.6` with `recommended_tier == 1` → auto-fix instead.
