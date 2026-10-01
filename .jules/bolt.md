@@ -21,3 +21,7 @@
 ## 2026-11-12 - Unified Single-Pass Regexes for Heuristic Classifiers
 **Learning:** In `classify_llm_necessity.py`, evaluating list-of-regex patterns (`any(p.search(text) for p in patterns)`) incurs Python loop overhead across every evaluated job prompt. Combining sub-pattern string lists into unified single-pass regexes (`re.compile("|".join(patterns))`) delegates alternation directly to the C regex engine and speeds up classification matching by ~4x (~21.5 μs vs ~82.6 μs per verb set check).
 **Action:** Combine list-based regex patterns into single `|`-delimited compiled regexes when performing boolean hit checks in classifier loops.
+
+## 2026-11-20 - Pre-Computing Fingerprints and Filter Sets in Status Probes
+**Learning:** In status probe scripts (`confirm_provider_recovery.py`), evaluating `fp_of(j.get("last_error"))` and date checks inside nested per-issue `affected_job_ids` loops creates redundant string matching and property accesses. Pre-computing `enabled_err_fps` dict and `today_ok_ids` set once upfront reduces execution time by ~30% (1.42x speedup).
+**Action:** Pre-compute fingerprint mappings and status filter ID sets upfront before iterating through container objects in probe scripts.
