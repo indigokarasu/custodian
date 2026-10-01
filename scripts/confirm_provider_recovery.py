@@ -48,22 +48,27 @@ def main():
     today = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d")
     d = json.load(open(JOBS))
     jobs = {j.get("id"): j for j in d.get("jobs", [])}
-    today_ok = [
-        j
+    today_ok_ids = {
+        j.get("id")
         for j in jobs.values()
         if (j.get("last_run_at") or "").startswith(today)
         and j.get("last_status") == "ok"
-    ]
+        and j.get("id")
+    }
     enabled_err = {
         jid: j
         for jid, j in jobs.items()
         if j.get("enabled", True) and j.get("last_status") == "error"
     }
-    live_fp = Counter(fp_of(j.get("last_error")) for j in enabled_err.values())
-    print(f"Jobs total={len(jobs)} today_OK={len(today_ok)} enabled_error={len(enabled_err)}")
+
+    # OPTIMIZATION (Bolt ⚡): Pre-compute fingerprints and today-OK job IDs up front
+    # to eliminate redundant fp_of() calls and dict lookups inside per-issue evaluation loops.
+    enabled_err_fps = {jid: fp_of(j.get("last_error")) for jid, j in enabled_err.items()}
+    live_fp = Counter(enabled_err_fps.values())
+    print(f"Jobs total={len(jobs)} today_OK={len(today_ok_ids)} enabled_error={len(enabled_err)}")
     print("Live enabled-error fingerprints:", dict(live_fp))
-    verdict = "LIVE" if len(today_ok) > len(jobs) * 0.4 else "LOW - possible real outage"
-    print(f"Today-OK share: {len(today_ok)}/{len(jobs)} ({verdict})")
+    verdict = "LIVE" if len(today_ok_ids) > len(jobs) * 0.4 else "LOW - possible real outage"
+    print(f"Today-OK share: {len(today_ok_ids)}/{len(jobs)} ({verdict})")
     print()
     issues = parse_issues(ISSUES)
     prov_issues = [
@@ -81,13 +86,12 @@ def main():
         still_err = [
             a
             for a in affected
-            if a in enabled_err and fp_of(enabled_err[a].get("last_error")) in PROVIDER_FPS
+            if enabled_err_fps.get(a) in PROVIDER_FPS
         ]
         recovered = [
             a
             for a in affected
-            if jobs.get(a, {}).get("last_status") == "ok"
-            and (jobs[a].get("last_run_at") or "").startswith(today)
+            if a in today_ok_ids
         ]
         print(
             f"{iid}: status={i.get('status')} esc={i.get('escalation_needed')} "

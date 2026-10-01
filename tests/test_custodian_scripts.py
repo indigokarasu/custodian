@@ -17,6 +17,7 @@ SKILL_DIR = Path(__file__).resolve().parent.parent
 SCRIPTS = SKILL_DIR / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 
+import confirm_provider_recovery as cpr       # noqa: E402
 import custodian_common                       # noqa: E402
 import escalation_exec_pause_reconcile as esc # noqa: E402
 import find_missed_user_gated_jobs as missed  # noqa: E402
@@ -200,6 +201,18 @@ class TestReopenLiveErrorCount(unittest.TestCase):
 
     def test_unknown_fingerprint_counts_zero(self):
         self.assertEqual(reopen.live_error_count("oc_no_such_fingerprint"), 0)
+
+
+class TestConfirmProviderRecovery(unittest.TestCase):
+    """confirm_provider_recovery — fp_of classification and main recovery confirmation logic."""
+
+    def test_fp_of(self):
+        self.assertEqual(cpr.fp_of("Provided authentication token is expired"), "token_expired")
+        self.assertEqual(cpr.fp_of("HTTP 402: insufficient credits"), "openrouter_402")
+        self.assertEqual(cpr.fp_of("portal.nousresearch.com 401 error"), "nous_401")
+        self.assertEqual(cpr.fp_of("owl-alpha 404 No endpoints found"), "owl_404")
+        self.assertEqual(cpr.fp_of("random error"), "other")
+        self.assertEqual(cpr.fp_of(None), "other")
 
 
 class TestEscalationExecPauseReconcile(unittest.TestCase):
