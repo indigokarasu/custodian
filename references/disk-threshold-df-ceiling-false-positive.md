@@ -47,8 +47,29 @@ avail = s.f_bavail * s.f_frsize
 pct = 100.0 * used / (used + avail)     # df's own denominator, without ceiling
 ```
 
-Bytes to reach exactly 80% is `4 * avail - used` (solve `used/(used+avail)=0.8`),
-which gives the headroom figure to report instead of a bare percentage.
+Bytes to reach exactly 80% is `0.80 * (used + avail) - used`, which gives the
+headroom figure to report instead of a bare percentage.
+
+**Do not use `4 * avail - used`.** It looks like the same quantity — it solves
+`used/(used+avail)=0.8` — and it crosses zero at exactly the same instant, which
+is why it survives spot-checks. It is a 5x-levered derivative. On a fixed-size
+filesystem `C = used + avail` is constant, so `4*avail - used = 4C - 5*used`:
+zero at the same point, but its derivative is −5 per byte of consumption against
+−1 for the true margin. Dividing it by a consumption rate therefore overstates
+urgency by 5x (or understates time remaining by 5x).
+
+Measured on this host 2026-10-01T17:45Z, used=76.58 GiB, avail=19.25 GiB:
+true `margin_to_80` = **88.7 MiB**; `4*avail - used` = **443.7 MiB** — the
+5.0x ratio, exact. A probe dividing that by a MiB/min rate printed
+"minutes_to_80 = 1" from a margin of under 30 minutes. Fix the *time* arithmetic
+too: `minutes_to_80 = margin_to_80 / consumption_rate_per_minute`, with **no
+further scaling** — a second probe divided a value already in minutes by 60
+again and read 0.02 h. Always sanity-check the result against one raw
+`statvfs` reading before reporting a time-to-threshold.
+
+Issue: `oc_disk_headroom_lever_time_estimate_5x_wrong_20261001T1746Z`.
+The same issue text claimed the formula also appears in SKILL.md; it does not
+(`grep` of SKILL.md finds no such expression). Reference file only.
 
 ## Symptoms that this is the cause
 
