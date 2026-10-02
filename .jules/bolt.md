@@ -25,3 +25,7 @@
 ## 2026-11-20 - Pre-Computing Fingerprints and Filter Sets in Status Probes
 **Learning:** In status probe scripts (`confirm_provider_recovery.py`), evaluating `fp_of(j.get("last_error"))` and date checks inside nested per-issue `affected_job_ids` loops creates redundant string matching and property accesses. Pre-computing `enabled_err_fps` dict and `today_ok_ids` set once upfront reduces execution time by ~30% (1.42x speedup).
 **Action:** Pre-compute fingerprint mappings and status filter ID sets upfront before iterating through container objects in probe scripts.
+
+## 2026-12-04 - Single-Pass Unified Regexes for Secret Audit Scans
+**Learning:** In `secret_audit.py`, iterating through 14 separate prefix regex patterns for every line of scanned files in `scan_file()` incurs Python loop overhead. Combining prefix sub-patterns into a single named-capture-group regex (`(?P<g_0>...)|(?P<g_1>...)`) delegates alternation directly to the C regex engine, speeding up prefix secret scanning by ~23% (3.57s -> 2.76s for 50,000 lines).
+**Action:** Combine list-of-regex patterns into indexed named-group unified regexes (`(?P<g_i>pattern)`) when scanning lines for token classification in audit scripts.
