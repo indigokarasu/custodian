@@ -193,3 +193,17 @@ Do NOT use `r'\| ERROR\s+(.*)'` — it will match zero lines.
 
 **⚠️ read_file 100K character limit:** The `read_file` tool has a hard limit of 100,000 characters. Files larger than this (e.g., `jobs.json` at 76K is fine, but `errors.log` at 1.4MB or `state.db` at 14GB are not) will fail with `"Read produced N characters which exceeds the safety limit"`. For large files, use:
 - `terminal` with `grep`, `head`, `tail`, `
+
+## Script inventory
+
+Extracted from SKILL.md on 2026-10-03.
+
+- `classify_error_jobs.py` — bucket error jobs by fingerprint; surface bare `Script exited with code 1` for de-aggregation
+- `classify_llm_necessity.py` / `_integration.py` — LLM-necessity classifier; report-only (`--json`, `--unit-test`)
+- `verify_escalation_state.py` — bidirectional staleness check (`issues.jsonl` + `jobs.json`)
+- `find_missed_user_gated_jobs.py` — enabled+erroring jobs missing from every issue
+- `scan_escalation_journal_gaps.py` — journal→issues gap probe (`--write` creates)
+- `race_safe_issue_patch.py` / `reopen_false_resolutions.py` — race-safe patch / reopen false resolutions
+- `verify_fixes_cron_run.py` — batch post-fix verification (`hermes cron run`)
+- `chronicle_embed_backlog_probe.py` — read-only backlog probe
+- `append_issue_row.py` — **the sanctioned append path to `issues.jsonl`.** Asserts `issue_id` + `escalation_needed` on every row and verifies the open-count delta against the filter as written, so the silent-visibility defect fails loudly at write time. `--dry-run` prints the row and the expected delta. Controls: `references/append_issue_row_control.py` (24 arms, throwaway store — run after any change).

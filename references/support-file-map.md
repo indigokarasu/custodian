@@ -2,6 +2,11 @@
 
 | File | When to read |
 |------|-------------|
+| `references/measurement-pitfalls.md` | **Before publishing any zero, rate, or "clean" verdict** — 40+ measurement-integrity rules, each written because a real number came from a defect rather than from the system. Themes: read-before-assert (file counts, per-file hits, grep the literal token once), denominator-first (occurrences due, capacity assertions as hard gates), time domain (LOCAL stamps, day+hour keys), store integrity (both keys per row), cron tool guards, unit mismatches. |
+| `references/escalation-execution-lessons.md` | During escalation EXECUTION — after classification, before a Tier 1/2 fix or a `user_gated` filing. Repair the class not the member; negative controls before trusting green; `user_gated` is a claim to be falsified; diff backup FILES and assert the net substitution; force-verification can race the store you just wrote. |
+| `references/scan-surface-is-a-plugin-tool.md` | When a scan reports `custodian.scan.light` is "not a hermes command", or when you are tempted to run `hermes update` because a command looks missing. Read BEFORE diagnosing — the 2026-10-01 incident cost a half-updated install and ~11 minutes, none of it needed. |
+| `references/append_issue_row_control.py` | After ANY change to `scripts/append_issue_row.py` — 24-arm control suite (11 positive, 9 negative-to-fail) on a throwaway store under a unique temp dir; never touches the real `issues.jsonl`. Exists because the helper's first version shipped green while mishandling the reopen case. |
+| `references/issues-jsonl-row-integrity.md` | Before hand-rolling an append, or when the open-issue count moves without a resolution — why every row must set `issue_id` AND `escalation_needed`, and why `race_safe_issue_patch.py` cannot enforce it. |
 | `references/execution-loops.md` | Before running any scan or escalation — full checklists for Light Scan (10-step), Deep Scan, Escalation Runner, and Escalation Execution Loop |
 | `references/script-path-security-block-pattern.md` | Script points outside `$HERMES_HOME/scripts/` |
 | `references/google-oauth-client-deleted-pattern.md` | Google OAuth `deleted_client` and `invalid_grant` (token revoked) errors |
