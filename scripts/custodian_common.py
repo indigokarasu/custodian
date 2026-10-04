@@ -16,6 +16,7 @@ Self-check:  python3 custodian_common.py
 """
 
 import json
+import sys
 
 __all__ = ["parse_issues"]
 
@@ -73,7 +74,20 @@ def parse_issues(text):
     return objs
 
 
-if __name__ == "__main__":
+USAGE = (__doc__ or "") + """
+USAGE:
+    python3 custodian_common.py --help     # this text
+    python3 custodian_common.py            # run the self-check
+
+This module is a LIBRARY, imported by append_issue_row.py, confirm_provider_recovery.py,
+escalation_exec_pause_reconcile.py, find_missed_user_gated_jobs.py, parse_issues_jsonl.py,
+reopen_false_resolutions.py, scan_escalation_journal_gaps.py, verify_escalation_state.py and
+verify_recovery_by_runtime.py. It performs no I/O and has no flags; the bare invocation is a
+self-check over parse_issues() and is read-only.
+"""
+
+
+def _self_check():
     # Self-check: nested braces, braces/brackets inside strings, JSONL,
     # concatenated-on-one-line, top-level list, and recovery from junk.
     assert parse_issues("") == []
@@ -94,3 +108,10 @@ if __name__ == "__main__":
     assert parse_issues('garbage {"a": 1}') == [{"a": 1}]
     assert parse_issues(json.dumps({"a": 1})) == [{"a": 1}]
     print("custodian_common self-check OK")
+
+
+if __name__ == "__main__":
+    if "-h" in sys.argv[1:] or "--help" in sys.argv[1:]:
+        print(USAGE)
+        sys.exit(0)
+    _self_check()

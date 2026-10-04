@@ -1,7 +1,10 @@
 # Measurement Pitfalls
 
-Extracted verbatim from `SKILL.md`'s Critical Pitfalls section on 2026-10-03
-(sha256[:12] = `b908e8d1fc97`, 41356 chars, 71 bullets).
+Extracted from `SKILL.md`'s Critical Pitfalls section on 2026-10-03
+(sha256[:12] = `b908e8d1fc97`, 41356 chars, 71 bullets). Entries have been **added**
+since that extraction — notably the named-driver rule below (2026-10-04), which now lives
+here rather than inline. Count the `- **` bullets, not the extraction-time figure, when
+you cite a total.
 
 **When to read:** BEFORE publishing any zero, any rate, or any "clean" verdict from
 a sweep; whenever a capacity assertion (`distinct_firing_jobs <= cohort`,
@@ -24,6 +27,8 @@ identifies ~80% of what follows.
 | Unit mismatches | chars vs bytes, cron DOW vs `weekday()`, interval vs 5-field expressions |
 
 ---
+
+- **A named driver must exist ON THIS HOST, and repeated identical control-log lines prove it did not run.** Measured 2026-10-04: the disk-deficit issue carried a named growth driver — Chrome BrowserMetrics `.pma` spool, "pruned hourly by `/etc/cron.d/prune-chrome-browsermetrics.sh`" — recorded for two consecutive scans. That script does not exist on this host; the five `.pma` directories total **24 MiB** and had not been written in 79 hours; and the prune log emitted **byte-identical lines** for four consecutive hours (same container `cid`, same `pruned 71 files, 284MiB freed`). Read naively that is 1.66 GiB of proof of reclaim against a directory holding 24 MiB. **Rule:** before crediting any driver, (a) `find` the named control's script path and confirm it exists on this host, (b) measure the target directory's real size and newest-file mtime, and (c) diff the last N *consecutive* control-log lines — identical text across fires means a template or a cached container response, not a measurement. A named-but-wrong driver is **worse** than an unnamed one: it retires the search, because the next run reads the attribution and stops looking. **Corollary for evidence generally:** repeated identical lines are a false-clean shape in any log cited as proof an action ran — the same shape as an exactly-uniform zero, one level up. Re-locate growth by differential `du` over a real interval rather than by re-reading the filed attribution; that is what found it in `/var` (+16.3 MiB/3 min) while every `/root` tree sat at +0.0 MiB.
 
 - **run_id strings: build once, assert before writing.** `strftime('%Y%m%dT%H%M%SZ')` ALREADY emits the trailing `Z`; a format that appends another yields `...T222225ZZ` (observed twice in one run, 2026-10-01, while superseding the very defect I was correcting). Content timestamps were always right; the identifier was malformed. Build it once by explicit concatenation, and grep the finished value for `ZZ` before it touches an append-only store. Repair = append-only supersession under LAST-ROW-WINS + rename the journal so filename == run_id; never rewrite the store.
 - **`write_file` lints before executing.** A SyntaxError is refused at write time, so a broken script cannot half-apply an append. Trust that gate — it protected `issues.jsonl` when a closing `)`/`}` slipped into a journal dict.

@@ -59,6 +59,12 @@ real number came from a defect rather than from the system:
 Full escalation-execution lessons (repair the class, negative controls, `user_gated`
 falsification, backup-file diffing): `references/escalation-execution-lessons.md`.
 
+7. **A named driver must exist on THIS host, and repeated identical control-log lines
+   prove it did not run.** A filed attribution is a CLAIM, and crediting it retires the
+   search — re-locate growth by differential `du` over a real interval, not by re-reading
+   the attribution. Full entry, with the measured numbers:
+   `references/measurement-pitfalls.md`.
+
 **Read the pitfall file before publishing any zero, rate, or "clean" verdict**, and
 the escalation file before applying or `user_gated`-filing any fix. The six rules
 that cause the most findings, kept inline because they apply to nearly every run:
@@ -137,7 +143,19 @@ check and the scheduled run that will produce it.
 
 ## Commands
 
-`custodian.init` — create storage, register background tasks, build activity model. `custodian.scan.light` — tail gateway log, check cron registry, retry failed fixes, check uninitialized skills. `custodian.scan.deep` — full sweep (`references/deep-scan.md`). `custodian.verify {fix_id}` · `repair.auto` · `repair.plan` · `issues.list` · `issues.resolve {issue_id}` · `status` · `schedule.show` · `escalation-runner` · `update`.
+**These are deferred tools, not shell commands.** Invoke them through
+`tool_describe` / `tool_call` by exact name. There is no `custodian` binary on
+PATH and `hermes custodian ...` is not a hermes subcommand — running either as
+a terminal command fails and wastes 3-6 tool calls every session.
+
+| Tool name | Args | Does |
+|---|---|---|
+| `custodian_scan` | `mode: light \| deep` | light = tail gateway log, cron registry, retry failed fixes; deep = full sweep (`references/deep-scan.md`). **⚠️ Verified broken 2026-10-04:** with `mode: deep` it returned `"mode": "light"`, charged ONE traceback to FOUR distinct `fingerprint_id`s with byte-identical evidence, included entries dated two days before the run, and wrote its journal to `/root/.hermes/commons/...` instead of the profile commons root. **Do not use its counts as a census** — treat output as unverified until `returned_mode == requested_mode` and no two entries share identical evidence across distinct fingerprint ids. Run `scripts/custodian_sweep.py` (self-test first) plus direct registry probes instead. Issue: `oc_custodian_scan_tool_returns_light_and_misattributes_identical_evidence_20261004T0301Z`. |
+| `custodian_issues` | `action: list \| summary \| resolve` (+`issue_id`) | issue triage |
+| `custodian_cron_health` | none | cron health report + alert gate |
+| `custodian_status` | none | plugin status (**currently broken**: raises `KeyError: 'attempts'` — do not retry, fall back to `custodian_cron_health`) |
+
+`custodian.init` — create storage, register background tasks, build activity model. `custodian.verify {fix_id}` · `repair.auto` · `repair.plan` · `schedule.show` · `escalation-runner` · `update`.
 
 `custodian.secrets.audit` — read-only inline-secret scan, deduped by value (`references/secret-audit.md`). `custodian.secrets.remediate` — plan; `--apply` migrates the safe subset (MCP `headers` to `${ENV}`; never overwrite `.env` keys; back up each file; credential blobs stay MANUAL). Re-run the audit until 0 inline hits.
 
@@ -202,10 +220,10 @@ Tier 3: InsightProposal to the proposals dir + journal tag `escalation_needed: t
 
 | Job | Mechanism | Schedule | Command |
 |---|---|---|---|
-| `custodian:light` | cron | `0 * * * *` | `custodian.scan.light` |
-| `custodian:deep` | cron | `0 8,14,20,2 * * *` | `custodian.scan.deep` |
-| `custodian:escalation-runner` | cron | `*/30 9-17 * * 1-5` | Process escalated issues |
-| `custodian:cron-health` | cron (no_agent) | `0 8,14,20,2 * * *` | Health line + alert gate |
+| `custodian:light` | cron | `0 * * * *` | `custodian_scan` mode=light |
+| `custodian:deep` | cron | `0 8,14,20,2 * * *` | `custodian_scan` mode=deep |
+| `custodian:escalation-runner` | cron | `*/30 9-17 * * 1-5` | `custodian_issues` action=resolve |
+| `custodian:cron-health` | cron (no_agent) | `0 8,14,20,2 * * *` | `custodian_cron_health` |
 
 ## Known Code Fixes, Safety & Code Surface
 
@@ -245,7 +263,11 @@ cron staggering, and the call-script-vs-reason-directly table:
 `append_issue_row.py` — **the sanctioned append path to `issues.jsonl`.** Asserts
 `issue_id` + `escalation_needed` on every row and verifies the open-count delta against
 the filter as written, so the silent-visibility defect fails loudly at write time.
-`--dry-run` prints the row and the expected delta. Controls:
+`--dry-run` prints the row and the expected delta and writes nothing; the append path is
+`--expect-delta N`, which re-prints the open-count delta and verifies it. Read the flags off
+the script's own `--help`, not off this file — an earlier revision of this section asserted
+the opposite (claimed `--dry-run` did not exist and named a `--measure-only` flag), and
+running `append_issue_row.py --help` refuted it in one command.
 `references/append_issue_row_control.py` (24 arms, throwaway store — run after any change).
 
 
