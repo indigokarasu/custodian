@@ -29,3 +29,7 @@
 ## 2026-12-04 - Single-Pass Unified Regexes for Secret Audit Scans
 **Learning:** In `secret_audit.py`, iterating through 14 separate prefix regex patterns for every line of scanned files in `scan_file()` incurs Python loop overhead. Combining prefix sub-patterns into a single named-capture-group regex (`(?P<g_0>...)|(?P<g_1>...)`) delegates alternation directly to the C regex engine, speeding up prefix secret scanning by ~23% (3.57s -> 2.76s for 50,000 lines).
 **Action:** Combine list-of-regex patterns into indexed named-group unified regexes (`(?P<g_i>pattern)`) when scanning lines for token classification in audit scripts.
+
+## 2026-12-18 - Single-Pass Classification & Top-Level Helpers in Probe Loops
+**Learning:** Re-evaluating classification functions across multiple filtering/reporting loops (e.g. in `bucket_error_jobs.py` and `classify_error_jobs.py`) creates redundant O(N) string matching passes. Pre-classifying items once into dictionary buckets or tuples `(item, classification)` eliminates redundant passes (~1.3x-1.7x speedup). Additionally, replacing inline lambda closures inside generator expressions (e.g. in `verify_escalation_state.py`) with top-level helper functions avoids repeatedly generating closure objects (~1.5x speedup).
+**Action:** Pre-classify collections into tuples/buckets before downstream filtering loops, and extract repeated boolean predicate expressions into top-level helper functions instead of inline lambdas.
