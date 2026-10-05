@@ -59,7 +59,33 @@ real number came from a defect rather than from the system:
 Full escalation-execution lessons (repair the class, negative controls, `user_gated`
 falsification, backup-file diffing): `references/escalation-execution-lessons.md`.
 
-7. **A named driver must exist on THIS host, and repeated identical control-log lines
+- **NEVER exercise a Hermes entry module (`python -m cron.scheduler`, or any `__main__`) as a
+  verification probe.** Measured 2026-10-05T04:00Z: a light scan's own diagnostic ran
+  `<bare store interpreter> -m cron.scheduler --help` with `cwd=/root/.hermes/hermes-agent` but
+  WITHOUT the PYTHONPATH that `cron/scheduler_worker_env.pin_hermes_tree_on_pythonpath` builds for
+  a real worker. That pin adds `repo_root` AND the PM-committed generation's `site-packages`
+  (issues #112729 / #122222); without it the child sees only the bare interpreter's stdlib
+  site-packages, so `hermes_cli/env_loader.py` -> `import dotenv` raises and the scheduler marks
+  **every job it cannot dispatch** `state=error` — a **15-job error storm** in the registry the
+  probe was reading, aimed at a single job. Root cause was absent: the committed site-packages
+  held dotenv, ruamel.yaml and croniter (279 entries), and the pinned import chain returned rc 0.
+  14 of 15 cleared on their own next scheduled fire. **Rule:** verify import health by importing
+  the PINNED chain (repo + committed site-packages on `PYTHONPATH`), which is what actually runs;
+  never by invoking the entry point. This is the destructive-verification-probe class applied to a
+  *registry* rather than a journal: the probe's blast radius is every job, not the one under test.
+- **Read the module that documents the symptom BEFORE fixing it, and never install into a shared
+  store interpreter as a first move.** The same run installed `ruamel.yaml` into
+  `/root/.hermes/tools/python-3.14.7+.../` because the registry's traceback said
+  `ModuleNotFoundError: No module named 'ruamel'`. `cron/scheduler_worker_env.py`'s module
+  docstring names that EXACT string as issue #122222 and prescribes the pin — a package install
+  into the bare store interpreter treats the symptom of a missing PYTHONPATH and mutates a shared
+  runtime that many profiles inherit. Reverted (`pip uninstall`, verified `import ruamel.yaml` -> rc 1).
+  **Rule:** the fix that makes a traceback go away is not the fix that makes the *cause* go away;
+  if the failing import happens in a child, find the module that sets the child's environment
+  before touching site-packages. Corollary: `sys.executable -m pip install` against
+  `/root/.hermes/tools/python-*` is a Tier 4-adjacent mutation and should be treated as
+  `user_gated` even though it is reversible.
+- **A named driver must exist on THIS host, and repeated identical control-log lines
    prove it did not run.** A filed attribution is a CLAIM, and crediting it retires the
    search — re-locate growth by differential `du` over a real interval, not by re-reading
    the attribution. Full entry, with the measured numbers:
