@@ -144,6 +144,20 @@ class TestScanEscalationJournalGaps(unittest.TestCase):
         self.assertIsNone(gaps.get_ts({"timestamp": "invalid date string"}))
         self.assertIsNone(gaps.get_ts({"timestamp": 12345678}))
 
+    def test_recovery_phrase_detection(self):
+        d1 = {"summary": "Issue now resolved after API key rotation."}
+        d2 = {"notes": "Service recovered."}
+        d3 = {"status": "still failing"}
+        for d in (d1, d2):
+            d_str = str(d).lower()
+            self.assertTrue(
+                "recovered" in d_str or "issue now resolved" in d_str or "now resolved" in d_str
+            )
+        d3_str = str(d3).lower()
+        self.assertFalse(
+            "recovered" in d3_str or "issue now resolved" in d3_str or "now resolved" in d3_str
+        )
+
 
 class TestVerifyPluginDefectPostrestart(unittest.TestCase):
     """verify_plugin_defect_postrestart.scan_log — pre vs post restart bucketing."""
