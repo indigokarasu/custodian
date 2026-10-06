@@ -25,6 +25,7 @@ import parse_issues_jsonl                     # noqa: E402
 import reopen_false_resolutions as reopen     # noqa: E402
 import scan_escalation_journal_gaps as gaps   # noqa: E402
 import verify_plugin_defect_postrestart as vp # noqa: E402
+import verify_provider_recovery as vpr        # noqa: E402
 
 # Mirror of the skilllab runner's stdlib allow-list: a module-scope import of
 # anything else breaks `--help` on a machine where the dependency is absent.
@@ -215,6 +216,45 @@ class TestReopenLiveErrorCount(unittest.TestCase):
 
     def test_unknown_fingerprint_counts_zero(self):
         self.assertEqual(reopen.live_error_count("oc_no_such_fingerprint"), 0)
+
+
+class TestVerifyProviderRecovery(unittest.TestCase):
+    """verify_provider_recovery — load_jobs, utc, and default_provider profile loading."""
+
+    def test_utc_iso_parsing(self):
+        ts = vpr.utc("2026-07-16T12:34:56Z")
+        self.assertIsNotNone(ts)
+        self.assertIsNone(vpr.utc(None))
+        self.assertIsNone(vpr.utc("invalid timestamp"))
+
+    def test_load_jobs_and_default_provider_profile_paths(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            profile_dir = Path(tmpdir) / ".hermes" / "profiles" / "testprof"
+            cron_dir = profile_dir / "cron"
+            cron_dir.mkdir(parents=True)
+            jobs_file = cron_dir / "jobs.json"
+            jobs_file.write_text(json.dumps({"jobs": [{"id": "j1", "enabled": True}]}))
+
+            cfg_file = profile_dir / "config.yaml"
+            cfg_file.write_text("provider: openrouter\nmodel: anthropic/claude-3-5-sonnet\n")
+
+            orig_expanduser = os.path.expanduser
+            def mock_expanduser(path):
+                if path.startswith("~"):
+                    return str(Path(tmpdir) / path[2:])
+                return path
+
+            try:
+                os.path.expanduser = mock_expanduser
+                jobs = vpr.load_jobs("testprof")
+                self.assertEqual(len(jobs), 1)
+                self.assertEqual(jobs[0]["id"], "j1")
+
+                prov, model = vpr.default_provider("testprof")
+                self.assertEqual(prov, "openrouter")
+                self.assertEqual(model, "anthropic/claude-3-5-sonnet")
+            finally:
+                os.path.expanduser = orig_expanduser
 
 
 class TestConfirmProviderRecovery(unittest.TestCase):
