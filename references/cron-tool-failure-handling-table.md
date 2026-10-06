@@ -26,6 +26,9 @@ Full failure → handling table (cron context) plus tool-specific variants:
 | `state.db` >1GB AND disk >80% | Flag `oc_state_db_oversized` (Tier 2). Recommend pruning over VACUUM when disk >80% |
 | `jobs.json` `last_status` still `error` after fix | Registry lags. Run `hermes cron run <id>` to flip. Do NOT treat stale `error` as proof of failure |
 | Command text contains literal "gateway restart" substring | Sandbox interlock blocks it. Reword to avoid the trigger token (e.g. "gateway reload") |
+| `write_file` refuses a path that already exists (`stale_write_blocked`) | Write to a RUN-UNIQUE filename instead (e.g. suffix the UTC run_id) — do not read-then-overwrite a scratch script you may have already rewritten this session |
+| SyntaxError points at a line that `read_file` AND `cat -A` both show as valid | A byte is not what it renders as (measured: `get("expr)` — a missing closing quote). `od -c` the line; a quote-parity check (`awk '{n=gsub(/"/,"\""); if(n%2==1) print NR}'`) localizes it faster |
+| Session terminal `workdir` points at a nonexistent path (exit 126, `cd: /Users/... No such file or directory`) | The host is not the path the session was opened on. Pass an explicit `workdir=/root` on every terminal call rather than retrying the default |
 
 ## Additional nuances
 
