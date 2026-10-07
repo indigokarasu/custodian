@@ -37,3 +37,7 @@
 ## 2027-01-08 - Avoiding JSON Serialization for Substring Phrase Matching in Probe Loops
 **Learning:** In journal gap scanning (`scan_escalation_journal_gaps.py`), calling `json.dumps(d).lower()` to check for recovery phrases across thousands of journal records incurs C/Python JSON re-encoding overhead. Replacing `json.dumps(d).lower()` with `str(d).lower()` yields a ~2.5x speedup (from ~1.52s down to ~0.60s per 1000 records).
 **Action:** Use `str(d).lower()` instead of `json.dumps(d).lower()` when performing boolean substring/phrase checks on parsed dictionary objects in high-throughput probe loops.
+
+## 2027-01-22 - Lazy Journal Window Fetching in Gateway Health Check
+**Learning:** In `gateway_health_check.py`, fetching 10-min (`DISCONNECT_LOOP_WINDOW_MIN`) and 30-min (`SILENT_DEATH_MINUTES`) journal window outputs upfront via `journalctl` subprocess calls creates redundant I/O and process creation overhead when early health checks (e.g. inactive or failed service state) trigger an early return. Deferring window fetches lazily until needed reduces subprocess calls by up to ~66% on early return paths.
+**Action:** Fetch expensive journal window ranges lazily on-demand only when earlier status or token health checks pass and require those log windows.

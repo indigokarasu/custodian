@@ -404,12 +404,8 @@ def check():
     }
 
     try:
-        # ── Batch journal reads to avoid redundant subprocess calls ──────
-        # These are the expensive operations — do them once upfront
+        # ── OPTIMIZATION (Bolt ⚡): Fetch 5-min journal tail upfront, defer longer journal windows lazily ──
         journal_5min = get_journal_tail(50, minutes=5)
-        journal_10min = get_journal_window(10) if False else journal_5min  # reuse 5min for 10min checks
-        journal_window = get_journal_window(DISCONNECT_LOOP_WINDOW_MIN)
-        journal_silent = get_journal_window(SILENT_DEATH_MINUTES)
 
         # ── Service state ────────────────────────────────────────────────
         state = get_service_state()
@@ -468,6 +464,9 @@ def check():
             result["status"] = "restarted_ok" if success else "restart_failed"
             return result
 
+        # Lazily fetch 10-min window for network, disconnect, and SMS checks
+        journal_window = None
+
         # ── Cases 5-10: Telegram/SMS checks (skip if no token) ───────────
         if telegram_configured:
             # Case 5: Telegram API not responding
@@ -490,6 +489,8 @@ def check():
                 result["restart_detail"] = msg
                 result["status"] = "restarted_ok" if success else "restart_failed"
                 return result
+
+            journal_window = get_journal_window(DISCONNECT_LOOP_WINDOW_MIN)
 
             # Case 7: Telegram network errors
             has_net_error, net_detail = check_telegram_network_errors(journal_window)
@@ -514,6 +515,7 @@ def check():
                 return result
 
             # Case 10: Telegram silent death
+            journal_silent = get_journal_window(SILENT_DEATH_MINUTES)
             is_silent, silent_detail = check_telegram_silent_death(journal_silent)
             if is_silent:
                 result["action"] = "restart"
@@ -525,6 +527,8 @@ def check():
                 return result
 
         # Case 9: SMS disconnect loop (always checked)
+        if journal_window is None:
+            journal_window = get_journal_window(DISCONNECT_LOOP_WINDOW_MIN)
         has_sms_issue, sms_detail = check_sms_health(journal_window)
         if has_sms_issue:
             result["action"] = "restart"

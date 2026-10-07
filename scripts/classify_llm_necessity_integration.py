@@ -57,44 +57,12 @@ def save_ack(state):
 
 
 def load_issues():
-    """Load existing issues from issues.jsonl (raw_decode fallback)."""
+    """Load existing issues from issues.jsonl using canonical parse_issues parser."""
     if not os.path.exists(ISSUES_PATH):
         return []
+    from custodian_common import parse_issues
     with open(ISSUES_PATH) as f:
-        raw = f.read()
-    if not raw.strip():
-        return []
-    entries = []
-    decoder = json.JSONDecoder()
-    for line in raw.splitlines():
-        line = line.strip()
-        if not line:
-            continue
-        try:
-            entries.append(json.loads(line))
-            continue
-        except json.JSONDecodeError:
-            pass
-        # Fast streaming parse for concatenated JSON objects on a single line.
-        # Bolt performance optimization: use C-optimized json.JSONDecoder().raw_decode()
-        # instead of character-by-character string accumulation loop (yields ~8x speedup).
-        idx = 0
-        length = len(line)
-        while idx < length:
-            while idx < length and line[idx].isspace():
-                idx += 1
-            if idx >= length:
-                break
-            try:
-                obj, end = decoder.raw_decode(line, idx)
-                entries.append(obj)
-                idx = end
-            except json.JSONDecodeError:
-                # On malformed character, skip forward to next object start '{'
-                idx = line.find('{', idx + 1)
-                if idx == -1:
-                    break
-    return entries
+        return parse_issues(f.read())
 
 
 def save_issues(entries):
