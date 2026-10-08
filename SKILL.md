@@ -73,6 +73,17 @@ falsification, backup-file diffing): `references/escalation-execution-lessons.md
   the PINNED chain (repo + committed site-packages on `PYTHONPATH`), which is what actually runs;
   never by invoking the entry point. This is the destructive-verification-probe class applied to a
   *registry* rather than a journal: the probe's blast radius is every job, not the one under test.
+- **An `ImportError` from a repo module during an in-flight `hermes update` is transient, not a
+  defect — check for the updater before persisting an issue.** Measured 2026-10-07T04:03-04 local:
+  two `cannot import name 'is_recurring' from 'cron.constants'` errors (jobs `lucid:user-dream`
+  aece38b3e953 and `custodian:deep` c3cdf6e7d887) landed while a `hermes update` was running
+  (`cron/constants.py` mtime 04:00:14, `cron/jobs.py` 04:01:08 — the files were rewritten as the
+  scheduler imported them). 0 occurrences after the update window; a bare re-import of the pinned
+  chain returned rc 0 and `is_recurring` resolves. **Rule:** before writing an issue for any
+  import-failure signature, `ps` for an in-flight `hermes update` / `pm repair` and re-run the
+  import against the on-disk file; if it now resolves AND the last occurrence falls inside the
+  update window, it is a transient artifact — do NOT write an issue (that would be a false
+  escalation, the same class as the stale-premise guard).
 - **Read the module that documents the symptom BEFORE fixing it, and never install into a shared
   store interpreter as a first move.** The same run installed `ruamel.yaml` into
   `/root/.hermes/tools/python-3.14.7+.../` because the registry's traceback said
