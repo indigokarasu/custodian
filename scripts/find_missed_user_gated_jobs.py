@@ -31,28 +31,40 @@ ISSUES_PATHS = [
     os.path.expanduser("~/.hermes/profiles/indigo/commons/data/ocas-custodian/issues.jsonl"),
 ]
 
-# (fingerprint, recommended_issue_id, match-substrings in last_error)
-USER_GATED = [
+import re
+
+# Raw pattern definitions
+_USER_GATED_PATTERNS = [
     ("oc_nous_api_key_invalid", "oc_nous_401_key_invalid_20260707",
-     ["portal.nousresearch.com", "your api key is invalid, blocked or out of funds"]),
+     [r"portal\.nousresearch\.com", r"your api key is invalid, blocked or out of funds"]),
     ("oc_openrouter_402_credits_exhausted", "oc_openrouter_402_credits_exhausted_20260706",
-     ["402", "insufficient", "credits", "openrouter"]),
+     [r"402", r"insufficient", r"credits", r"openrouter"]),
     ("oc_http_404_model_deprecated", "oc_owl_alpha_model_404_20260701",
-     ["404", "no endpoints found", "owl-alpha"]),
+     [r"404", r"no endpoints found", r"owl-alpha"]),
     ("oc_google_tasks_api_403", "oc_google_tasks_api_403_forbidden",
-     ["403", "forbidden", "tasks api", "tasks"]),
+     [r"403", r"forbidden", r"tasks api", r"tasks"]),
     ("oc_google_oauth_token_revoked", "oc_google_oauth_token_revoked",
-     ["invalid_grant", "token has been expired or revoked"]),
+     [r"invalid_grant", r"token has been expired or revoked"]),
 ]
 
-TRANSIENT = [
-    "cannot schedule new futures after interpreter shutdown",
-    "resourceexhausted",
-    "rate limit exceeded",
-    "429",
-    "provider returned error",
-    "futures shutdown",
+_TRANSIENT_PATTERNS = [
+    r"cannot schedule new futures after interpreter shutdown",
+    r"resourceexhausted",
+    r"rate limit exceeded",
+    r"429",
+    r"provider returned error",
+    r"futures shutdown",
 ]
+
+# OPTIMIZATION (Bolt ⚡): Pre-compile user-gated and transient regex patterns at module load.
+# Joining sub-patterns into unified regexes delegates matching to C regex engine, avoiding
+# inner Python loop iterations over substring lists per job error.
+USER_GATED = [
+    (fp, iid, re.compile("|".join(subs), re.IGNORECASE))
+    for fp, iid, subs in _USER_GATED_PATTERNS
+]
+
+_TRANSIENT_RE = re.compile("|".join(_TRANSIENT_PATTERNS), re.IGNORECASE)
 
 
 def collect_paused():
@@ -74,14 +86,11 @@ def collect_paused():
 def classify(err):
     if not err:
         return ("UNKNOWN", None, None)
-    low = err.lower()
-    for fp, iid, subs in USER_GATED:
-        for sub in subs:
-            if sub in low:
-                return ("MISSED", fp, iid)
-    for t in TRANSIENT:
-        if t in low:
-            return ("TRANSIENT", None, None)
+    for fp, iid, rx in USER_GATED:
+        if rx.search(err):
+            return ("MISSED", fp, iid)
+    if _TRANSIENT_RE.search(err):
+        return ("TRANSIENT", None, None)
     return ("UNKNOWN", None, None)
 
 
