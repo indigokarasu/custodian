@@ -132,6 +132,8 @@ _PERSONA_FRAMING_RE = re.compile("|".join(_PERSONA_FRAMING))
 _MULTI_SOURCE_RE = re.compile("|".join(_MULTI_SOURCE), re.IGNORECASE)
 _DISPATCH_PATTERNS_RE = re.compile("|".join(_DISPATCH_PATTERNS), re.IGNORECASE)
 
+_KNOWN_GENUINE_LLM_RE = re.compile("|".join(re.escape(k) for k in _KNOWN_GENUINE_LLM), re.IGNORECASE)
+
 _BORDERLINE_EXIT_CODE_RE = re.compile(r"exit code", re.IGNORECASE)
 _BORDERLINE_SKILL_LOAD_RE = re.compile(r"(run|check|scan|monitor)\s+(daily|weekly|regular)\s+\S+\s+(using|with)\s+the?\s+\S+\s+skill", re.IGNORECASE)
 
@@ -176,13 +178,11 @@ def has_positive_signal(prompt, script):
 
 def has_negative_signal(prompt, name):
     """True if the job genuinely needs LLM reasoning."""
-    pl = prompt.lower()
-    name_lower = name.lower() if name else ""
+    # By-name exclusion list (Bolt ⚡ optimization: unified regex avoids Python loop & lowercasing)
+    if name and _KNOWN_GENUINE_LLM_RE.search(name):
+        return True
 
-    # By-name exclusion list
-    for known in _KNOWN_GENUINE_LLM:
-        if known.lower() in name_lower:
-            return True
+    pl = prompt.lower()
 
     # Generation/reasoning verbs
     if _GENERATION_VERBS_RE.search(pl):
@@ -237,12 +237,9 @@ def classify(job):
 
     neg = has_negative_signal(prompt, name)
     if neg:
-        name_lower = name.lower()
-        for known in _KNOWN_GENUINE_LLM:
-            if known.lower() in name_lower:
-                negative_signals.append("known_genuine_llm")
-                break
-        if not negative_signals:
+        if name and _KNOWN_GENUINE_LLM_RE.search(name):
+            negative_signals.append("known_genuine_llm")
+        else:
             negative_signals.append("needs_llm_reasoning")
 
     signals_info = {
