@@ -56,53 +56,14 @@ Interactive invocation offers a two-level menu: `references/interactive-menu.md`
 Full pitfall catalogue — 40+ measurement-integrity rules, each written because a
 real number came from a defect rather than from the system:
 `references/measurement-pitfalls.md`.
-Full escalation-execution lessons (repair the class, negative controls, `user_gated`
-falsification, backup-file diffing): `references/escalation-execution-lessons.md`.
-
-- **NEVER exercise a Hermes entry module (`python -m cron.scheduler`, or any `__main__`) as a
-  verification probe.** Measured 2026-10-05T04:00Z: a light scan's own diagnostic ran
-  `<bare store interpreter> -m cron.scheduler --help` with `cwd=/root/.hermes/hermes-agent` but
-  WITHOUT the PYTHONPATH that `cron/scheduler_worker_env.pin_hermes_tree_on_pythonpath` builds for
-  a real worker. That pin adds `repo_root` AND the PM-committed generation's `site-packages`
-  (issues #112729 / #122222); without it the child sees only the bare interpreter's stdlib
-  site-packages, so `hermes_cli/env_loader.py` -> `import dotenv` raises and the scheduler marks
-  **every job it cannot dispatch** `state=error` — a **15-job error storm** in the registry the
-  probe was reading, aimed at a single job. Root cause was absent: the committed site-packages
-  held dotenv, ruamel.yaml and croniter (279 entries), and the pinned import chain returned rc 0.
-  14 of 15 cleared on their own next scheduled fire. **Rule:** verify import health by importing
-  the PINNED chain (repo + committed site-packages on `PYTHONPATH`), which is what actually runs;
-  never by invoking the entry point. This is the destructive-verification-probe class applied to a
-  *registry* rather than a journal: the probe's blast radius is every job, not the one under test.
-- **An `ImportError` from a repo module during an in-flight `hermes update` is transient, not a
-  defect — check for the updater before persisting an issue.** Measured 2026-10-07T04:03-04 local:
-  two `cannot import name 'is_recurring' from 'cron.constants'` errors (jobs `lucid:user-dream`
-  aece38b3e953 and `custodian:deep` c3cdf6e7d887) landed while a `hermes update` was running
-  (`cron/constants.py` mtime 04:00:14, `cron/jobs.py` 04:01:08 — the files were rewritten as the
-  scheduler imported them). 0 occurrences after the update window; a bare re-import of the pinned
-  chain returned rc 0 and `is_recurring` resolves. **Rule:** before writing an issue for any
-  import-failure signature, `ps` for an in-flight `hermes update` / `pm repair` and re-run the
-  import against the on-disk file; if it now resolves AND the last occurrence falls inside the
-  update window, it is a transient artifact — do NOT write an issue (that would be a false
-  escalation, the same class as the stale-premise guard).
-- **Read the module that documents the symptom BEFORE fixing it, and never install into a shared
-  store interpreter as a first move.** The same run installed `ruamel.yaml` into
-  `/root/.hermes/tools/python-3.14.7+.../` because the registry's traceback said
-  `ModuleNotFoundError: No module named 'ruamel'`. `cron/scheduler_worker_env.py`'s module
-  docstring names that EXACT string as issue #122222 and prescribes the pin — a package install
-  into the bare store interpreter treats the symptom of a missing PYTHONPATH and mutates a shared
-  runtime that many profiles inherit. Reverted (`pip uninstall`, verified `import ruamel.yaml` -> rc 1).
-  **Rule:** the fix that makes a traceback go away is not the fix that makes the *cause* go away;
-  if the failing import happens in a child, find the module that sets the child's environment
-  before touching site-packages. Corollary: `sys.executable -m pip install` against
-  `/root/.hermes/tools/python-*` is a Tier 4-adjacent mutation and should be treated as
-  `user_gated` even though it is reversible.
-- **A named driver must exist on THIS host, and repeated identical control-log lines
-   prove it did not run.** A filed attribution is a CLAIM, and crediting it retires the
-   search — re-locate growth by differential `du` over a real interval, not by re-reading
-   the attribution. Full entry, with the measured numbers:
-   `references/measurement-pitfalls.md`.
+Inline narratives for the four most critical pitfalls (entry-module probe, ImportError
+during update, shared store interpreter, named driver verification) have been extracted
+to `references/inline-pitfall-narratives.md` to reduce SKILL.md length.
 
 **Read the pitfall file before publishing any zero, rate, or "clean" verdict**, and
+the escalation file before applying or `user_gated`-filing any fix. The six rules
+that cause the most findings, plus the tool-quirk table:
+`references/measurement-rules-six.md`.
 the escalation file before applying or `user_gated`-filing any fix. The six rules
 that cause the most findings, kept inline because they apply to nearly every run:
 
@@ -150,25 +111,7 @@ Tool quirks in cron context (`read_file` dedup, pipe-to-interpreter, `write_file
 ## Escalation execution: hard-won lessons
 
 Full text — read before applying a Tier 1/2 fix or filing anything `user_gated`:
-`references/escalation-execution-lessons.md`. Four that change what you do:
-
-- **Repair the CLASS, not the member.** An issue repaired member-by-member more than twice
-  has the wrong repair unit — enumerate the whole set in one pass, then say whether the
-  correction weakens anything.
-- **A negative control is the only thing that distinguishes a passing detector from a
-  broken one, and it catches the fixer.** Derive exception lists by RULE, never by literal
-  name. When your own control's assertion fails, suspect the fixture first.
-- **A `user_gated` flag is a CLAIM about the fix path, not a verdict on the risk.** Run
-  `hermes cron edit --help` before concluding a cron prompt/schedule is uneditable.
-- **Diff the backup FILE, never a reconstructed snapshot, and assert the NET substitution**
-  (`apply(SUB, original) == live`); classify scheduler-written volatile fields
-  (`fire_claim`, `next_run_at`, `last_dispatch`, `pending_slot`) separately so their drift
-  never fails a config-integrity assertion.
-
-Corollary: `hermes cron run <id>` can contend with the store this run just wrote — when the
-assertion under test is a text signature in the registry, re-reading the registry after the
-edit IS the re-validation; record the behavioral confirmation as pending, with the specific
-check and the scheduled run that will produce it.
+`references/escalation-execution-lessons.md`.
 
 ## Responsibility Boundary
 
