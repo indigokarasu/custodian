@@ -311,6 +311,42 @@ class TestRaceSafeIssuePatch(unittest.TestCase):
             if os.path.exists(path):
                 os.unlink(path)
 
+    def test_escaped_issue_id_is_not_skipped_by_prefilter(self):
+        """The fast-path substring test must stay a SUPERSET of the parse match.
+
+        An id containing a character JSON escapes (non-ASCII, quote, backslash)
+        is written escaped on disk, so a literal `issue_id in line` pre-filter is
+        a false negative: the row is silently skipped and the script reports
+        NOT FOUND on an object that matches. Regression for the Bolt ⚡
+        pre-filter added in #25.
+        """
+        for issue_id in ["oc_état_1", 'oc_"odd"_id', "oc_back\\slash_id"]:
+            with self.subTest(issue_id=issue_id):
+                lines = [json.dumps({"issue_id": issue_id, "status": "user_gated"})]
+                with tempfile.NamedTemporaryFile("w", suffix=".jsonl", delete=False) as fh:
+                    fh.write("\n".join(lines) + "\n")
+                    path = fh.name
+
+                try:
+                    old_argv = sys.argv
+                    sys.argv = [
+                        "race_safe_issue_patch.py",
+                        "--issue-id", issue_id,
+                        "--set", "status=resolved",
+                        "--path", path,
+                    ]
+                    with self.assertRaises(SystemExit) as cm:
+                        patch.main()
+                    self.assertEqual(cm.exception.code, 0)
+
+                    with open(path) as f:
+                        after = [json.loads(ln) for ln in f if ln.strip()]
+                    self.assertEqual(after[0]["status"], "resolved")
+                finally:
+                    sys.argv = old_argv
+                    if os.path.exists(path):
+                        os.unlink(path)
+
 
 class TestConfirmProviderRecovery(unittest.TestCase):
     """confirm_provider_recovery — fp_of classification and main recovery confirmation logic."""

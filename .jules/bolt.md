@@ -47,5 +47,6 @@
 **Action:** Pre-compile multi-keyword string pattern sets into unified `re.compile("|".join(...))` regexes at module load in classification and escalation probes.
 
 ## 2027-02-19 - Substring Pre-filtering for Line-Based JSON Scanners
-**Learning:** In `race_safe_issue_patch.py`, calling `parse_line()` (`json.loads()`) for every line in `issues.jsonl` incurs heavy Python JSON decoding overhead across thousands of lines. Adding a fast C-level substring pre-check (`if args.issue_id not in ln: continue`) and pre-computing loop-invariant status flags outside the line loop yields a ~30x speedup when patching target issues in large JSONL stores.
-**Action:** In line-based JSON mutation/patching scripts, use fast substring checks (`target_id in line`) before invoking `json.loads()`, and lift loop-invariant flag calculations outside per-line iteration loops.
+**Learning:** In `race_safe_issue_patch.py`, calling `parse_line()` (`json.loads()`) for every line in `issues.jsonl` incurs heavy Python JSON decoding overhead across thousands of lines. Adding a fast C-level substring pre-check and pre-computing loop-invariant status flags outside the line loop yields a real speedup when patching target issues in large JSONL stores.
+**Action:** In line-based JSON mutation/patching scripts, use a fast substring check before invoking `json.loads()`, and lift loop-invariant flag calculations outside per-line iteration loops. **The substring must be a SUPERSET of what the parse-based match accepts**: test both the literal value and its `json.dumps(v)[1:-1]` escaped form, because an identifier containing a quote, backslash, or non-ASCII character is written escaped on disk (`\u00e9`) and a literal `value in line` test silently skips the matching row.
+
