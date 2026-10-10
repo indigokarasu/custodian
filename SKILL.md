@@ -50,6 +50,7 @@ Interactive invocation offers a two-level menu: `references/interactive-menu.md`
 
 - **`send_email.py` template mismatch** (`oc_vesper_template_missing`): only `job_search` valid — `references/send-email-template-mismatch.md`.
 - **Wrong path prefix**: use `$AGENT_ROOT/profiles/<profile>/commons/...` — `references/wrong-path-prefix-in-skill-scripts.md`.
+- **Plugin manifest parse spam** (`Failed to parse .../plugin.yaml: expected '<document start>'`): stray `...` YAML document-end markers between mapping keys; the plugin never loads. Check upstream first (the checkout may just be behind). — `references/plugin-manifest-yaml-document-marker-corruption.md`.
 
 ## Critical Pitfalls
 
