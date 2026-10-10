@@ -84,6 +84,18 @@ def main():
     is_resolving = any(k == "status" and val == "resolved" for k, val in keyvals)
     has_resolved_at = any(k == "resolved_at" for k, _ in keyvals)
 
+    # Fast-path pre-filter: the raw issue id appears in the line only if it needs
+    # no JSON escaping. An id containing a quote, backslash, or non-ASCII char is
+    # written escaped (e.g. `\u00e9`), so a literal `in` test is a false negative —
+    # the target line is skipped and the script exits 1 "NOT FOUND" on a row that
+    # matches. Test both the literal id and its escaped form so the pre-filter
+    # stays a SUPERSET of the parse-based match.
+    escaped_id = json.dumps(args.issue_id)[1:-1]
+    needles = (args.issue_id,) if escaped_id == args.issue_id else (args.issue_id, escaped_id)
+
+    def _skip(ln):
+        return not any(n in ln for n in needles)
+
     for attempt in range(1, args.retries + 1):
         with open(args.path) as f:
             lines = f.readlines()
@@ -92,7 +104,7 @@ def main():
         gate_mismatch = False
         for ln in lines:
             # Fast-path substring check avoids expensive json.loads() parsing on non-target lines
-            if args.issue_id not in ln:
+            if _skip(ln):
                 out.append(ln if ln.endswith("\n") else ln + "\n")
                 continue
             o = parse_line(ln)
@@ -120,7 +132,7 @@ def main():
         # immediate re-read verify
         with open(args.path) as f:
             for ln in f:
-                if args.issue_id not in ln:
+                if _skip(ln):
                     continue
                 o = parse_line(ln)
                 if o and (o.get("issue_id") or o.get("id")) == args.issue_id:
