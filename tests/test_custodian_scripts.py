@@ -22,6 +22,7 @@ import custodian_common                       # noqa: E402
 import escalation_exec_pause_reconcile as esc # noqa: E402
 import find_missed_user_gated_jobs as missed  # noqa: E402
 import parse_issues_jsonl                     # noqa: E402
+import race_safe_issue_patch as patch         # noqa: E402
 import reopen_false_resolutions as reopen     # noqa: E402
 import scan_escalation_journal_gaps as gaps   # noqa: E402
 import verify_plugin_defect_postrestart as vp # noqa: E402
@@ -255,6 +256,60 @@ class TestVerifyProviderRecovery(unittest.TestCase):
                 self.assertEqual(model, "anthropic/claude-3-5-sonnet")
             finally:
                 os.path.expanduser = orig_expanduser
+
+
+class TestRaceSafeIssuePatch(unittest.TestCase):
+    """race_safe_issue_patch — line patching and fast-path verification."""
+
+    def test_parse_line_and_coerce(self):
+        self.assertEqual(patch.parse_line('{"issue_id": "oc_1", "status": "open"}'),
+                         {"issue_id": "oc_1", "status": "open"})
+        self.assertIsNone(patch.parse_line("   \n"))
+        self.assertIsNone(patch.parse_line("invalid json"))
+
+        self.assertEqual(patch.coerce("true"), True)
+        self.assertEqual(patch.coerce("false"), False)
+        self.assertEqual(patch.coerce("null"), None)
+        self.assertEqual(patch.coerce("123"), 123)
+        self.assertEqual(patch.coerce("open"), "open")
+
+    def test_main_patch_and_verify(self):
+        lines = [
+            json.dumps({"issue_id": "oc_1", "status": "user_gated", "escalation_needed": True}),
+            json.dumps({"issue_id": "oc_2", "status": "user_gated", "escalation_needed": True}),
+        ]
+        with tempfile.NamedTemporaryFile("w", suffix=".jsonl", delete=False) as fh:
+            fh.write("\n".join(lines) + "\n")
+            path = fh.name
+
+        try:
+            old_argv = sys.argv
+            sys.argv = [
+                "race_safe_issue_patch.py",
+                "--issue-id", "oc_1",
+                "--set", "status=resolved",
+                "--set", "escalation_needed=false",
+                "--path", path,
+            ]
+            with self.assertRaises(SystemExit) as cm:
+                patch.main()
+            self.assertEqual(cm.exception.code, 0)
+
+            with open(path) as f:
+                updated_lines = [json.loads(ln) for ln in f if ln.strip()]
+
+            # oc_1 should be updated and have resolved_at set
+            self.assertEqual(updated_lines[0]["status"], "resolved")
+            self.assertFalse(updated_lines[0]["escalation_needed"])
+            self.assertIn("resolved_at", updated_lines[0])
+
+            # oc_2 should be unchanged
+            self.assertEqual(updated_lines[1]["status"], "user_gated")
+            self.assertTrue(updated_lines[1]["escalation_needed"])
+        finally:
+            sys.argv = old_argv
+            if os.path.exists(path):
+                os.unlink(path)
 
 
 class TestConfirmProviderRecovery(unittest.TestCase):

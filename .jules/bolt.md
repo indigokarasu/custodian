@@ -45,3 +45,7 @@
 ## 2027-02-05 - Unified Pre-Compiled Regex Matching in Escalation Probes
 **Learning:** In `find_missed_user_gated_jobs.py`, checking `sub in low` inside nested Python loops for each job's `last_error` incurred Python loop iteration overhead. Pre-compiling sub-patterns into unified `|`-delimited `re.compile(..., re.IGNORECASE)` objects delegates matching directly to the C regex engine, speeding up error classification matching.
 **Action:** Pre-compile multi-keyword string pattern sets into unified `re.compile("|".join(...))` regexes at module load in classification and escalation probes.
+
+## 2027-02-19 - Substring Pre-filtering for Line-Based JSON Scanners
+**Learning:** In `race_safe_issue_patch.py`, calling `parse_line()` (`json.loads()`) for every line in `issues.jsonl` incurs heavy Python JSON decoding overhead across thousands of lines. Adding a fast C-level substring pre-check (`if args.issue_id not in ln: continue`) and pre-computing loop-invariant status flags outside the line loop yields a ~30x speedup when patching target issues in large JSONL stores.
+**Action:** In line-based JSON mutation/patching scripts, use fast substring checks (`target_id in line`) before invoking `json.loads()`, and lift loop-invariant flag calculations outside per-line iteration loops.

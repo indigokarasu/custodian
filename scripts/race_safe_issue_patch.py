@@ -80,6 +80,10 @@ def main():
 
     now_iso = datetime.now(timezone.utc).isoformat()
 
+    # OPTIMIZATION (Bolt ⚡): Pre-compute resolution flags once outside line processing loop
+    is_resolving = any(k == "status" and val == "resolved" for k, val in keyvals)
+    has_resolved_at = any(k == "resolved_at" for k, _ in keyvals)
+
     for attempt in range(1, args.retries + 1):
         with open(args.path) as f:
             lines = f.readlines()
@@ -87,6 +91,10 @@ def main():
         found = False
         gate_mismatch = False
         for ln in lines:
+            # Fast-path substring check avoids expensive json.loads() parsing on non-target lines
+            if args.issue_id not in ln:
+                out.append(ln if ln.endswith("\n") else ln + "\n")
+                continue
             o = parse_line(ln)
             if o and (o.get("issue_id") or o.get("id")) == args.issue_id:
                 if args.require_status is not None and o.get("status") != args.require_status:
@@ -95,8 +103,7 @@ def main():
                     continue
                 for k, val in keyvals:
                     o[k] = val
-                if any(k == "status" and val == "resolved" for k, val in keyvals) and \
-                        "resolved_at" not in [kv[0] for kv in keyvals]:
+                if is_resolving and not has_resolved_at:
                     o["resolved_at"] = now_iso
                 out.append(json.dumps(o) + "\n")
                 found = True
@@ -113,6 +120,8 @@ def main():
         # immediate re-read verify
         with open(args.path) as f:
             for ln in f:
+                if args.issue_id not in ln:
+                    continue
                 o = parse_line(ln)
                 if o and (o.get("issue_id") or o.get("id")) == args.issue_id:
                     if all(o.get(k) == val for k, val in keyvals):
