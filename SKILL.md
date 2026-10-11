@@ -8,7 +8,7 @@ includes:
 - scripts/**
 metadata:
   author: Indigo Karasu (indigokarasu)
-  version: "3.2.0"
+  version: "3.3.0"
   hermes:
     tags:
       - monitoring
@@ -17,6 +17,19 @@ metadata:
       - cron
       - OCAS-core
     category: devops
+    config:
+      - key: HERMES_HOME
+        description: "Hermes home; roots the profile / skills / scripts paths every scan reads"
+        default: "~/.hermes"
+      - key: HERMES_PROFILE
+        description: "Active profile name; selects <HERMES_HOME>/profiles/<profile>/cron/jobs.json"
+        default: "indigo"
+      - key: HERMES_PROFILE_HOME
+        description: "Profile home (<HERMES_HOME>/profiles/<HERMES_PROFILE>) for journals and commons"
+        default: "~/.hermes/profiles/indigo"
+      - key: AGENT_ROOT
+        description: "Agent root for commons/ paths (e.g. $AGENT_ROOT/profiles/<profile>/commons)"
+        default: "~/.hermes"
 triggers:
 - system health
 - log errors
@@ -48,71 +61,21 @@ Interactive invocation offers a two-level menu: `references/interactive-menu.md`
 
 ## Known Code Fixes
 
-- **`send_email.py` template mismatch** (`oc_vesper_template_missing`): only `job_search` valid — `references/send-email-template-mismatch.md`.
-- **Wrong path prefix**: use `$AGENT_ROOT/profiles/<profile>/commons/...` — `references/wrong-path-prefix-in-skill-scripts.md`.
-- **Plugin manifest parse spam** (`Failed to parse .../plugin.yaml: expected '<document start>'`): stray `...` YAML document-end markers between mapping keys; the plugin never loads. Check upstream first (the checkout may just be behind). — `references/plugin-manifest-yaml-document-marker-corruption.md`.
+One-line index; **read `references/known-code-fixes.md` before applying any fix whose signature matches** — it carries the file, the mechanism, and the correct handling for each.
+
+- `send_email.py` template mismatch (`oc_vesper_template_missing`) — only `job_search` valid.
+- Wrong commons path prefix — use `$AGENT_ROOT/profiles/<profile>/commons/...`.
+- Plugin manifest parse spam — stray `...` YAML document-end markers; check upstream first.
+- Tier 4 code fixes + MCP cascade triage; secret-redaction source corruption (fix directly, never user-gate).
+- Google OAuth `deleted_client` / `invalid_grant`; after a `googleapiclient` `ModuleNotFoundError`, immediately re-check token revocation.
+- Env-sync gate recurrence; `hello_operator` `Router` naming trap (`ps | grep router` misses it).
+- Safety envelope, background-task conformance, activity model + schedule optimization, storage/platform, script-path rejection.
 
 ## Critical Pitfalls
 
-Full pitfall catalogue — 40+ measurement-integrity rules, each written because a
-real number came from a defect rather than from the system:
-`references/measurement-pitfalls.md`.
-Inline narratives for the four most critical pitfalls (entry-module probe, ImportError
-during update, shared store interpreter, named driver verification) have been extracted
-to `references/inline-pitfall-narratives.md` to reduce SKILL.md length.
+Full catalogue — 40+ measurement-integrity rules, each written because a real number came from a defect rather than from the system: `references/measurement-pitfalls.md`. **Read it before publishing any zero, rate, or "clean" verdict.** The six rules that cause the most findings, the three runner traps, and the cron tool-quirk table live in `references/measurement-rules-six.md`; the four most critical narratives (entry-module probe, ImportError during update, shared store interpreter, named driver verification) live in `references/inline-pitfall-narratives.md`.
 
-**Read the pitfall file before publishing any zero, rate, or "clean" verdict**, and
-the escalation file before applying or `user_gated`-filing any fix. The six rules
-that cause the most findings, plus the tool-quirk table:
-`references/measurement-rules-six.md`.
-the escalation file before applying or `user_gated`-filing any fix. The six rules
-that cause the most findings, kept inline because they apply to nearly every run:
-
-1. **A sweep that reads 0 files is indistinguishable from a clean sweep.** Print the
-   per-set file count and a per-file error line; check the exit code AND the `!!` count.
-   `gzip.open` takes no `errors=`, so one shared opener raises on every file and every
-   fingerprint returns 0 at once. Branch on the extension inside the loop.
-2. **The denominator must physically host the numerator.** Assert
-   `distinct_firing_jobs <= enabled_jobs` and `unclaimed <= occurrences_due` PER HOUR. A
-   failing capacity assertion means the denominator is wrong, not the numerator.
-   Denominator = occurrences due (`3600/n` for `every Nm`, not 1), parsed from `*`, `a-b`,
-   `*/s` and comma lists, all as **ints**.
-3. **Key every hourly bucket by DAY *AND* HOUR, in LOCAL time.** Log stamps and cron
-   selectors share one timezone domain. Hour-only keys sum two days; UTC keys against
-   local stamps produce confident nonsense. Reset per-file `carry = None` inside the loop
-   and guard the clock domain.
-4. **Every appended `issues.jsonl` row MUST set `issue_id` AND `escalation_needed`,** and
-   the open count must be compared before and after. Expected delta =
-   `is_open(this_row) - is_open(previous_last_row_for_this_issue_id)` — the open filter
-   applied twice, no kind table, no special cases. A reopen of a CLOSED issue is `+1`, not
-   `0`, even though the row supersedes. Use `scripts/append_issue_row.py`. Full recipe:
-   `references/issues-jsonl-row-integrity.md`.
-5. **Cron is MINUTE HOUR DOM MONTH DOW** — `f[0]` is the minute. `every Nm` is a 2-field
-   string, so any `len(fields) >= 5` guard silently drops the busiest watchdogs.
-   `schedule.expr == ''` means `kind: "interval"`, not a parse failure.
-6. **Before publishing any zero or rate: name the file the signature lives in, grep the
-   literal string once and READ the line, then count.** A filter that skips the line
-   carrying the signature (`continue` before the match test), a wrong token (`unclaimed` vs
-   `never claimed`), or a `" WARNING "` filter with a non-existent leading space each
-   return a clean zero forever. An exactly-uniform zero across unrelated fingerprints is a
-   filter bug until proven otherwise.
-
-Three more that apply to nearly every run, all with full entries in the reference:
-**`run_id` strings** — build once by explicit concatenation (`strftime('%Y%m%dT%H%M%SZ')`
-already emits the `Z`) and grep for `ZZ` before writing; **blocked in cron** — `find -delete`
-and inline `python3 -c`, so express destructive reap as a script file; **a COUNT in a status
-bucket is not permanence** — snapshot row IDs, wait 60-90s, re-read, compare BOTH `pid` and
-`process_id`.
-
-Tool quirks in cron context (`read_file` dedup, pipe-to-interpreter, `write_file` failures,
-`execute_code` denial, heredoc `$(date)` expansion, the `hermes cron` CLI path mismatch, inline
-`python3 -c` blocked, Python 3.14 `strptime` rejections):
-`references/cron-tool-failure-handling-table.md`.
-
-## Escalation execution: hard-won lessons
-
-Full text — read before applying a Tier 1/2 fix or filing anything `user_gated`:
-`references/escalation-execution-lessons.md`.
+Load-bearing, one line each: a sweep that reads 0 files is indistinguishable from a clean sweep (print the per-set file count and the exit code); the denominator must physically host the numerator (assert capacity per hour); key every hourly bucket by DAY *AND* HOUR, in LOCAL time; every appended `issues.jsonl` row must set `issue_id` AND `escalation_needed`; cron is MINUTE HOUR DOM MONTH DOW; before publishing any zero or rate, grep the literal signature once and READ the line.
 
 ## Responsibility Boundary
 
@@ -124,14 +87,11 @@ Full text — read before applying a Tier 1/2 fix or filing anything `user_gated
 
 ## Commands
 
-**These are deferred tools, not shell commands.** Invoke them through
-`tool_describe` / `tool_call` by exact name. There is no `custodian` binary on
-PATH and `hermes custodian ...` is not a hermes subcommand — running either as
-a terminal command fails and wastes 3-6 tool calls every session.
+**These are deferred tools, not shell commands.** Invoke them through `tool_describe` / `tool_call` by exact name. There is no `custodian` binary on PATH and `hermes custodian ...` is not a hermes subcommand — running either as a terminal command fails and wastes 3-6 tool calls every session.
 
 | Tool name | Args | Does |
 |---|---|---|
-| `custodian_scan` | `mode: light \| deep` | light = tail gateway log, cron registry, retry failed fixes; deep = full sweep (`references/deep-scan.md`). **⚠️ Verified broken 2026-10-04:** with `mode: deep` it returned `"mode": "light"`, charged ONE traceback to FOUR distinct `fingerprint_id`s with byte-identical evidence, included entries dated two days before the run, and wrote its journal to `/root/.hermes/commons/...` instead of the profile commons root. **Do not use its counts as a census** — treat output as unverified until `returned_mode == requested_mode` and no two entries share identical evidence across distinct fingerprint ids. Run `scripts/custodian_sweep.py` (self-test first) plus direct registry probes instead. Issue: `oc_custodian_scan_tool_returns_light_and_misattributes_identical_evidence_20261004T0301Z`. |
+| `custodian_scan` | `mode: light \| deep` | light = tail gateway log, cron registry, retry failed fixes; deep = full sweep (`references/deep-scan.md`). **⚠️ Verified broken 2026-10-04 — do not use its counts as a census; read `references/custodian-scan-tool-broken.md` first.** Treat output as unverified until `returned_mode == requested_mode` and no two entries share identical evidence across distinct fingerprint ids; prefer `scripts/custodian_sweep.py` (self-test first) + direct registry probes. |
 | `custodian_issues` | `action: list \| summary \| resolve` (+`issue_id`) | issue triage |
 | `custodian_cron_health` | none | cron health report + alert gate |
 | `custodian_status` | none | plugin status (**currently broken**: raises `KeyError: 'attempts'` — do not retry, fall back to `custodian_cron_health`) |
@@ -142,7 +102,7 @@ a terminal command fails and wastes 3-6 tool calls every session.
 
 ## Example
 
-A light scan reads `jobs.json`, tails the gateway log for new errors, fingerprints each, and journals to the path above. A clean scan (all errors transient) returns `[SILENT]` *after* that journal — the journal proves the scan ran; `[SILENT]` suppresses delivery noise only.
+A light scan reads `jobs.json`, tails the gateway log for new errors, fingerprints each, and journals the result. A clean scan (all errors transient) returns `[SILENT]` *after* that journal — the journal proves the scan ran; `[SILENT]` suppresses delivery noise only.
 
 ## Confidence Model
 
@@ -150,12 +110,7 @@ A light scan reads `jobs.json`, tails the gateway log for new errors, fingerprin
 
 ## Workflow: Scan & Escalation Loops
 
-**Full checklists in `references/execution-loops.md` — read before any scan or escalation
-run.** Four loops: Light Scan (10 steps), Deep Scan (13 steps, `references/deep-scan.md`,
-early-exit when all errors are transient cf=None/0), Escalation Runner (8 steps +
-verification, already-classified fast path under 2h old and unchanged), and Escalation
-Execution Loop (bidirectional state verification, missed-enrollment sweep, four-bucket
-classification, one-pass `issues.jsonl` reconcile).
+**Full checklists in `references/execution-loops.md` — read before any scan or escalation run.** Four loops: Light Scan (10 steps), Deep Scan (13 steps, `references/deep-scan.md`, early-exit when all errors are transient cf=None/0), Escalation Runner (8 steps + verification, already-classified fast path under 2h old and unchanged), and Escalation Execution Loop (bidirectional state verification, missed-enrollment sweep, four-bucket classification, one-pass `issues.jsonl` reconcile).
 
 Run gates (all apply in cron context):
 
@@ -163,31 +118,13 @@ Run gates (all apply in cron context):
 - [ ] New gateway errors since the last scan tailed and fingerprinted; error jobs re-run/live-probed before stale-vs-active classification
 - [ ] Journal written BEFORE `[SILENT]`; fix outcomes re-validated before any issue is marked resolved
 
-**Cron silence protocol:** runs with no actionable issues respond with exactly `[SILENT]`.
-**Journal-before-silent:** a no-op scan MUST write its observation journal
-(`not_activity_reason` set) first — that journal is the evidence the contract requires.
+**Cron silence protocol:** runs with no actionable issues respond with exactly `[SILENT]`. **Journal-before-silent:** a no-op scan MUST write its observation journal (`not_activity_reason` set) first — that journal is the evidence the contract requires.
 
-**Two-stage self-healing contract** (`spec-ocas-recovery.md`): 1) log the decision (what,
-why, fingerprint, Tier) to `issues.jsonl`/journal BEFORE any fix; 2) attempt the repair;
-3) re-validate BEFORE logging success — re-run the affected job/script, confirm the
-original signature is gone, then mark resolved. A fix without re-validation is a claim,
-not a resolution.
+**Two-stage self-healing contract** (`spec-ocas-recovery.md`): 1) log the decision (what, why, fingerprint, Tier) to `issues.jsonl`/journal BEFORE any fix; 2) attempt the repair; 3) re-validate BEFORE logging success — re-run the affected job/script, confirm the original signature is gone, then mark resolved. A fix without re-validation is a claim, not a resolution.
 
-**Post-fix verification:** after any Tier 1 fix, re-check the targeted log/config, then
-close the registry loop with `hermes cron run <id>` (batch:
-`scripts/verify_fixes_cron_run.py`).
+**Post-fix verification:** after any Tier 1 fix, re-check the targeted log/config, then close the registry loop with `hermes cron run <id>` (batch: `scripts/verify_fixes_cron_run.py`).
 
-**Operational hints.** *Model-pin drift can't run via CLI (2026-07-22):* `hermes cron` has
-no `update` subcommand and `edit` lacks `--provider`/`--model`. If <operator> chose a pin
-target, edit `jobs.json` directly; else leave user-gated
-(`references/escalation-execution-loop.md`). `hermes cron edit` DOES exist for
-prompt/schedule/name — check `--help` before concluding anything is uneditable.
-*False-escalation resolution:* an open `user_gated` issue claiming "Job still erroring
-live" with `last_run_at` days before your sweep is the stale-error signature — re-run the
-job; success = FALSE ESCALATION, resolve it (`scripts/race_safe_issue_patch.py`
-patches race-safely).
-
-
+**Operational hints.** *Model-pin drift can't run via CLI (2026-07-22):* `hermes cron` has no `update` subcommand and `edit` lacks `--provider`/`--model`. If <operator> chose a pin target, edit `jobs.json` directly; else leave user-gated (`references/escalation-execution-loop.md`). `hermes cron edit` DOES exist for prompt/schedule/name — check `--help` before concluding anything is uneditable. *False-escalation resolution:* an open `user_gated` issue claiming "Job still erroring live" with `last_run_at` days before your sweep is the stale-error signature — re-run the job; success = FALSE ESCALATION, resolve it (`scripts/race_safe_issue_patch.py` patches race-safely).
 
 ## Core Fingerprints (Operational Detection Set)
 
@@ -195,7 +132,7 @@ patches race-safely).
 
 ## Escalation Path
 
-Tier 3: InsightProposal to the proposals dir + journal tag `escalation_needed: true`.
+Tier 3: InsightProposal to the proposals dir + journal tag `escalation_needed: true`. Full execution lessons — read before applying a Tier 1/2 fix or filing anything `user_gated`: `references/escalation-execution-lessons.md`.
 
 ## Background tasks
 
@@ -206,51 +143,11 @@ Tier 3: InsightProposal to the proposals dir + journal tag `escalation_needed: t
 | `custodian:escalation-runner` | cron | `*/30 9-17 * * 1-5` | `custodian_issues` action=resolve |
 | `custodian:cron-health` | cron (no_agent) | `0 8,14,20,2 * * *` | `custodian_cron_health` |
 
-## Known Code Fixes, Safety & Code Surface
-
-- Tier 4 code fixes + MCP cascade triage: `references/known-code-fixes-and-cascade.md`.
-  Secret-redaction pattern that corrupts skill source — fix directly, do NOT leave
-  user-gated: `references/redaction-placeholder-source-corruption.md`.
-- Safety envelope + Tier 1 auto-fix registry: `references/fix-safety.md`. Background-task
-  conformance + registry health: `references/conformance.md`. Activity model (rebuilt each
-  deep scan from a 14-day window) + schedule optimization:
-  `references/schedule-optimization.md`. Storage/platform:
-  `references/background-tasks.md`, `references/platform-compatibility.md`.
-- Script path rejected under a profile → scripts must live at
-  `<hermes-home>/profiles/<profile>/scripts/<basename>`:
-  `references/script-path-security-block-pattern.md`.
-- Google OAuth: `oc_google_oauth_client_deleted` (client deleted in the Cloud Console) and
-  `oc_google_oauth_token_revoked` (refresh token expired, `invalid_grant`), affecting only
-  direct-credential jobs `email:check` and `monitor:list` —
-  `references/google-oauth-client-deleted-pattern.md`. **Sequential rule:** after fixing a
-  `googleapiclient` `ModuleNotFoundError`, immediately re-check for token revocation
-  (Tier 1 → Tier 3). Wrapper-cascade masking:
-  `references/subprocess-cascade-oauth-masking.md`.
-- **Env-sync gate:** a Tier 1 fix that looked revalidated did not stop the next occurrence —
-  an unguarded loop fall-through plus an urgency guard that measured the token the script
-  had just replaced. `references/envsync-budget-fallthrough-and-inoperable-urgency-guard-2026-09-29.md`.
-- **Naming trap:** `hello_operator/server.py` names the class serving `/v1/chat/completions`
-  `Router`, so `ps | grep router` cannot see it and "the gateway never restarted" is
-  evidence about a *different* process than a `hello-operator.service` restart.
-  `references/hello-operator-envsync-restart-drops-inflight.md`; for unexplained unit
-  restarts read `/root/.hello-operator/stop-forensics.log` first.
-
 ## Scripts
 
-25 scripts, all with `--help` (lazy imports — works without optional deps). Per-script usage,
-cron staggering, and the call-script-vs-reason-directly table:
-`references/using-script.md`. The one that matters most:
+25 scripts, all with `--help` (lazy imports — works without optional deps). Per-script usage, cron staggering, and the call-script-vs-reason-directly table: `references/using-script.md`. The one that matters most:
 
-`append_issue_row.py` — **the sanctioned append path to `issues.jsonl`.** Asserts
-`issue_id` + `escalation_needed` on every row and verifies the open-count delta against
-the filter as written, so the silent-visibility defect fails loudly at write time.
-`--dry-run` prints the row and the expected delta and writes nothing; the append path is
-`--expect-delta N`, which re-prints the open-count delta and verifies it. Read the flags off
-the script's own `--help`, not off this file — an earlier revision of this section asserted
-the opposite (claimed `--dry-run` did not exist and named a `--measure-only` flag), and
-running `append_issue_row.py --help` refuted it in one command.
-`references/append_issue_row_control.py` (24 arms, throwaway store — run after any change).
-
+`append_issue_row.py` — **the sanctioned append path to `issues.jsonl`.** Asserts `issue_id` + `escalation_needed` on every row and verifies the open-count delta against the filter as written, so the silent-visibility defect fails loudly at write time. `--dry-run` prints the row and the expected delta and writes nothing; the append path is `--expect-delta N`, which re-prints the open-count delta and verifies it. Read the flags off the script's own `--help`, not off this file. `references/append_issue_row_control.py` (24 arms, throwaway store — run after any change).
 
 ## Self-Update
 
@@ -280,4 +177,4 @@ Full table (all 20 cron failure modes + tool variants): `references/cron-tool-fa
 
 ## Support File Map
 
-Full file→**When to read** index (108 entries, keyed by failure signature): `references/support-file-map.md` — consult before any scan/fix.
+Full file→**When to read** index, keyed by failure signature: `references/support-file-map.md` — consult before any scan/fix.

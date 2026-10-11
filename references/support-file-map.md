@@ -114,3 +114,16 @@
 | `references/mcp-server-reconnect-loop-escalation-pitfall.md` | When an external HTTP MCP server reconnect loop was previously dismissed as "info-only transient" but shows real `connection lost (attempt N/5)` errors and >hours of non-recovery (no `registered N tools` line). Detection recipe + the `find_missed_user_gated_jobs.py` `affected_job_ids` false-positive. |
 | `references/cron-tool-failure-handling-table.md` | In cron context — any tool call failure (`read_file` dedup, pipe-to-interpreter, `write_file`, heredoc `$(date)`, `hermes cron` path mismatch): full failure→fix table |
 | `references/fos-nameerror-pattern.md` | Historical — `fos.path`→`os.path` NameError across 8 scripts (fixed 2026-07-27); read if the symptom recurs |
+| `references/known-code-fixes.md` | Before applying a fix whose signature matches an entry in the SKILL.md `## Known Code Fixes` index — file, mechanism, and correct handling per defect |
+| `references/custodian-scan-tool-broken.md` | Before trusting any `custodian_scan` output as a census — the 2026-10-04 verified-broken behavior and the two conditions that must hold before use |
+| `references/measurement-rules-six.md` | Before publishing any zero, rate, or "clean" verdict — the six highest-yield measurement rules, the three runner traps, and the cron tool-quirk table |
+| `references/inline-pitfall-narratives.md` | When diagnosing a verification-probe, import-failure, or shared-store-interpreter symptom — the four most critical pitfall narratives with measured numbers |
+| `references/custodian-core-fingerprints.md` | During light-scan Step 3 (fingerprint matching) and Step 6 (recurrence check) — the operational detection set |
+| `references/non-fatal-error-patterns.md` | During classification — Tier-2 surface-only catalog of non-fatal patterns |
+| `references/custodian-gotchas.md` | During any scan or fix — 14 operational gotchas (skill-package immutability, pipe-to-interpreter, confidence auto-tiering, log compaction, library hygiene) |
+| `references/operational-gotchas.md` | **Before any Tier 1 fix** — provider, credential, and escalation-state traps |
+| `references/disk-compaction.md` | When disk usage exceeds 80% — compaction procedure |
+| `references/secret-audit.md` | When running `custodian.secrets.audit` — the read-only inline-secret scan |
+| `references/support-file-map.md` | This file — the full file→When-to-read index; consult before any scan/fix |
+| `scripts/verify_fixes_cron_run.py` | After any Tier 1 fix — batch re-runs the affected jobs to close the registry loop |
+| `scripts/custodian_sweep.py` | When `custodian_scan` output is suspect — self-test first, then direct registry probes (lives at `<hermes-home>/profiles/<profile>/scripts/`) |
