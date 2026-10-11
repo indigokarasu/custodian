@@ -48,15 +48,17 @@ def parse(path):
 
 def dedupe(entries):
     best = {}
+    # OPTIMIZATION (Bolt ⚡): Single hash table lookup via `prev = best.get(key)`
+    # avoids multiple dictionary lookups per entry in deduplication loop.
     for e in entries:
         key = e.get('issue_id') or e.get('id')
         if not key:
             continue
-        if key not in best:
+        prev = best.get(key)
+        if prev is None:
             best[key] = e
-        else:
-            if best[key].get('status') in ('resolved', 'closed') and e.get('status') not in ('resolved', 'closed'):
-                best[key] = e
+        elif prev.get('status') in ('resolved', 'closed') and e.get('status') not in ('resolved', 'closed'):
+            best[key] = e
     return best
 
 
@@ -73,7 +75,9 @@ if __name__ == '__main__':
     # Open-signal per escalation-loop guidance: not resolved/duplicate AND
     # (escalation_needed OR status==user_gated). 'summary' field does not exist;
     # use 'description' for the preview line.
-    open_issues = [e for k, e in best.items()
+    # OPTIMIZATION (Bolt ⚡): Iterate over `best.values()` directly instead of `best.items()`
+    # to eliminate tuple creation and unpacking overhead.
+    open_issues = [e for e in best.values()
                    if e.get('status') not in ('resolved', 'duplicate', 'closed')
                    and (e.get('escalation_needed') is True or e.get('status') == 'user_gated')]
     print(f'path: {path}')

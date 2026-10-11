@@ -149,9 +149,15 @@ def main():
             fps = set(); collect_fps(d, fps)
             cited_ids = set(d.get("escalation_refs", []) or [])
             missing_ids = [i for i in cited_ids if i not in open_ids]
-            missing_fps = [f for f in fps
-                           if f not in open_fps
-                           and not any(m in f.lower() for m in TRANSIENT_MARKERS)]
+            # OPTIMIZATION (Bolt ⚡): Evaluate `f.lower()` once per fingerprint outside
+            # the transient marker iteration loop instead of calling `.lower()` up to
+            # len(TRANSIENT_MARKERS) times in a generator expression.
+            missing_fps = []
+            for f in fps:
+                if f not in open_fps:
+                    f_low = f.lower()
+                    if not any(m in f_low for m in TRANSIENT_MARKERS):
+                        missing_fps.append(f)
             if missing_ids or missing_fps:
                 gaps.append((d.get("run_id") or fp.split("/")[-1], ts, missing_ids, missing_fps))
             # OPTIMIZATION (Bolt ⚡): Use str(d).lower() instead of json.dumps(d).lower()
