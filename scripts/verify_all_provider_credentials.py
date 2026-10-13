@@ -92,9 +92,28 @@ def main(profile=None):
         seen.add(sig)
         uniq.append((label, bu, key))
     print(f"Distinct credentials found: {len(uniq)}\n")
+
+    # OPTIMIZATION (Bolt ⚡): Probe distinct provider credentials concurrently using ThreadPoolExecutor.
+    # Parallelizing HTTP network requests reduces overall probing latency from sum(probe_times) to max(probe_time).
+    # Lazy import of concurrent.futures keeps --help output instant and avoids top-level import overhead.
+    import concurrent.futures
+
+    results = {}
+    if uniq:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=min(len(uniq), 8)) as executor:
+            future_to_item = {
+                executor.submit(probe, label, bu, key): item
+                for item in uniq
+                for label, bu, key in [item]
+            }
+            for future in concurrent.futures.as_completed(future_to_item):
+                item = future_to_item[future]
+                results[item] = future.result()
+
     any_dead = False
-    for label, bu, key in uniq:
-        res = probe(label, bu, key)
+    for item in uniq:
+        label, bu, key = item
+        res = results[item]
         flag = ""
         if res.startswith("DEAD") or res.startswith("ERR"):
             any_dead = True

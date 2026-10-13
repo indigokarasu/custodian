@@ -5,6 +5,7 @@ Pure-logic tests only — no live cron/state/config reads and no side effects.
 Run from the skill directory:  python3 -m unittest discover -s tests
 """
 import ast
+import io
 import json
 import os
 import subprocess
@@ -25,8 +26,9 @@ import parse_issues_jsonl                     # noqa: E402
 import race_safe_issue_patch as patch         # noqa: E402
 import reopen_false_resolutions as reopen     # noqa: E402
 import scan_escalation_journal_gaps as gaps   # noqa: E402
-import verify_plugin_defect_postrestart as vp # noqa: E402
-import verify_provider_recovery as vpr        # noqa: E402
+import verify_all_provider_credentials as vapc # noqa: E402
+import verify_plugin_defect_postrestart as vp  # noqa: E402
+import verify_provider_recovery as vpr         # noqa: E402
 
 # Mirror of the skilllab runner's stdlib allow-list: a module-scope import of
 # anything else breaks `--help` on a machine where the dependency is absent.
@@ -346,6 +348,61 @@ class TestRaceSafeIssuePatch(unittest.TestCase):
                     sys.argv = old_argv
                     if os.path.exists(path):
                         os.unlink(path)
+
+
+class TestVerifyAllProviderCredentials(unittest.TestCase):
+    """verify_all_provider_credentials — credential collection and concurrent probing."""
+
+    def test_collect_credentials(self):
+        cfg = {
+            "model": {"base_url": "https://api.openai.com/v1", "api_key": "sk-1"},
+            "providers": {
+                "openrouter": {"base_url": "https://openrouter.ai/api/v1", "api_key": "sk-2"},
+            },
+            "auxiliary": {
+                "sub1": {"base_url": "https://aux.ai/v1", "api_key": "sk-3"},
+            },
+            "fallback_model": {"base_url": "https://fallback.ai/v1", "api_key": "sk-4"},
+        }
+        creds = vapc.collect(cfg)
+        labels = [c[0] for c in creds]
+        self.assertIn("model: block", labels)
+        self.assertIn("providers.openrouter", labels)
+        self.assertIn("auxiliary.sub1", labels)
+        self.assertIn("fallback_model", labels)
+
+    def test_main_concurrent_probing(self):
+        cfg = {
+            "model": {"base_url": "https://api.openai.com/v1", "api_key": "sk-test1"},
+            "providers": {
+                "p1": {"base_url": "https://p1.ai/v1", "api_key": "sk-test2"},
+            },
+        }
+
+        def mock_probe(label, base_url, api_key):
+            if "openai" in base_url:
+                return "LIVE (200)"
+            return "DEAD HTTP 401: Unauthorized"
+
+        orig_load_config = vapc.load_config
+        orig_probe = vapc.probe
+        vapc.load_config = lambda prof: (cfg, "/dummy/config.yaml")
+        vapc.probe = mock_probe
+
+        try:
+            old_stdout = sys.stdout
+            sys.stdout = io.StringIO()
+            vapc.main("dummy_profile")
+            output = sys.stdout.getvalue()
+        finally:
+            sys.stdout = old_stdout
+            vapc.load_config = orig_load_config
+            vapc.probe = orig_probe
+
+        self.assertIn("Distinct credentials found: 2", output)
+        self.assertIn("LIVE (200)", output)
+        self.assertIn("DEAD HTTP 401", output)
+        self.assertIn("VERDICT: ONE OR MORE CREDENTIALS DEAD", output)
 
 
 class TestConfirmProviderRecovery(unittest.TestCase):
