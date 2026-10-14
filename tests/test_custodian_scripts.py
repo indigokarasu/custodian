@@ -230,6 +230,9 @@ class TestVerifyProviderRecovery(unittest.TestCase):
         self.assertIsNone(vpr.utc(None))
         self.assertIsNone(vpr.utc("invalid timestamp"))
 
+    def test_load_jobs_missing_file_returns_empty_list(self):
+        self.assertEqual(vpr.load_jobs("nonexistent_profile_xyz_123"), [])
+
     def test_load_jobs_and_default_provider_profile_paths(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             profile_dir = Path(tmpdir) / ".hermes" / "profiles" / "testprof"
