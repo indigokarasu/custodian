@@ -26,6 +26,7 @@ import parse_issues_jsonl                     # noqa: E402
 import race_safe_issue_patch as patch         # noqa: E402
 import reopen_false_resolutions as reopen     # noqa: E402
 import scan_escalation_journal_gaps as gaps   # noqa: E402
+import secret_audit as sa                     # noqa: E402
 import verify_all_provider_credentials as vapc # noqa: E402
 import verify_plugin_defect_postrestart as vp  # noqa: E402
 import verify_provider_recovery as vpr         # noqa: E402
@@ -406,6 +407,25 @@ class TestVerifyAllProviderCredentials(unittest.TestCase):
         self.assertIn("LIVE (200)", output)
         self.assertIn("DEAD HTTP 401", output)
         self.assertIn("VERDICT: ONE OR MORE CREDENTIALS DEAD", output)
+
+
+class TestSecretAudit(unittest.TestCase):
+    """secret_audit — is_redacted and is_high_entropy helper logic."""
+
+    def test_is_redacted(self):
+        self.assertTrue(sa.is_redacted("api_key = '${MY_ENV_VAR}'"))
+        self.assertTrue(sa.is_redacted("token = os.environ.get('SECRET')"))
+        self.assertTrue(sa.is_redacted("secret: «redacted»"))
+        self.assertFalse(sa.is_redacted("api_key = 'sk-12345678901234567890'"))
+
+    def test_is_high_entropy(self):
+        # High entropy string with mixed case / non-py-ident chars
+        self.assertTrue(sa.is_high_entropy("a8F9-c2d1_e0b3a4F5g6h7j8k9l0"))
+        # Below min length
+        self.assertFalse(sa.is_high_entropy("short", min_len=16))
+        # Excluded entropy word
+        self.assertFalse(sa.is_high_entropy("authorization"))
+        self.assertFalse(sa.is_high_entropy("bearer"))
 
 
 class TestConfirmProviderRecovery(unittest.TestCase):
