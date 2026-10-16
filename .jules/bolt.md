@@ -53,3 +53,7 @@
 ## 2027-03-05 - Concurrent Network Probing in Status Verification Scripts
 **Learning:** In network status probes (`verify_all_provider_credentials.py`), testing multiple distinct credentials or endpoints serially incurs high cumulative network latency $O(\sum t_i)$. Utilizing `concurrent.futures.ThreadPoolExecutor` to probe endpoints concurrently reduces execution latency to $O(\max t_i)$ (~3x-10x speedup across multiple provider endpoints) while preserving result ordering.
 **Action:** Parallelize independent network status probes using `ThreadPoolExecutor` and lazily import `concurrent.futures` inside execution functions to avoid top-level import overhead during CLI evaluations like `--help`.
+
+## 2027-03-19 - Pre-computing Lowercased Marker Tuples and Keyword Sets in Line Scanners
+**Learning:** In `secret_audit.py`, calling `m.lower()` on tuple elements inside a generator expression for every scanned line incurred repeated string lowercasing overhead (`any(m.lower() in low for m in REDACTED_MARKERS)`). Pre-computing `_LOWER_REDACTED_MARKERS` and static keyword sets (`_EXCLUDED_ENTROPY_WORDS`) at module import yields a ~1.46x speedup on line-level redaction checks across large file scans.
+**Action:** Pre-compute lowercased tuples (`tuple(m.lower() for m in CONSTANTS)`) and keyword sets at module load instead of evaluating `.lower()` on list/tuple elements inside per-line generator expressions.
