@@ -1,6 +1,6 @@
 # Dead skill reference on an active (enabled) job — fix procedure
 
-When Step 5 finds a skill whose directory is missing (`<hermes-home>/profiles/<profile>/skills/<skill>/` absent) but the skill is in the live active-skill set (referenced by an enabled, non-paused job), the correct remediation depends on WHICH directory is missing:
+When Step 5 finds a skill whose directory is missing (`<hermes-home>/profiles/<profile>/skills/<skill>/` absent) but the skill is in the live active-skill set (referenced by an enabled job that is not paused (state != 'paused' and paused_at is null)), the correct remediation depends on WHICH directory is missing:
 
 ## Case A: skill dir PRESENT, but `data/` or `journals/` dirs missing
 → Tier 1: `mkdir` the missing dirs + write a `config.json` (see `fix-missing-skill-data-directories-2026-06-30.md` / `fix-missing-skill-journals-directories-2026-06-30.md`). The skill legitimately exists; it just needs storage.
