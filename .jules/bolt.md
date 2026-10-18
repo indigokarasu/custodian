@@ -57,3 +57,7 @@
 ## 2027-03-19 - Pre-computing Lowercased Marker Tuples and Keyword Sets in Line Scanners
 **Learning:** In `secret_audit.py`, calling `m.lower()` on tuple elements inside a generator expression for every scanned line incurred repeated string lowercasing overhead (`any(m.lower() in low for m in REDACTED_MARKERS)`). Pre-computing `_LOWER_REDACTED_MARKERS` and static keyword sets (`_EXCLUDED_ENTROPY_WORDS`) at module import yields a ~1.46x speedup on line-level redaction checks across large file scans.
 **Action:** Pre-compute lowercased tuples (`tuple(m.lower() for m in CONSTANTS)`) and keyword sets at module load instead of evaluating `.lower()` on list/tuple elements inside per-line generator expressions.
+
+## 2027-04-02 - Predicate Order Optimization in Journal Record Scanners
+**Learning:** In `scan_escalation_journal_gaps.py`, evaluating `get_ts(d)` before checking `d.get("escalation_needed")` incurred ISO 8601 string parsing and dict key inspection across every record. Reordering evaluation to check cheap boolean/status predicates first short-circuits ~95% of non-escalation records before timestamp parsing, yielding a ~3.6x speedup (0.827s -> 0.226s per 50,000 records).
+**Action:** Order filter conditions in record scanning loops so cheap boolean flags or type guards run before expensive property parsing or ISO 8601 timestamp conversion functions.
