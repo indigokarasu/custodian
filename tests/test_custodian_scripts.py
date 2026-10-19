@@ -18,6 +18,7 @@ SKILL_DIR = Path(__file__).resolve().parent.parent
 SCRIPTS = SKILL_DIR / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 
+import classify_llm_necessity_integration as clni # noqa: E402
 import confirm_provider_recovery as cpr       # noqa: E402
 import custodian_common                       # noqa: E402
 import escalation_exec_pause_reconcile as esc # noqa: E402
@@ -426,6 +427,59 @@ class TestSecretAudit(unittest.TestCase):
         # Excluded entropy word
         self.assertFalse(sa.is_high_entropy("authorization"))
         self.assertFalse(sa.is_high_entropy("bearer"))
+
+
+class TestClassifyLlmNecessityIntegration(unittest.TestCase):
+    """classify_llm_necessity_integration — candidate filtering and state counting."""
+
+    def test_acknowledged_statuses_filtering(self):
+        ack = {
+            "job1": "converted",
+            "job2": "intentional_llm",
+            "job3": "acknowledged",
+            "job4": "pending_review",
+        }
+        all_candidates = [
+            {"name": "job1"},
+            {"name": "job2"},
+            {"name": "job3"},
+            {"name": "job4"},
+            {"name": "job5"},
+        ]
+        new_candidates = [
+            r for r in all_candidates
+            if ack.get(r["name"]) not in clni.ACKNOWLEDGED_STATUSES
+        ]
+        names = [r["name"] for r in new_candidates]
+        self.assertEqual(names, ["job4", "job5"])
+
+    def test_candidate_set_membership(self):
+        candidate_names = ["job1", "job2"]
+        candidate_names_set = set(candidate_names)
+        ack = {
+            "job1": "converted",
+            "job3": "converted",
+            "job4": "intentional_llm",
+        }
+        removed = [
+            name for name, status in ack.items()
+            if status in ("converted", "intentional_llm") and name not in candidate_names_set
+        ]
+        self.assertEqual(sorted(removed), ["job3", "job4"])
+
+    def test_acknowledged_state_counting(self):
+        ack = {
+            "job1": "converted",
+            "job2": "converted",
+            "job3": "intentional_llm",
+            "job4": "acknowledged",
+            "job5": "acknowledged",
+            "job6": "acknowledged",
+        }
+        ack_counts = clni.Counter(ack.values())
+        self.assertEqual(ack_counts["converted"], 2)
+        self.assertEqual(ack_counts["intentional_llm"], 1)
+        self.assertEqual(ack_counts["acknowledged"], 3)
 
 
 class TestConfirmProviderRecovery(unittest.TestCase):

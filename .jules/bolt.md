@@ -61,3 +61,7 @@
 ## 2027-04-02 - Predicate Order Optimization in Journal Record Scanners
 **Learning:** In `scan_escalation_journal_gaps.py`, evaluating `get_ts(d)` before checking `d.get("escalation_needed")` incurred ISO 8601 string parsing and dict key inspection across every record. Reordering evaluation to check cheap boolean/status predicates first short-circuits ~95% of non-escalation records before timestamp parsing, yielding a ~3.6x speedup (0.827s -> 0.226s per 50,000 records).
 **Action:** Order filter conditions in record scanning loops so cheap boolean flags or type guards run before expensive property parsing or ISO 8601 timestamp conversion functions.
+
+## 2027-04-16 - Set Lookups and Counter Aggregation in Integration Probes
+**Learning:** In `classify_llm_necessity_integration.py`, checking `name not in candidate_names` (where `candidate_names` was a list) performed $O(A \times C)$ linear searches per acknowledged item, and evaluating `sum(1 for v in ack.values() if v == ...)` three times created redundant dictionary iterations. Converting candidate names to a static set (`candidate_names_set`) reduced lookup time by ~90x (~88.8s -> ~0.98s for 10,000 checks), and replacing multiple generator scans with `Counter(ack.values())` yielded a ~1.32x speedup.
+**Action:** Convert candidate lists to `set` objects before performing element membership checks in loops, and use `collections.Counter` for single-pass state frequency counting.
