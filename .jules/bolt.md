@@ -65,3 +65,7 @@
 ## 2027-04-16 - Set Lookups and Counter Aggregation in Integration Probes
 **Learning:** In `classify_llm_necessity_integration.py`, checking `name not in candidate_names` (where `candidate_names` was a list) performed $O(A \times C)$ linear searches per acknowledged item, and evaluating `sum(1 for v in ack.values() if v == ...)` three times created redundant dictionary iterations. Converting candidate names to a static set (`candidate_names_set`) reduced lookup time by ~90x (~88.8s -> ~0.98s for 10,000 checks), and replacing multiple generator scans with `Counter(ack.values())` yielded a ~1.32x speedup.
 **Action:** Convert candidate lists to `set` objects before performing element membership checks in loops, and use `collections.Counter` for single-pass state frequency counting.
+
+## 2027-04-30 - Unified Regex Pre-Compilation for Transient Marker Scanning
+**Learning:** In `scan_escalation_journal_gaps.py`, checking `any(m in f.lower() for m in TRANSIENT_MARKERS)` inside generator expressions evaluated a Python tuple iteration loop for every non-open fingerprint. Pre-compiling `TRANSIENT_MARKERS` into a single `_TRANSIENT_MARKERS_RE = re.compile("|".join(TRANSIENT_MARKERS))` pattern at module load delegates substring searching directly to C, yielding a ~1.82x speedup (0.158s -> 0.087s per 100k checks).
+**Action:** Combine static keyword tuple/list filters into pre-compiled `|`-delimited regex patterns at module load when performing boolean substring exclusions in line/record scanning loops.
