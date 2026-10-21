@@ -4,7 +4,7 @@ warning: 'FALSE TRIGGER RISK: Has had 50% false trigger rate on interactive load
 name: ocas-custodian
 license: MIT
 description: 'Monitors agent gateway logs, cron jobs, skill journals, and OCAS data directories for operational failures. Detects errors, applies safe non-destructive fixes autonomously during quiet hours, escalates the rest. RCA on recurring errors with fix-loop detection and confidence-tier auto promote/demote. Use when: cron jobs fail or show stale errors, gateway logs show repeated error patterns, skill journals have gaps, disk usage exceeds thresholds, MCP servers crash-loop, or after any gateway restart. Keywords: cron health, log analysis, system monitoring, error fingerprinting, auto-repair, fix-loop detection, operational conformance. NOT for OKR trend analysis, skill design evaluation, behavioral lesson extraction, briefing delivery, or social graph queries.'
-source: https://github.com/<agent-handle>/custodian
+source: https://github.com/indigokarasu/custodian
 includes:
 - references/**
 - scripts/**
