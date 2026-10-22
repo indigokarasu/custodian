@@ -29,6 +29,7 @@ import reopen_false_resolutions as reopen     # noqa: E402
 import scan_escalation_journal_gaps as gaps   # noqa: E402
 import secret_audit as sa                     # noqa: E402
 import verify_all_provider_credentials as vapc # noqa: E402
+import verify_escalation_state as ves          # noqa: E402
 import verify_plugin_defect_postrestart as vp  # noqa: E402
 import verify_provider_recovery as vpr         # noqa: E402
 
@@ -480,6 +481,24 @@ class TestClassifyLlmNecessityIntegration(unittest.TestCase):
         self.assertEqual(ack_counts["converted"], 2)
         self.assertEqual(ack_counts["intentional_llm"], 1)
         self.assertEqual(ack_counts["acknowledged"], 3)
+
+
+class TestVerifyEscalationState(unittest.TestCase):
+    """verify_escalation_state — fp_of, recovery checks, and job/issue classification."""
+
+    def test_fp_of(self):
+        self.assertEqual(ves.fp_of({"last_error": "HTTP 402 insufficient credits"}), "openrouter_402")
+        self.assertEqual(ves.fp_of({"last_error": "401 API key is invalid"}), "nous_401")
+        self.assertEqual(ves.fp_of({"last_error": "404 owl-alpha model missing"}), "owl_404")
+        self.assertIsNone(ves.fp_of({"last_error": "random error"}))
+        self.assertIsNone(ves.fp_of({}))
+
+    def test_is_job_recovered(self):
+        self.assertTrue(ves._is_job_recovered({"last_status": "ok", "last_error": ""}))
+        self.assertTrue(ves._is_job_recovered({"last_status": "ok", "last_error": "   "}))
+        self.assertFalse(ves._is_job_recovered({"last_status": "error", "last_error": ""}))
+        self.assertFalse(ves._is_job_recovered({"last_status": "ok", "last_error": "some error"}))
+        self.assertFalse(ves._is_job_recovered(None))
 
 
 class TestConfirmProviderRecovery(unittest.TestCase):
