@@ -230,6 +230,8 @@ if __name__ == "__main__":
     ap.add_argument("--profile", default=PROFILE, help="Profile name")
     args = ap.parse_args()
     PROFILE = args.profile
+    # OPTIMIZATION (Bolt ⚡): Re-evaluate PROFILE_HOME dynamically when profile arg is parsed
+    PROFILE_HOME = os.path.expanduser(f"~/.hermes/profiles/{PROFILE}")
     ISSUES_PATH = f"{PROFILE_HOME}/commons/data/ocas-custodian/issues.jsonl"
     ACK_PATH = f"{PROFILE_HOME}/commons/data/ocas-custodian/llm_necessity_ack.json"
     main()
