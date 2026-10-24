@@ -16,8 +16,9 @@ import os
 from collections import Counter
 
 PROFILE = os.environ.get("HERMES_PROFILE", "indigo")
+# OPTIMIZATION (Bolt ⚡): Use f-strings for profile path interpolation to avoid failed disk stat lookups on literal '{PROFILE}' strings
 CANDIDATES = [
-    os.path.expanduser("~/.hermes/profiles/{PROFILE}/cron/jobs.json"),
+    os.path.expanduser(f"~/.hermes/profiles/{PROFILE}/cron/jobs.json"),
     os.path.expanduser("~/.hermes/profiles/indigo/cron/jobs.json"),
     os.path.expanduser("~/.hermes/cron/jobs.json"),
 ]
@@ -90,7 +91,7 @@ if __name__ == "__main__":
     args = ap.parse_args()
     PROFILE = args.profile
     CANDIDATES[:] = [
-        os.path.expanduser("~/.hermes/profiles/{PROFILE}/cron/jobs.json"),
+        os.path.expanduser(f"~/.hermes/profiles/{PROFILE}/cron/jobs.json"),
         os.path.expanduser("~/.hermes/profiles/indigo/cron/jobs.json"),
         os.path.expanduser("~/.hermes/cron/jobs.json"),
     ]

@@ -69,3 +69,7 @@
 ## 2027-04-30 - Unified Regex Pre-Compilation for Transient Marker Scanning
 **Learning:** In `scan_escalation_journal_gaps.py`, checking `any(m in f.lower() for m in TRANSIENT_MARKERS)` inside generator expressions evaluated a Python tuple iteration loop for every non-open fingerprint. Pre-compiling `TRANSIENT_MARKERS` into a single `_TRANSIENT_MARKERS_RE = re.compile("|".join(TRANSIENT_MARKERS))` pattern at module load delegates substring searching directly to C, yielding a ~1.82x speedup (0.158s -> 0.087s per 100k checks).
 **Action:** Combine static keyword tuple/list filters into pre-compiled `|`-delimited regex patterns at module load when performing boolean substring exclusions in line/record scanning loops.
+
+## 2027-05-14 - F-String Profile Path Interpolation in Probe Scripts
+**Learning:** Omission of `f` prefixes in `os.path.expanduser("~/.hermes/profiles/{PROFILE}/...")` causes string literals to fail `os.path.exists()` checks, triggering redundant disk `stat` fallback lookups across candidate paths and `FileNotFoundError` on profile CLI flags.
+**Action:** Always ensure `f"~/.hermes/profiles/{profile}/..."` uses `f`-string formatting when constructing profile-scoped file path candidate lists.
