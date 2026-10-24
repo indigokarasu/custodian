@@ -148,7 +148,8 @@ if __name__ == "__main__":
     )
     ap.add_argument("--profile", default=PROFILE, help="Profile name or HOME dir")
     args = ap.parse_args()
-    PROFILE = args.profile if os.path.sep in args.profile else os.path.expanduser("~/.hermes/profiles/{args.profile}")
+    # OPTIMIZATION (Bolt ⚡): Add f-string prefix for profile path expansion to avoid FileNotFoundError on literal string
+    PROFILE = args.profile if os.path.sep in args.profile else os.path.expanduser(f"~/.hermes/profiles/{args.profile}")
     JOBS = f"{PROFILE}/cron/jobs.json"
     ISSUES = f"{PROFILE}/commons/data/ocas-custodian/issues.jsonl"
     main()
