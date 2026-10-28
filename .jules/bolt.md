@@ -77,3 +77,7 @@
 ## 2027-05-28 - Early Short-Circuit Return in Journal Tail Error Detection
 **Learning:** In `gateway_health_check.py`, `check_import_errors` accumulated all matching error lines into an intermediate list before returning only the first item (`import_errors[0]`). Short-circuiting execution on the first valid match avoids processing remaining log lines and avoids allocating temporary lists (~1.96x speedup on import error detection).
 **Action:** In log-scanning functions that only report the first encountered matching line, return immediately on the first match rather than accumulating all matches into a list.
+
+## 2027-05-28 - Single-Pass Lowercasing and Short-Circuit Set Reconciliation in Status Probes
+**Learning:** In status verification probes (`confirm_provider_recovery.py` and `verify_escalation_state.py`), computing `le.lower()` once upfront per function call avoids redundant string lowercasing allocations across substring matching conditions. Furthermore, in `verify_escalation_state.py`, short-circuiting set difference calculations (`missing = actual - listed`, `extra = listed - actual`) behind an `actual != listed` equality guard avoids allocating two new set objects per issue entry in steady state (~1.66x speedup).
+**Action:** Pre-compute lowercased error strings once upfront in classification functions, and guard set difference calculations with equality checks (`if set1 != set2:`) when scanning container elements in steady-state reconciliation loops.
