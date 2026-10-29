@@ -26,14 +26,18 @@ PROVIDER_FPS = {"token_expired", "openrouter_402", "nous_401", "owl_404"}
 
 
 def fp_of(le):
-    le = le or ""
-    if "token is expired" in le or "token_expired" in le:
+    if not le:
+        return "other"
+    # OPTIMIZATION (Bolt ⚡): Pre-compute low = le.lower() once upfront to eliminate
+    # redundant string allocations and ensure case-insensitive matching across error messages.
+    low = le.lower()
+    if "token is expired" in low or "token_expired" in low:
         return "token_expired"
-    if "402" in le and "credits" in le:
+    if "402" in low and "credits" in low:
         return "openrouter_402"
-    if "portal.nousresearch.com" in le or "Your API key is invalid" in le:
+    if "portal.nousresearch.com" in low or "your api key is invalid" in low:
         return "nous_401"
-    if "owl-alpha" in le or "No endpoints found" in le:
+    if "owl-alpha" in low or "no endpoints found" in low:
         return "owl_404"
     return "other"
 
