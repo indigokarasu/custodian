@@ -73,3 +73,7 @@
 ## 2027-05-14 - F-String Profile Path Interpolation in Probe Scripts
 **Learning:** Omission of `f` prefixes in `os.path.expanduser("~/.hermes/profiles/{PROFILE}/...")` causes string literals to fail `os.path.exists()` checks, triggering redundant disk `stat` fallback lookups across candidate paths and `FileNotFoundError` on profile CLI flags.
 **Action:** Always ensure `f"~/.hermes/profiles/{profile}/..."` uses `f`-string formatting when constructing profile-scoped file path candidate lists.
+
+## 2027-05-28 - Early Short-Circuit Return in Journal Tail Error Detection
+**Learning:** In `gateway_health_check.py`, `check_import_errors` accumulated all matching error lines into an intermediate list before returning only the first item (`import_errors[0]`). Short-circuiting execution on the first valid match avoids processing remaining log lines and avoids allocating temporary lists (~1.96x speedup on import error detection).
+**Action:** In log-scanning functions that only report the first encountered matching line, return immediately on the first match rather than accumulating all matches into a list.

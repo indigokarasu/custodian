@@ -23,6 +23,7 @@ import confirm_provider_recovery as cpr       # noqa: E402
 import custodian_common                       # noqa: E402
 import escalation_exec_pause_reconcile as esc # noqa: E402
 import find_missed_user_gated_jobs as missed  # noqa: E402
+import gateway_health_check as ghc            # noqa: E402
 import parse_issues_jsonl                     # noqa: E402
 import race_safe_issue_patch as patch         # noqa: E402
 import reopen_false_resolutions as reopen     # noqa: E402
@@ -499,6 +500,36 @@ class TestVerifyEscalationState(unittest.TestCase):
         self.assertFalse(ves._is_job_recovered({"last_status": "error", "last_error": ""}))
         self.assertFalse(ves._is_job_recovered({"last_status": "ok", "last_error": "some error"}))
         self.assertFalse(ves._is_job_recovered(None))
+
+
+class TestGatewayHealthCheck(unittest.TestCase):
+    """gateway_health_check.check_import_errors — import error detection."""
+
+    def test_check_import_errors_returns_first_error(self):
+        tail = (
+            "2026-09-20 10:00:00 tool_executor ModuleNotFoundError: foo\n"
+            "2026-09-20 10:00:01 ModuleNotFoundError: No module named 'bar'\n"
+            "2026-09-20 10:00:02 ImportError: cannot import name 'baz'\n"
+        )
+        has_err, msg = ghc.check_import_errors(tail)
+        self.assertTrue(has_err)
+        self.assertEqual(msg, "Import error: 2026-09-20 10:00:01 ModuleNotFoundError: No module named 'bar'")
+
+    def test_check_import_errors_ignores_tool_and_stdin_lines(self):
+        tail = (
+            "2026-09-20 10:00:00 tool_executor ModuleNotFoundError: foo\n"
+            "2026-09-20 10:00:01 Tool terminal returned error: ImportError\n"
+            "2026-09-20 10:00:02 File '<stdin>', line 1, in <module> ModuleNotFoundError: baz\n"
+        )
+        has_err, msg = ghc.check_import_errors(tail)
+        self.assertFalse(has_err)
+        self.assertEqual(msg, "No import errors")
+
+    def test_check_import_errors_no_errors(self):
+        tail = "2026-09-20 10:00:00 [INFO] Gateway started normally\n"
+        has_err, msg = ghc.check_import_errors(tail)
+        self.assertFalse(has_err)
+        self.assertEqual(msg, "No import errors")
 
 
 class TestConfirmProviderRecovery(unittest.TestCase):
