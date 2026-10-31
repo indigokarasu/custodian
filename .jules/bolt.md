@@ -81,3 +81,7 @@
 ## 2027-05-28 - Single-Pass Lowercasing and Short-Circuit Set Reconciliation in Status Probes
 **Learning:** In status verification probes (`confirm_provider_recovery.py` and `verify_escalation_state.py`), computing `le.lower()` once upfront per function call avoids redundant string lowercasing allocations across substring matching conditions. Furthermore, in `verify_escalation_state.py`, short-circuiting set difference calculations (`missing = actual - listed`, `extra = listed - actual`) behind an `actual != listed` equality guard avoids allocating two new set objects per issue entry in steady state (~1.66x speedup).
 **Action:** Pre-compute lowercased error strings once upfront in classification functions, and guard set difference calculations with equality checks (`if set1 != set2:`) when scanning container elements in steady-state reconciliation loops.
+
+## 2027-06-11 - Module-Level JSONDecoder Reuse in Stream Parsers
+**Learning:** In `custodian_common.parse_issues`, instantiating a new `json.JSONDecoder()` object on every invocation incurs Python object creation, constructor initialization, and method binding overhead across thousands of journal/issue files. Reusing a module-level `_DECODER = json.JSONDecoder()` and binding `_DECODER.raw_decode` locally yields a ~1.5x speedup (2.09s -> 1.36s for 50 batch files parsed 1,000 times).
+**Action:** Pre-instantiate a reusable `_DECODER = json.JSONDecoder()` at module scope for functions that repeatedly parse JSON streams across file collections.
