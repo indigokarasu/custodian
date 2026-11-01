@@ -166,6 +166,44 @@ class TestScanEscalationJournalGaps(unittest.TestCase):
             "recovered" in d3_str or "issue now resolved" in d3_str or "now resolved" in d3_str
         )
 
+    def test_brace_depth_parse_prefilter(self):
+        # File with escalation_needed
+        with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as fh:
+            json.dump([{"run_id": "r1", "escalation_needed": True, "fingerprint": "oc_test"}], fh)
+            p_esc = fh.name
+
+        # File with recovery note
+        with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as fh:
+            json.dump([{"run_id": "r2", "notes": "service recovered"}], fh)
+            p_rec = fh.name
+
+        # File with resolution note
+        with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as fh:
+            json.dump([{"run_id": "r3", "summary": "issue now resolved"}], fh)
+            p_res = fh.name
+
+        # Routine journal file with neither
+        with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as fh:
+            json.dump([{"run_id": "r4", "status": "ok", "msg": "routine daily scan complete"}], fh)
+            p_routine = fh.name
+
+        try:
+            # When prefilter=False, all files parse cleanly
+            self.assertEqual(len(gaps.brace_depth_parse(p_esc, prefilter=False)), 1)
+            self.assertEqual(len(gaps.brace_depth_parse(p_rec, prefilter=False)), 1)
+            self.assertEqual(len(gaps.brace_depth_parse(p_res, prefilter=False)), 1)
+            self.assertEqual(len(gaps.brace_depth_parse(p_routine, prefilter=False)), 1)
+
+            # When prefilter=True, routine files short-circuit immediately without parsing JSON
+            self.assertEqual(len(gaps.brace_depth_parse(p_esc, prefilter=True)), 1)
+            self.assertEqual(len(gaps.brace_depth_parse(p_rec, prefilter=True)), 1)
+            self.assertEqual(len(gaps.brace_depth_parse(p_res, prefilter=True)), 1)
+            self.assertEqual(gaps.brace_depth_parse(p_routine, prefilter=True), [])
+        finally:
+            for p in (p_esc, p_rec, p_res, p_routine):
+                if os.path.exists(p):
+                    os.unlink(p)
+
 
 class TestVerifyPluginDefectPostrestart(unittest.TestCase):
     """verify_plugin_defect_postrestart.scan_log — pre vs post restart bucketing."""
