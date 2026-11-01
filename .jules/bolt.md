@@ -81,3 +81,7 @@
 ## 2027-05-28 - Single-Pass Lowercasing and Short-Circuit Set Reconciliation in Status Probes
 **Learning:** In status verification probes (`confirm_provider_recovery.py` and `verify_escalation_state.py`), computing `le.lower()` once upfront per function call avoids redundant string lowercasing allocations across substring matching conditions. Furthermore, in `verify_escalation_state.py`, short-circuiting set difference calculations (`missing = actual - listed`, `extra = listed - actual`) behind an `actual != listed` equality guard avoids allocating two new set objects per issue entry in steady state (~1.66x speedup).
 **Action:** Pre-compute lowercased error strings once upfront in classification functions, and guard set difference calculations with equality checks (`if set1 != set2:`) when scanning container elements in steady-state reconciliation loops.
+## 2027-05-28 - Single-Pass Signal Extraction in LLM Necessity Classifier
+**Learning:** In `classify_llm_necessity.py`, evaluating `has_negative_signal(prompt, name)` followed by re-evaluating `_KNOWN_GENUINE_LLM_RE.search(name)` inside `classify()` caused duplicate regex searches on job names. Refactoring to `check_negative_signal(prompt, name)` returning a `(has_negative, signal_type)` tuple in a single pass eliminated redundant regex searches.
+**Action:** When classifying items with multi-category heuristic rules, return `(has_match, category_type)` in a single helper pass instead of executing boolean status checks followed by category lookup checks.
+
