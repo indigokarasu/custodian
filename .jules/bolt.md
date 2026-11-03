@@ -92,3 +92,7 @@
 ## 2027-06-25 - Raw Text Substring Pre-filtering for Journal Directory Sweeps
 **Learning:** In `scan_escalation_journal_gaps.py`, walking journal directories and calling `parse_issues` across every historical `.json` file incurs heavy JSON parsing overhead when ~95% of routine files contain neither escalation signals nor recovery notes. Performing a fast raw text substring check (`"escalation_needed" not in raw and "recovered" not in raw_low and "resolved" not in raw_low`) short-circuits parsing before `parse_issues`, yielding a ~5.2x speedup on journal sweeps (15.6ms -> 2.96ms per 200 files).
 **Action:** In directory-walking probes that only inspect files matching specific status flags or phrases, perform a fast substring pre-check on raw file contents before calling full JSON stream parsers.
+
+## 2027-07-09 - Substring Pre-Filtering for Targeted Single-Issue Lookups
+**Learning:** In `verify_recovery_by_runtime.py`, `load_issue(iid)` loaded and parsed all JSON records across `issues.jsonl` on every single invocation even when the requested issue ID was not present or mistyped. Adding a fast C-level raw text substring check (`iid not in raw and escaped_iid not in raw`) bypasses `parse_issues()` completely for non-matching IDs, achieving an ~11x speedup (~2.86ms -> ~0.26ms per query on 1,000 records).
+**Action:** In single-issue search helpers reading `issues.jsonl`, run a dual substring check on raw text against both literal ID and JSON-escaped ID (`json.dumps(iid)[1:-1]`) before invoking stream parsing.

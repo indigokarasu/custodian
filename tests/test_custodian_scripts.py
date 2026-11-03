@@ -33,6 +33,7 @@ import verify_all_provider_credentials as vapc # noqa: E402
 import verify_escalation_state as ves          # noqa: E402
 import verify_plugin_defect_postrestart as vp  # noqa: E402
 import verify_provider_recovery as vpr         # noqa: E402
+import verify_recovery_by_runtime as vrr       # noqa: E402
 
 # Mirror of the skilllab runner's stdlib allow-list: a module-scope import of
 # anything else breaks `--help` on a machine where the dependency is absent.
@@ -261,6 +262,55 @@ class TestReopenLiveErrorCount(unittest.TestCase):
 
     def test_unknown_fingerprint_counts_zero(self):
         self.assertEqual(reopen.live_error_count("oc_no_such_fingerprint"), 0)
+
+
+class TestVerifyRecoveryByRuntime(unittest.TestCase):
+    """verify_recovery_by_runtime — load_issue, parse_ts, and recovery confirmation."""
+
+    def test_parse_ts(self):
+        self.assertIsNotNone(vrr.parse_ts("2026-07-16T12:34:56Z"))
+        self.assertIsNone(vrr.parse_ts(None))
+        self.assertIsNone(vrr.parse_ts(""))
+        self.assertIsNone(vrr.parse_ts("invalid_ts"))
+
+    def test_load_issue_hit_and_miss(self):
+        issues_data = [
+            {"issue_id": "oc_test_1", "status": "user_gated", "jobs_paused": ["j1", "j2"]},
+            {"issue_id": "oc_test_é", "status": "resolved", "jobs_paused": ["j3"]},
+        ]
+        with tempfile.NamedTemporaryFile("w", suffix=".jsonl", delete=False) as fh:
+            for item in issues_data:
+                fh.write(json.dumps(item) + "\n")
+            path = fh.name
+
+        orig_issues = vrr.ISSUES
+        try:
+            vrr.ISSUES = path
+            # Normal lookup hit
+            iss1 = vrr.load_issue("oc_test_1")
+            self.assertIsNotNone(iss1)
+            self.assertEqual(iss1.get("issue_id"), "oc_test_1")
+            self.assertEqual(iss1.get("jobs_paused"), ["j1", "j2"])
+
+            # Escaped unicode lookup hit (checks superset prefilter)
+            iss2 = vrr.load_issue("oc_test_é")
+            self.assertIsNotNone(iss2)
+            self.assertEqual(iss2.get("issue_id"), "oc_test_é")
+
+            # Lookup miss (short-circuits via substring prefilter)
+            self.assertIsNone(vrr.load_issue("oc_nonexistent_xyz"))
+        finally:
+            vrr.ISSUES = orig_issues
+            if os.path.exists(path):
+                os.unlink(path)
+
+    def test_load_issue_missing_file(self):
+        orig_issues = vrr.ISSUES
+        try:
+            vrr.ISSUES = "/nonexistent/path/issues.jsonl"
+            self.assertIsNone(vrr.load_issue("oc_test_1"))
+        finally:
+            vrr.ISSUES = orig_issues
 
 
 class TestVerifyProviderRecovery(unittest.TestCase):
