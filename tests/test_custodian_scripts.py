@@ -591,7 +591,29 @@ class TestVerifyEscalationState(unittest.TestCase):
 
 
 class TestGatewayHealthCheck(unittest.TestCase):
-    """gateway_health_check.check_import_errors — import error detection."""
+    """gateway_health_check — check_import_errors & service state parsing."""
+
+    def test_get_service_states_parsing(self):
+        orig_run = ghc.run
+        try:
+            ghc.run = lambda cmd: ("active\nrunning\n", 0)
+            act, sub = ghc.get_service_states()
+            self.assertEqual(act, "active")
+            self.assertEqual(sub, "running")
+            self.assertEqual(ghc.get_service_state(), "active")
+            self.assertEqual(ghc.get_service_substate(), "running")
+
+            ghc.run = lambda cmd: ("failed\nfailed\n", 0)
+            act, sub = ghc.get_service_states()
+            self.assertEqual(act, "failed")
+            self.assertEqual(sub, "failed")
+
+            ghc.run = lambda cmd: ("", -1)
+            act, sub = ghc.get_service_states()
+            self.assertEqual(act, "")
+            self.assertEqual(sub, "")
+        finally:
+            ghc.run = orig_run
 
     def test_check_import_errors_returns_first_error(self):
         tail = (
