@@ -102,5 +102,9 @@
 **Action:** Query multiple systemd unit properties in a single `systemctl show --property=Prop1,Prop2 --value` invocation instead of issuing separate serial status calls.
 
 ## 2027-08-06 - Superset Substring Pre-filtering for Multi-Branch Polling Conflict Scanners
-**Learning:** In `gateway_health_check.py`, running `CONFLICT_RE.finditer(journal_10min)` across 500-1000 lines evaluated a 6-branch case-insensitive regex on every health check cycle. Since every branch of `CONFLICT_RE` requires either `"conflict"`, `"terminated"`, or `"409"`, testing `if "conflict" not in low and "terminated" not in low and "409" not in low:` short-circuits ~99.9% of routine clean logs before regex execution, yielding a ~48x speedup (4.37s -> 0.09s per 1000 checks).
+**Learning:** In `gateway_health_check.py`, running `CONFLICT_RE.finditer(journal_10min)` across 500-1000 lines evaluated a 6-branch case-insensitive regex on every health check cycle. Since every branch of `CONFLICT_RE` requires either "conflict", "terminated", or "409", testing `if "conflict" not in low and "terminated" not in low and "409" not in low:` short-circuits ~99.9% of routine clean logs before regex execution, yielding a ~48x speedup (4.37s -> 0.09s per 1000 checks).
 **Action:** When evaluating complex multi-branch regexes over large log buffers, identify common token supersets and short-circuit evaluation with fast C-level substring checks.
+
+## 2027-08-06 - Incremental Tail Verification in Append-Only Stores
+**Learning:** In `append_issue_row.py`, verifying the open-count delta after appending a row by re-reading and re-parsing the entire `issues.jsonl` store created redundant $O(N)$ disk I/O and JSON stream decoding passes. Recording the byte offset prior to append and reading only from that offset allows incremental delta verification while eliminating the second whole-file parse (~1.89x to 2.40x speedup on 1,000–5,000 store records).
+**Action:** In append-only file verification routines, record `f.tell()` in append mode before writing and parse only the newly appended tail bytes to update state incrementally rather than re-reading the entire file.

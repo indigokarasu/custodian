@@ -18,6 +18,7 @@ SKILL_DIR = Path(__file__).resolve().parent.parent
 SCRIPTS = SKILL_DIR / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 
+import append_issue_row as air                # noqa: E402
 import classify_llm_necessity_integration as clni # noqa: E402
 import confirm_provider_recovery as cpr       # noqa: E402
 import custodian_common                       # noqa: E402
@@ -713,6 +714,35 @@ class TestEscalationExecPauseReconcile(unittest.TestCase):
         self.assertEqual(sorted(paused_by_bucket.get("openrouter", [])), ["j2"])
         self.assertEqual(sorted(paused_by_bucket.get("google403", [])), ["j3"])
         self.assertEqual(paused_by_bucket.get("owl", []), [])
+
+
+class TestAppendIssueRow(unittest.TestCase):
+    """append_issue_row — incremental tail parsing and delta verification."""
+
+    def test_append_incremental_tail_verification(self):
+        with tempfile.NamedTemporaryFile("w", suffix=".jsonl", delete=False) as fh:
+            fh.write(json.dumps({"issue_id": "oc_init", "status": "open", "escalation_needed": True, "description": "init"}) + "\n")
+            path = fh.name
+        try:
+            rc = air.main([
+                "--path", path,
+                "--issue-id", "oc_new",
+                "--status", "open",
+                "--escalation-needed",
+                "--description", "incremental tail verify test",
+            ])
+            self.assertEqual(rc, 0)
+
+            # Re-read file to verify state matches full load
+            loaded = air.load(path)
+            self.assertEqual(len(loaded), 2)
+            self.assertEqual(loaded[1]["issue_id"], "oc_new")
+            self.assertEqual(loaded[1]["description"], "incremental tail verify test")
+
+            last = air.last_rows(loaded)
+            self.assertEqual(sum(1 for r in last.values() if air.is_open(r)), 2)
+        finally:
+            os.unlink(path)
 
 
 class TestNoModuleScopeThirdPartyImports(unittest.TestCase):
