@@ -635,6 +635,38 @@ class TestGatewayHealthCheck(unittest.TestCase):
         self.assertFalse(has_err)
         self.assertEqual(msg, "No import errors")
 
+    def test_check_telegram_polling_conflict(self):
+        # 1. Clean log (short-circuits via substring pre-filter)
+        clean_log = "2026-09-20 10:00:00 Gateway started normally\n2026-09-20 10:00:01 Connected to Telegram"
+        has_conflict, msg = ghc.check_telegram_polling_conflict(clean_log)
+        self.assertFalse(has_conflict)
+        self.assertEqual(msg, "No polling conflict")
+
+        # 2. Genuine conflict without reconnect
+        err_log = "2026-09-20 10:00:00 telegram.error.Conflict: terminated by other getUpdates"
+        has_conflict, msg = ghc.check_telegram_polling_conflict(err_log)
+        self.assertTrue(has_conflict)
+        self.assertIn("Telegram polling conflict", msg)
+
+        # 3. Conflict followed by reconnect
+        rec_log = (
+            "2026-09-20 10:00:00 telegram.error.Conflict: terminated by other getUpdates\n"
+            "2026-09-20 10:01:00 Connected to Telegram"
+        )
+        has_conflict, msg = ghc.check_telegram_polling_conflict(rec_log)
+        self.assertFalse(has_conflict)
+        self.assertIn("reconnected afterwards", msg)
+
+        # 4. Spurious 409 substring (latency, memory, or millisecond timestamps)
+        spurious_log = (
+            "2026-09-20 10:00:00 latency 409ms on request\n"
+            "2026-09-20 10:00:01 memory 409.2M\n"
+            "2026-09-20 21:02:13,409 thread started\n"
+        )
+        has_conflict, msg = ghc.check_telegram_polling_conflict(spurious_log)
+        self.assertFalse(has_conflict)
+        self.assertEqual(msg, "No polling conflict")
+
     def test_check_import_errors_no_errors(self):
         tail = "2026-09-20 10:00:00 [INFO] Gateway started normally\n"
         has_err, msg = ghc.check_import_errors(tail)
